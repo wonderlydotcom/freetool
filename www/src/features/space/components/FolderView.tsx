@@ -862,6 +862,13 @@ export default function FolderView({
               <CardTitle className="text-base font-medium">
                 {child.name}
               </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {child.type === "folder"
+                  ? "Folder"
+                  : child.type === "dashboard"
+                    ? "Dashboard"
+                    : child.description || ""}
+              </p>
               <div className="flex items-center gap-2">
                 {child.type === "folder" ? (
                   <Popover
@@ -1052,15 +1059,6 @@ export default function FolderView({
                 </PermissionButton>
               </div>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                {child.type === "folder"
-                  ? "Folder"
-                  : child.type === "dashboard"
-                    ? "Dashboard"
-                    : child.description || ""}
-              </p>
-            </CardContent>
           </Card>
         ))}
         {children.length === 0 && (

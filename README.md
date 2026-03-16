@@ -650,7 +650,12 @@ This project uses **SQLite** with **DBUp** for database migrations. SQLite is a 
    dotnet restore
    ```
 
-3. **Configure database (optional)**
+3. **Install frontend dependencies**
+   ```bash
+   cd www && npm install && cd ..
+   ```
+
+4. **Configure database (optional)**
    The default configuration uses SQLite with a local file. The database file `freetool.db` will be created automatically in the API project directory. If needed, edit `src/Freetool.Api/appsettings.Development.json`:
    ```json
    {
@@ -660,7 +665,7 @@ This project uses **SQLite** with **DBUp** for database migrations. SQLite is a 
    }
    ```
 
-4. **Start the application**
+5. **Start the application**
    ```bash
    docker-compose up --build
    ```
