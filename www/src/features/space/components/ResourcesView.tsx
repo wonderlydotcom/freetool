@@ -571,6 +571,9 @@ export default function ResourcesView({
                     </div>
                     <span>{resource.name}</span>
                   </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    {resource.description}
+                  </p>
                   <div className="flex items-center gap-2">
                     <PermissionGate
                       spaceId={spaceId}
@@ -634,9 +637,6 @@ export default function ResourcesView({
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {resource.description}
-                  </p>
                   <p className="text-xs font-mono bg-gray-50 p-2 rounded">
                     {resource.resourceKind === "http"
                       ? resource.baseUrl
