@@ -56,7 +56,7 @@ variable "oauth2_client_secret" {
 variable "machine_type" {
   description = "GCE machine type"
   type        = string
-  default     = "e2-micro"
+  default     = "e2-small"
 }
 
 variable "boot_disk_size_gb" {
@@ -112,6 +112,17 @@ variable "primary_mig_target_size" {
   validation {
     condition     = var.primary_mig_target_size >= 0
     error_message = "primary_mig_target_size must be >= 0."
+  }
+}
+
+variable "primary_mig_autohealing_initial_delay_sec" {
+  description = "Initial delay before managed instance group autohealing starts checking a new instance."
+  type        = number
+  default     = 300
+
+  validation {
+    condition     = var.primary_mig_autohealing_initial_delay_sec >= 0
+    error_message = "primary_mig_autohealing_initial_delay_sec must be >= 0."
   }
 }
 

@@ -11,7 +11,7 @@ fi
 # 3) Provision green VM + backend attachment via OpenTofu (capacity 0)
 # 4) Drain old backend via OpenTofu (small non-zero primary capacity)
 # 5) Stop both stacks, copy sqlite dirs (freetool-db + openfga)
-# 6) Restart green, then switch traffic via OpenTofu (green capacity 1)
+# 6) Restart green, then switch traffic via OpenTofu (green capacity 1, primary MIG warm standby size 1)
 
 require_cmd() { command -v "$1" >/dev/null 2>&1 || { echo "Missing: $1" >&2; exit 1; }; }
 log() { printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"; }
@@ -151,8 +151,8 @@ wait_local_health() {
   done
 }
 
-wait_primary_mig_zero_instances() {
-  local start elapsed target_size instance_count
+wait_primary_mig_target_instances() {
+  local expected="$1" start elapsed target_size instance_count
   start="$(now)"
   while true; do
     target_size="$(gcloud compute instance-groups managed describe "${GCP_MIG_NAME}" \
@@ -164,13 +164,13 @@ wait_primary_mig_zero_instances() {
       --zone "${GCP_VM_ZONE}" \
       --format='value(instance)' | wc -l | tr -d ' ')"
 
-    if [[ "${target_size}" == "0" && "${instance_count}" == "0" ]]; then
+    if [[ "${target_size}" == "${expected}" && "${instance_count}" -ge "${expected}" ]]; then
       return 0
     fi
 
     elapsed="$(( $(now) - start ))"
     if (( elapsed > 900 )); then
-      echo "Primary MIG did not scale down to zero instances within 15 minutes (targetSize=${target_size}, instances=${instance_count})" >&2
+      echo "Primary MIG did not converge to targetSize=${expected} within 15 minutes (targetSize=${target_size}, instances=${instance_count})" >&2
       exit 1
     fi
     sleep 10
@@ -179,20 +179,21 @@ wait_primary_mig_zero_instances() {
 
 resolve_old_vm() {
   local mig_vm bluegreen_vm backend_vm labeled_vm
+
+  # The blue/green VM owns the persistent data disk after cutover, so prefer it
+  # whenever it exists instead of the primary MIG's stateless instance.
+  bluegreen_vm="$(jq -r '.bluegreen_vm_name.value // empty' <<<"${OUT:-}")"
+  if [[ -n "${bluegreen_vm}" ]]; then
+    echo "${bluegreen_vm}"
+    return 0
+  fi
+
   mig_vm="$(gcloud compute instance-groups managed list-instances "${GCP_MIG_NAME}" \
     --project "${GCP_PROJECT_ID}" \
     --zone "${GCP_VM_ZONE}" \
     --format='value(instance.basename())' | head -n1)"
   if [[ -n "${mig_vm}" ]]; then
     echo "${mig_vm}"
-    return 0
-  fi
-
-  # After a prior successful cutover the primary MIG can be size 0; in that state
-  # the currently serving VM is the existing blue/green VM tracked in OpenTofu state.
-  bluegreen_vm="$(jq -r '.bluegreen_vm_name.value // empty' <<<"${OUT:-}")"
-  if [[ -n "${bluegreen_vm}" ]]; then
-    echo "${bluegreen_vm}"
     return 0
   fi
 
@@ -393,10 +394,10 @@ fi
 log "Restart green + enable traffic via OpenTofu"
 start_stack "${GREEN_VM_NAME}"
 wait_local_health "${GREEN_VM_NAME}"
-apply_tofu_state 0 1 true "${TAG}" 0
+apply_tofu_state 0 1 true "${TAG}" 1
 GREEN_BACKEND_ENABLED=1
-log "Wait for primary MIG to reach zero instances"
-wait_primary_mig_zero_instances
+log "Wait for primary MIG to return to warm standby size 1"
+wait_primary_mig_target_instances 1
 
 T4="$(now)"
 CUTOVER_SECONDS="$((T4-T3))"
@@ -420,8 +421,8 @@ Resources:
 
 Note:
   Old backend traffic is set to capacity 0 via OpenTofu.
-  Primary MIG target size is set to 0 after successful cutover.
-  Script waits until primary MIG reports zero instances.
+  Primary MIG target size is restored to 1 after successful cutover.
+  Script waits until the primary MIG reports at least one standby instance.
 SUMMARY
 
 if command -v tailscale >/dev/null 2>&1; then

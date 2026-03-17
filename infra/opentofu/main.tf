@@ -233,6 +233,11 @@ resource "google_compute_instance_group_manager" "freetool" {
     max_surge_fixed       = 0
     max_unavailable_fixed = 1
   }
+
+  auto_healing_policies {
+    health_check      = google_compute_health_check.freetool.id
+    initial_delay_sec = var.primary_mig_autohealing_initial_delay_sec
+  }
 }
 
 resource "google_compute_instance" "bluegreen" {

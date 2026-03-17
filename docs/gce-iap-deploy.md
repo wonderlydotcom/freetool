@@ -6,7 +6,7 @@ This repo now includes infrastructure as code under `infra/opentofu`.
 
 - Custom VPC + subnet
 - Artifact Registry Docker repo
-- `e2-micro` Compute Engine VM
+- `e2-small` Compute Engine VM
 - Dedicated persistent disk for app data (default 30 GB)
 - VM service account + IAM for Artifact Registry pull
 - VM startup bootstrap (Docker, Compose, gcloud, stack startup)
@@ -75,4 +75,4 @@ Manual mode is still available via `./scripts/deploy-gce.sh` if you want to pass
 - API is configured to run at root path (`/`) with no path base.
 - Runtime data is bind-mounted from `${data_mount_path}` on a dedicated persistent disk.
 - Disk defaults: `30 GB` (`pd-balanced`) with `preserve_data_disk_on_destroy=true`.
-- `e2-micro` is viable but memory headroom is limited; monitor usage after enabling production traffic.
+- `e2-small` is the default because the app and OpenFGA are too tight on `e2-micro` once production traffic is enabled.
