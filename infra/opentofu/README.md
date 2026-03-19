@@ -92,22 +92,3 @@ IMAGE_TAG=$(git rev-parse --short HEAD) scripts/deploy-app-from-tofu.sh
 PUBLISH_LATEST=true scripts/deploy-app-from-tofu.sh
 scripts/deploy-app-from-tofu.sh -var-file=environments/dev/terraform.tfvars.example
 ```
-
-## Data Restore
-
-Before the production cutover, archive the entire VM data root so both SQLite stores are preserved:
-
-```bash
-sudo tar -C /mnt/freetool-data -czf freetool-pre-k8s.tgz freetool-db openfga
-```
-
-Then seed the platform PVC with:
-
-```bash
-scripts/seed-k8s-pvc-from-archive.sh \
-  --archive freetool-pre-k8s.tgz \
-  --namespace app-freetool \
-  --pvc data \
-  --artifact-repo freetool \
-  --image-name freetool-api
-```

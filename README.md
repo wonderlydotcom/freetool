@@ -866,7 +866,6 @@ Use the Kubernetes deployment flow in this repo:
 - Foundation/bootstrap stack: `infra/foundation/opentofu/`
 - App workload stack: `infra/opentofu/`
 - App stack guide: `infra/opentofu/README.md`
-- Migration runbook: `MIGRATE_TO_K8S.md`
 - App deploy script: `scripts/deploy-app-from-tofu.sh`
 
 ## 🔐 Production Auth Flow (IAP + Google Directory DWD)
