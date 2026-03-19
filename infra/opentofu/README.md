@@ -34,17 +34,18 @@ The values that matter here are:
 - `runtime_contract_config_map`
 - `secret_provider_class`
 - `artifact_registry_repo`
-- `state_bucket_name`
 - `iap_jwt_audience`
 - `required_pod_labels`
 
 ## Backend
 
-The shared platform creates a per-app GCS bucket for this repo's state. Populate [`backend.gcs.hcl.example`](./backend.gcs.hcl.example) with `state_bucket_name`, then initialize with:
+The shared platform creates a per-app GCS bucket for this repo's state, and this stack now checks in the matching backend configuration. Initialize with:
 
 ```bash
-tofu init -migrate-state -backend-config=backend.gcs.hcl.example
+tofu init -input=false
 ```
+
+If this working copy was previously initialized against another backend, run `tofu init -input=false -migrate-state` once instead.
 
 For syntax-only validation without a configured backend, use:
 

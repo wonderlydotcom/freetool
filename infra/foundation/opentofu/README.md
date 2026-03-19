@@ -10,17 +10,16 @@ It creates:
 
 It reuses the existing shared Workload Identity Pool `github-actions`; it does not try to create a new project-global pool per repo.
 
-It does **not** create the app-owned state bucket used by `infra/opentofu`. That bucket comes from `../internal-tools-infra/platform/apps` and must still be copied from the app contract into GitHub Actions as `TOFU_BACKEND_BUCKET` with `TOFU_BACKEND_PREFIX=infra/opentofu`.
+It does **not** create the app-owned state bucket used by `infra/opentofu`. The app stack now checks in its own remote backend target for this repo.
 
 ## Usage
 
 First-time bootstrap must start from local state because this stack creates its own backend bucket.
 
 1. Copy `terraform.tfvars.example` to `terraform.tfvars`.
-2. Copy `backend.hcl.example` to `backend.hcl`.
-3. Create a scratch copy of this directory without the `backend "gcs"` block and apply there.
-4. Copy the resulting `terraform.tfstate` back into this directory.
-5. Run `tofu init -migrate-state -force-copy -input=false -backend-config=backend.hcl`.
+2. Create a scratch copy of this directory without the `backend "gcs"` block and apply there.
+3. Copy the resulting `terraform.tfstate` back into this directory.
+4. Run `tofu init -migrate-state -force-copy -input=false`.
 
 After that migration, normal commands can run directly from `infra/foundation/opentofu`.
 
@@ -37,6 +36,4 @@ The app deploy workflow still needs cluster and app-contract values:
 
 - `GKE_CLUSTER_NAME`
 - `GKE_CLUSTER_LOCATION`
-- `TOFU_BACKEND_BUCKET`
-- `TOFU_BACKEND_PREFIX`
 - `TOFU_TFVARS_BASE64`
