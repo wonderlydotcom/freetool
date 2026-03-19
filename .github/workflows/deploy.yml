@@ -24,8 +24,6 @@ jobs:
       GCP_DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
       GKE_CLUSTER_NAME: ${{ vars.GKE_CLUSTER_NAME }}
       GKE_CLUSTER_LOCATION: ${{ vars.GKE_CLUSTER_LOCATION }}
-      TOFU_BACKEND_BUCKET: ${{ vars.TOFU_BACKEND_BUCKET }}
-      TOFU_BACKEND_PREFIX: ${{ vars.TOFU_BACKEND_PREFIX }}
       TOFU_TFVARS_BASE64: ${{ vars.TOFU_TFVARS_BASE64 }}
 
     steps:
@@ -41,8 +39,6 @@ jobs:
             GCP_DEPLOY_SERVICE_ACCOUNT
             GKE_CLUSTER_NAME
             GKE_CLUSTER_LOCATION
-            TOFU_BACKEND_BUCKET
-            TOFU_BACKEND_PREFIX
             TOFU_TFVARS_BASE64
           )
 
@@ -106,15 +102,10 @@ jobs:
         working-directory: www
         run: npm ci
 
-      - name: Write OpenTofu backend config
-        run: |
-          set -euo pipefail
-          printf 'bucket = "%s"\nprefix = "%s"\n' "$TOFU_BACKEND_BUCKET" "$TOFU_BACKEND_PREFIX" > "${INFRA_DIR}/backend.gcs.hcl"
-
       - name: Init OpenTofu backend
         run: |
           set -euo pipefail
-          tofu -chdir="${INFRA_DIR}" init -input=false -backend-config=backend.gcs.hcl
+          tofu -chdir="${INFRA_DIR}" init -input=false
 
       - name: Write OpenTofu deploy tfvars
         run: |
