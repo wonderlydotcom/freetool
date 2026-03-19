@@ -20,62 +20,66 @@ type IdentityProvisioningController
     ) =
     inherit AuthenticatedControllerBase()
 
-    member private this.IsOrgAdminAsync() : Task<bool> =
-        task {
-            let userId = this.CurrentUserId.Value.ToString()
-            return! authService.CheckPermissionAsync (User userId) OrganizationAdmin (OrganizationObject "default")
-        }
+    member private this.IsOrgAdminAsync() : Task<bool> = task {
+        let userId = this.CurrentUserId.Value.ToString()
+        return! authService.CheckPermissionAsync (User userId) OrganizationAdmin (OrganizationObject "default")
+    }
 
     member private this.Forbidden(message: string) : IActionResult =
         this.StatusCode(
             403,
-            {| error = "Forbidden"
-               message = message |}
+            {|
+                error = "Forbidden"
+                message = message
+            |}
         )
         :> IActionResult
 
     member private this.HandleDomainError(error: DomainError) : IActionResult =
         match error with
         | ValidationError message ->
-            this.BadRequest
-                {| error = "Validation failed"
-                   message = message |}
+            this.BadRequest {|
+                error = "Validation failed"
+                message = message
+            |}
             :> IActionResult
         | NotFound message ->
-            this.NotFound
-                {| error = "Resource not found"
-                   message = message |}
+            this.NotFound {|
+                error = "Resource not found"
+                message = message
+            |}
             :> IActionResult
         | Conflict message ->
-            this.Conflict
-                {| error = "Conflict"
-                   message = message |}
+            this.Conflict {|
+                error = "Conflict"
+                message = message
+            |}
             :> IActionResult
         | InvalidOperation message ->
-            this.UnprocessableEntity
-                {| error = "Invalid operation"
-                   message = message |}
+            this.UnprocessableEntity {|
+                error = "Invalid operation"
+                message = message
+            |}
             :> IActionResult
 
     [<HttpGet>]
     [<ProducesResponseType(typeof<IdentityGroupSpaceMappingDto list>, StatusCodes.Status200OK)>]
     [<ProducesResponseType(StatusCodes.Status403Forbidden)>]
-    member this.GetMappings() : Task<IActionResult> =
-        task {
-            let userId = this.CurrentUserId
-            let! isOrgAdmin = this.IsOrgAdminAsync()
+    member this.GetMappings() : Task<IActionResult> = task {
+        let userId = this.CurrentUserId
+        let! isOrgAdmin = this.IsOrgAdminAsync()
 
-            if not isOrgAdmin then
-                logger.LogWarning(
-                    "User {UserId} attempted to list group-space mappings without org admin role",
-                    userId.Value
-                )
+        if not isOrgAdmin then
+            logger.LogWarning(
+                "User {UserId} attempted to list group-space mappings without org admin role",
+                userId.Value
+            )
 
-                return this.Forbidden("Only organization administrators can view group-space mappings")
-            else
-                let! mappings = mappingRepository.GetAllAsync()
-                return this.Ok(mappings) :> IActionResult
-        }
+            return this.Forbidden("Only organization administrators can view group-space mappings")
+        else
+            let! mappings = mappingRepository.GetAllAsync()
+            return this.Ok(mappings) :> IActionResult
+    }
 
     [<HttpPost>]
     [<ProducesResponseType(typeof<IdentityGroupSpaceMappingDto>, StatusCodes.Status201Created)>]
@@ -83,31 +87,32 @@ type IdentityProvisioningController
     [<ProducesResponseType(StatusCodes.Status403Forbidden)>]
     [<ProducesResponseType(StatusCodes.Status404NotFound)>]
     [<ProducesResponseType(StatusCodes.Status409Conflict)>]
-    member this.CreateMapping([<FromBody>] createDto: CreateIdentityGroupSpaceMappingDto) : Task<IActionResult> =
-        task {
-            let actorUserId = this.CurrentUserId
-            let! isOrgAdmin = this.IsOrgAdminAsync()
+    member this.CreateMapping([<FromBody>] createDto: CreateIdentityGroupSpaceMappingDto) : Task<IActionResult> = task {
+        let actorUserId = this.CurrentUserId
+        let! isOrgAdmin = this.IsOrgAdminAsync()
 
-            if not isOrgAdmin then
-                logger.LogWarning("User {UserId} attempted to create mapping without org admin role", actorUserId.Value)
-                return this.Forbidden("Only organization administrators can create group-space mappings")
-            else
-                match Guid.TryParse createDto.SpaceId with
-                | false, _ ->
-                    return
-                        this.BadRequest(
-                            {| error = "Validation failed"
-                               message = "Invalid space ID format" |}
-                        )
-                        :> IActionResult
-                | true, spaceGuid ->
-                    let spaceId = SpaceId.FromGuid spaceGuid
-                    let! result = mappingRepository.AddAsync actorUserId createDto.GroupKey spaceId
+        if not isOrgAdmin then
+            logger.LogWarning("User {UserId} attempted to create mapping without org admin role", actorUserId.Value)
+            return this.Forbidden("Only organization administrators can create group-space mappings")
+        else
+            match Guid.TryParse createDto.SpaceId with
+            | false, _ ->
+                return
+                    this.BadRequest(
+                        {|
+                            error = "Validation failed"
+                            message = "Invalid space ID format"
+                        |}
+                    )
+                    :> IActionResult
+            | true, spaceGuid ->
+                let spaceId = SpaceId.FromGuid spaceGuid
+                let! result = mappingRepository.AddAsync actorUserId createDto.GroupKey spaceId
 
-                    match result with
-                    | Ok mapping -> return this.StatusCode(StatusCodes.Status201Created, mapping) :> IActionResult
-                    | Error error -> return this.HandleDomainError(error)
-        }
+                match result with
+                | Ok mapping -> return this.StatusCode(StatusCodes.Status201Created, mapping) :> IActionResult
+                | Error error -> return this.HandleDomainError(error)
+    }
 
     [<HttpPut("{mappingId}")>]
     [<ProducesResponseType(StatusCodes.Status200OK)>]
@@ -130,8 +135,10 @@ type IdentityProvisioningController
                 | false, _ ->
                     return
                         this.BadRequest(
-                            {| error = "Validation failed"
-                               message = "Invalid mapping ID format" |}
+                            {|
+                                error = "Validation failed"
+                                message = "Invalid mapping ID format"
+                            |}
                         )
                         :> IActionResult
                 | true, mappingGuid ->
@@ -148,27 +155,28 @@ type IdentityProvisioningController
     [<ProducesResponseType(StatusCodes.Status403Forbidden)>]
     [<ProducesResponseType(StatusCodes.Status404NotFound)>]
     [<ProducesResponseType(StatusCodes.Status409Conflict)>]
-    member this.DeleteMapping(mappingId: string) : Task<IActionResult> =
-        task {
-            let actorUserId = this.CurrentUserId
-            let! isOrgAdmin = this.IsOrgAdminAsync()
+    member this.DeleteMapping(mappingId: string) : Task<IActionResult> = task {
+        let actorUserId = this.CurrentUserId
+        let! isOrgAdmin = this.IsOrgAdminAsync()
 
-            if not isOrgAdmin then
-                logger.LogWarning("User {UserId} attempted to delete mapping without org admin role", actorUserId.Value)
-                return this.Forbidden("Only organization administrators can delete group-space mappings")
-            else
-                match Guid.TryParse mappingId with
-                | false, _ ->
-                    return
-                        this.BadRequest(
-                            {| error = "Validation failed"
-                               message = "Invalid mapping ID format" |}
-                        )
-                        :> IActionResult
-                | true, mappingGuid ->
-                    let! result = mappingRepository.DeleteAsync mappingGuid
+        if not isOrgAdmin then
+            logger.LogWarning("User {UserId} attempted to delete mapping without org admin role", actorUserId.Value)
+            return this.Forbidden("Only organization administrators can delete group-space mappings")
+        else
+            match Guid.TryParse mappingId with
+            | false, _ ->
+                return
+                    this.BadRequest(
+                        {|
+                            error = "Validation failed"
+                            message = "Invalid mapping ID format"
+                        |}
+                    )
+                    :> IActionResult
+            | true, mappingGuid ->
+                let! result = mappingRepository.DeleteAsync mappingGuid
 
-                    match result with
-                    | Ok() -> return this.NoContent() :> IActionResult
-                    | Error error -> return this.HandleDomainError(error)
-        }
+                match result with
+                | Ok() -> return this.NoContent() :> IActionResult
+                | Error error -> return this.HandleDomainError(error)
+    }

@@ -12,43 +12,46 @@ open Freetool.Domain.ValueObjects
 type KeyValuePair = { Key: string; Value: string }
 
 [<CLIMutable>]
-type SerializableHttpRequest =
-    { BaseUrl: string
-      UrlParameters: KeyValuePair array
-      Headers: KeyValuePair array
-      Body: KeyValuePair array
-      HttpMethod: string
-      UseJsonBody: bool }
+type SerializableHttpRequest = {
+    BaseUrl: string
+    UrlParameters: KeyValuePair array
+    Headers: KeyValuePair array
+    Body: KeyValuePair array
+    HttpMethod: string
+    UseJsonBody: bool
+}
 
 [<CLIMutable>]
-type IdentityGroupSpaceMappingData =
-    { Id: Guid
-      GroupKey: string
-      SpaceId: SpaceId
-      IsActive: bool
-      CreatedByUserId: UserId
-      UpdatedByUserId: UserId
-      CreatedAt: DateTime
-      UpdatedAt: DateTime }
+type IdentityGroupSpaceMappingData = {
+    Id: Guid
+    GroupKey: string
+    SpaceId: SpaceId
+    IsActive: bool
+    CreatedByUserId: UserId
+    UpdatedByUserId: UserId
+    CreatedAt: DateTime
+    UpdatedAt: DateTime
+}
 
 module ExecutableHttpRequestSerializer =
     let serialize (requestOpt: Freetool.Domain.ExecutableHttpRequest option) : string =
         match requestOpt with
         | None -> null
         | Some request ->
-            let serializable: SerializableHttpRequest =
-                { BaseUrl = request.BaseUrl
-                  UrlParameters =
+            let serializable: SerializableHttpRequest = {
+                BaseUrl = request.BaseUrl
+                UrlParameters =
                     request.UrlParameters
                     |> List.map (fun (k, v) -> { Key = k; Value = v })
                     |> List.toArray
-                  Headers =
+                Headers =
                     request.Headers
                     |> List.map (fun (k, v) -> { Key = k; Value = v })
                     |> List.toArray
-                  Body = request.Body |> List.map (fun (k, v) -> { Key = k; Value = v }) |> List.toArray
-                  HttpMethod = request.HttpMethod
-                  UseJsonBody = request.UseJsonBody }
+                Body = request.Body |> List.map (fun (k, v) -> { Key = k; Value = v }) |> List.toArray
+                HttpMethod = request.HttpMethod
+                UseJsonBody = request.UseJsonBody
+            }
 
             System.Text.Json.JsonSerializer.Serialize(serializable)
 
@@ -60,16 +63,17 @@ module ExecutableHttpRequestSerializer =
                 let deserialized =
                     System.Text.Json.JsonSerializer.Deserialize<SerializableHttpRequest>(json)
 
-                Some
-                    { Freetool.Domain.ExecutableHttpRequest.BaseUrl = deserialized.BaseUrl
-                      UrlParameters =
+                Some {
+                    Freetool.Domain.ExecutableHttpRequest.BaseUrl = deserialized.BaseUrl
+                    UrlParameters =
                         deserialized.UrlParameters
                         |> Array.toList
                         |> List.map (fun kv -> (kv.Key, kv.Value))
-                      Headers = deserialized.Headers |> Array.toList |> List.map (fun kv -> (kv.Key, kv.Value))
-                      Body = deserialized.Body |> Array.toList |> List.map (fun kv -> (kv.Key, kv.Value))
-                      HttpMethod = deserialized.HttpMethod
-                      UseJsonBody = deserialized.UseJsonBody }
+                    Headers = deserialized.Headers |> Array.toList |> List.map (fun kv -> (kv.Key, kv.Value))
+                    Body = deserialized.Body |> Array.toList |> List.map (fun kv -> (kv.Key, kv.Value))
+                    HttpMethod = deserialized.HttpMethod
+                    UseJsonBody = deserialized.UseJsonBody
+                }
             with _ ->
                 None
 
@@ -312,9 +316,10 @@ type FreetoolDbContext(options: DbContextOptions<FreetoolDbContext>) =
                                 )
 
                             deserialized
-                            |> List.map (fun item ->
-                                { Freetool.Domain.RunInputValue.Title = item.Title
-                                  Freetool.Domain.RunInputValue.Value = item.Value }))
+                            |> List.map (fun item -> {
+                                Freetool.Domain.RunInputValue.Title = item.Title
+                                Freetool.Domain.RunInputValue.Value = item.Value
+                            }))
                 )
 
             entity.Property(fun r -> r.InputValues).HasConversion(runInputValueListConverter)
@@ -629,24 +634,26 @@ type FreetoolDbContext(options: DbContextOptions<FreetoolDbContext>) =
             let serializeInputs (inputs: Freetool.Domain.Events.Input list) =
                 let serializable =
                     inputs
-                    |> List.map (fun input ->
-                        {| Title = input.Title
-                           Description = input.Description |> Option.toObj
-                           Type = input.Type.ToString()
-                           Required = input.Required
-                           DefaultValue =
-                            input.DefaultValue |> Option.map (fun dv -> dv.ToRawString()) |> Option.toObj |})
+                    |> List.map (fun input -> {|
+                        Title = input.Title
+                        Description = input.Description |> Option.toObj
+                        Type = input.Type.ToString()
+                        Required = input.Required
+                        DefaultValue = input.DefaultValue |> Option.map (fun dv -> dv.ToRawString()) |> Option.toObj
+                    |})
 
                 System.Text.Json.JsonSerializer.Serialize(serializable)
 
             let deserializeInputs (json: string) =
                 let deserialized =
                     System.Text.Json.JsonSerializer.Deserialize<
-                        {| Title: string
-                           Description: string
-                           Type: string
-                           Required: bool
-                           DefaultValue: string |} list
+                        {|
+                            Title: string
+                            Description: string
+                            Type: string
+                            Required: bool
+                            DefaultValue: string
+                        |} list
                      >(
                         json
                     )
@@ -694,11 +701,15 @@ type FreetoolDbContext(options: DbContextOptions<FreetoolDbContext>) =
                                             let value = trimmed.Substring(0, colonIdx)
                                             let label = trimmed.Substring(colonIdx + 3)
 
-                                            { Freetool.Domain.ValueObjects.RadioOption.Value = value
-                                              Label = Some label }
+                                            {
+                                                Freetool.Domain.ValueObjects.RadioOption.Value = value
+                                                Label = Some label
+                                            }
                                         else
-                                            { Freetool.Domain.ValueObjects.RadioOption.Value = trimmed
-                                              Label = None })
+                                            {
+                                                Freetool.Domain.ValueObjects.RadioOption.Value = trimmed
+                                                Label = None
+                                            })
                                     |> Array.toList
 
                                 InputType.Radio(options)
@@ -724,11 +735,13 @@ type FreetoolDbContext(options: DbContextOptions<FreetoolDbContext>) =
                             else
                                 Some item.Description
 
-                        { Freetool.Domain.Events.Input.Title = item.Title
-                          Freetool.Domain.Events.Input.Description = description
-                          Freetool.Domain.Events.Input.Type = validInputType
-                          Freetool.Domain.Events.Input.Required = item.Required
-                          Freetool.Domain.Events.Input.DefaultValue = defaultValue }
+                        {
+                            Freetool.Domain.Events.Input.Title = item.Title
+                            Freetool.Domain.Events.Input.Description = description
+                            Freetool.Domain.Events.Input.Type = validInputType
+                            Freetool.Domain.Events.Input.Required = item.Required
+                            Freetool.Domain.Events.Input.DefaultValue = defaultValue
+                        }
                     | Error _ -> failwith $"Invalid InputType in database: {item.Type}")
 
             let inputListConverter =
@@ -774,11 +787,15 @@ type FreetoolDbContext(options: DbContextOptions<FreetoolDbContext>) =
                                     let value = trimmed.Substring(0, colonIdx)
                                     let label = trimmed.Substring(colonIdx + 3)
 
-                                    { Freetool.Domain.ValueObjects.RadioOption.Value = value
-                                      Label = Some label }
+                                    {
+                                        Freetool.Domain.ValueObjects.RadioOption.Value = value
+                                        Label = Some label
+                                    }
                                 else
-                                    { Freetool.Domain.ValueObjects.RadioOption.Value = trimmed
-                                      Label = None })
+                                    {
+                                        Freetool.Domain.ValueObjects.RadioOption.Value = trimmed
+                                        Label = None
+                                    })
                             |> Array.toList
 
                         match InputType.Radio(options) with
@@ -882,26 +899,29 @@ type FreetoolDbContext(options: DbContextOptions<FreetoolDbContext>) =
                         match configOpt with
                         | None -> null
                         | Some config ->
-                            let serialized =
-                                {| Mode = sqlModeToString config.Mode
-                                   Table = config.Table
-                                   Columns = config.Columns
-                                   Filters =
+                            let serialized = {|
+                                Mode = sqlModeToString config.Mode
+                                Table = config.Table
+                                Columns = config.Columns
+                                Filters =
                                     config.Filters
-                                    |> List.map (fun filter ->
-                                        {| Column = filter.Column
-                                           Operator = sqlOperatorToString filter.Operator
-                                           Value = filter.Value |})
-                                   Limit = config.Limit
-                                   OrderBy =
+                                    |> List.map (fun filter -> {|
+                                        Column = filter.Column
+                                        Operator = sqlOperatorToString filter.Operator
+                                        Value = filter.Value
+                                    |})
+                                Limit = config.Limit
+                                OrderBy =
                                     config.OrderBy
-                                    |> List.map (fun orderBy ->
-                                        {| Column = orderBy.Column
-                                           Direction = sqlDirectionToString orderBy.Direction |})
-                                   RawSql = config.RawSql
-                                   RawSqlParams =
+                                    |> List.map (fun orderBy -> {|
+                                        Column = orderBy.Column
+                                        Direction = sqlDirectionToString orderBy.Direction
+                                    |})
+                                RawSql = config.RawSql
+                                RawSqlParams =
                                     config.RawSqlParams
-                                    |> List.map (fun kvp -> {| Key = kvp.Key; Value = kvp.Value |}) |}
+                                    |> List.map (fun kvp -> {| Key = kvp.Key; Value = kvp.Value |})
+                            |}
 
                             System.Text.Json.JsonSerializer.Serialize(serialized)),
                     (fun json ->
@@ -910,33 +930,39 @@ type FreetoolDbContext(options: DbContextOptions<FreetoolDbContext>) =
                         else
                             let deserialized =
                                 System.Text.Json.JsonSerializer.Deserialize<
-                                    {| Mode: string
-                                       Table: string option
-                                       Columns: string list
-                                       Filters:
-                                           {| Column: string
-                                              Operator: string
-                                              Value: string option |} list
-                                       Limit: int option
-                                       OrderBy: {| Column: string; Direction: string |} list
-                                       RawSql: string option
-                                       RawSqlParams: {| Key: string; Value: string |} list |}
+                                    {|
+                                        Mode: string
+                                        Table: string option
+                                        Columns: string list
+                                        Filters:
+                                            {|
+                                                Column: string
+                                                Operator: string
+                                                Value: string option
+                                            |} list
+                                        Limit: int option
+                                        OrderBy: {| Column: string; Direction: string |} list
+                                        RawSql: string option
+                                        RawSqlParams: {| Key: string; Value: string |} list
+                                    |}
                                  >(
                                     json
                                 )
 
                             let filters =
                                 deserialized.Filters
-                                |> List.map (fun filter ->
-                                    { Freetool.Domain.Entities.SqlFilter.Column = filter.Column
-                                      Operator = sqlOperatorFromString filter.Operator
-                                      Value = filter.Value })
+                                |> List.map (fun filter -> {
+                                    Freetool.Domain.Entities.SqlFilter.Column = filter.Column
+                                    Operator = sqlOperatorFromString filter.Operator
+                                    Value = filter.Value
+                                })
 
                             let orderBy =
                                 deserialized.OrderBy
-                                |> List.map (fun order ->
-                                    { Freetool.Domain.Entities.SqlOrderBy.Column = order.Column
-                                      Direction = sqlDirectionFromString order.Direction })
+                                |> List.map (fun order -> {
+                                    Freetool.Domain.Entities.SqlOrderBy.Column = order.Column
+                                    Direction = sqlDirectionFromString order.Direction
+                                })
 
                             let rawParams =
                                 deserialized.RawSqlParams
@@ -945,15 +971,16 @@ type FreetoolDbContext(options: DbContextOptions<FreetoolDbContext>) =
                                     | Ok valid -> valid
                                     | Error _ -> failwith $"Invalid KeyValuePair in database: {kvp.Key}={kvp.Value}")
 
-                            Some
-                                { Freetool.Domain.Entities.SqlQueryConfig.Mode = sqlModeFromString deserialized.Mode
-                                  Table = deserialized.Table
-                                  Columns = deserialized.Columns
-                                  Filters = filters
-                                  Limit = deserialized.Limit
-                                  OrderBy = orderBy
-                                  RawSql = deserialized.RawSql
-                                  RawSqlParams = rawParams })
+                            Some {
+                                Freetool.Domain.Entities.SqlQueryConfig.Mode = sqlModeFromString deserialized.Mode
+                                Table = deserialized.Table
+                                Columns = deserialized.Columns
+                                Filters = filters
+                                Limit = deserialized.Limit
+                                OrderBy = orderBy
+                                RawSql = deserialized.RawSql
+                                RawSqlParams = rawParams
+                            })
                 )
 
             entity.Property(fun a -> a.SqlConfig).HasConversion(sqlConfigConverter)

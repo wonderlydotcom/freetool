@@ -6,12 +6,13 @@ open Freetool.Domain.ValueObjects
 
 // CLIMutable for EntityFramework
 [<CLIMutable>]
-type Input =
-    { Title: string
-      Description: string option
-      Type: InputType
-      Required: bool
-      DefaultValue: DefaultValue option }
+type Input = {
+    Title: string
+    Description: string option
+    Type: InputType
+    Required: bool
+    DefaultValue: DefaultValue option
+}
 
 type AppChange =
     | NameChanged of oldValue: AppName * newValue: AppName
@@ -28,52 +29,56 @@ type AppChange =
         newValue: Freetool.Domain.Entities.SqlQueryConfig option
     | DescriptionChanged of oldValue: string option * newValue: string option
 
-type AppCreatedEvent =
-    { AppId: AppId
-      Name: AppName
-      FolderId: FolderId option
-      ResourceId: ResourceId
-      HttpMethod: HttpMethod
-      Inputs: Input list
-      OccurredAt: DateTime
-      EventId: Guid
-      ActorUserId: UserId }
+type AppCreatedEvent = {
+    AppId: AppId
+    Name: AppName
+    FolderId: FolderId option
+    ResourceId: ResourceId
+    HttpMethod: HttpMethod
+    Inputs: Input list
+    OccurredAt: DateTime
+    EventId: Guid
+    ActorUserId: UserId
+} with
 
     interface IDomainEvent with
         member this.OccurredAt = this.OccurredAt
         member this.EventId = this.EventId
         member this.UserId = this.ActorUserId
 
-type AppUpdatedEvent =
-    { AppId: AppId
-      Changes: AppChange list
-      OccurredAt: DateTime
-      EventId: Guid
-      ActorUserId: UserId }
+type AppUpdatedEvent = {
+    AppId: AppId
+    Changes: AppChange list
+    OccurredAt: DateTime
+    EventId: Guid
+    ActorUserId: UserId
+} with
 
     interface IDomainEvent with
         member this.OccurredAt = this.OccurredAt
         member this.EventId = this.EventId
         member this.UserId = this.ActorUserId
 
-type AppDeletedEvent =
-    { AppId: AppId
-      Name: AppName
-      OccurredAt: DateTime
-      EventId: Guid
-      ActorUserId: UserId }
+type AppDeletedEvent = {
+    AppId: AppId
+    Name: AppName
+    OccurredAt: DateTime
+    EventId: Guid
+    ActorUserId: UserId
+} with
 
     interface IDomainEvent with
         member this.OccurredAt = this.OccurredAt
         member this.EventId = this.EventId
         member this.UserId = this.ActorUserId
 
-type AppRestoredEvent =
-    { AppId: AppId
-      Name: AppName
-      OccurredAt: DateTime
-      EventId: Guid
-      ActorUserId: UserId }
+type AppRestoredEvent = {
+    AppId: AppId
+    Name: AppName
+    OccurredAt: DateTime
+    EventId: Guid
+    ActorUserId: UserId
+} with
 
     interface IDomainEvent with
         member this.OccurredAt = this.OccurredAt
@@ -90,37 +95,45 @@ module AppEvents =
         (httpMethod: HttpMethod)
         (inputs: Input list)
         =
-        { AppId = appId
-          Name = name
-          FolderId = folderId
-          ResourceId = resourceId
-          HttpMethod = httpMethod
-          Inputs = inputs
-          OccurredAt = DateTime.UtcNow
-          EventId = Guid.NewGuid()
-          ActorUserId = actorUserId }
+        {
+            AppId = appId
+            Name = name
+            FolderId = folderId
+            ResourceId = resourceId
+            HttpMethod = httpMethod
+            Inputs = inputs
+            OccurredAt = DateTime.UtcNow
+            EventId = Guid.NewGuid()
+            ActorUserId = actorUserId
+        }
         : AppCreatedEvent
 
     let appUpdated (actorUserId: UserId) (appId: AppId) (changes: AppChange list) =
-        { AppId = appId
-          Changes = changes
-          OccurredAt = DateTime.UtcNow
-          EventId = Guid.NewGuid()
-          ActorUserId = actorUserId }
+        {
+            AppId = appId
+            Changes = changes
+            OccurredAt = DateTime.UtcNow
+            EventId = Guid.NewGuid()
+            ActorUserId = actorUserId
+        }
         : AppUpdatedEvent
 
     let appDeleted (actorUserId: UserId) (appId: AppId) (name: AppName) =
-        { AppId = appId
-          Name = name
-          OccurredAt = DateTime.UtcNow
-          EventId = Guid.NewGuid()
-          ActorUserId = actorUserId }
+        {
+            AppId = appId
+            Name = name
+            OccurredAt = DateTime.UtcNow
+            EventId = Guid.NewGuid()
+            ActorUserId = actorUserId
+        }
         : AppDeletedEvent
 
     let appRestored (actorUserId: UserId) (appId: AppId) (name: AppName) =
-        { AppId = appId
-          Name = name
-          OccurredAt = DateTime.UtcNow
-          EventId = Guid.NewGuid()
-          ActorUserId = actorUserId }
+        {
+            AppId = appId
+            Name = name
+            OccurredAt = DateTime.UtcNow
+            EventId = Guid.NewGuid()
+            ActorUserId = actorUserId
+        }
         : AppRestoredEvent

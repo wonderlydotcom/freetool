@@ -162,11 +162,12 @@ module RunHandler =
                     let! runs = runRepository.GetByAppIdAsync appIdObj skip take
                     let! totalCount = runRepository.GetCountByAppIdAsync appIdObj
 
-                    let pagedResult =
-                        { Items = runs |> List.map (fun run -> run.State)
-                          TotalCount = totalCount
-                          Skip = skip
-                          Take = take }
+                    let pagedResult = {
+                        Items = runs |> List.map (fun run -> run.State)
+                        TotalCount = totalCount
+                        Skip = skip
+                        Take = take
+                    }
 
                     return Ok(RunsResult pagedResult)
 
@@ -177,11 +178,12 @@ module RunHandler =
                     let! runs = runRepository.GetByStatusAsync statusObj skip take
                     let! totalCount = runRepository.GetCountByStatusAsync statusObj
 
-                    let pagedResult =
-                        { Items = runs |> List.map (fun run -> run.State)
-                          TotalCount = totalCount
-                          Skip = skip
-                          Take = take }
+                    let pagedResult = {
+                        Items = runs |> List.map (fun run -> run.State)
+                        TotalCount = totalCount
+                        Skip = skip
+                        Take = take
+                    }
 
                     return Ok(RunsResult pagedResult)
 
@@ -196,11 +198,12 @@ module RunHandler =
                         let! runs = runRepository.GetByAppIdAndStatusAsync appIdObj statusObj skip take
                         let! totalCount = runRepository.GetCountByAppIdAndStatusAsync appIdObj statusObj
 
-                        let pagedResult =
-                            { Items = runs |> List.map (fun run -> run.State)
-                              TotalCount = totalCount
-                              Skip = skip
-                              Take = take }
+                        let pagedResult = {
+                            Items = runs |> List.map (fun run -> run.State)
+                            TotalCount = totalCount
+                            Skip = skip
+                            Take = take
+                        }
 
                         return Ok(RunsResult pagedResult)
         }

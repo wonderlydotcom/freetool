@@ -29,10 +29,11 @@ type TestCommand =
 // Test DTO records for attribute extraction
 type TestDto = { UserName: string; Email: string }
 
-type SensitiveDto =
-    { Password: string
-      ApiToken: string
-      SecretKey: string }
+type SensitiveDto = {
+    Password: string
+    ApiToken: string
+    SecretKey: string
+}
 
 // ============================================================================
 // Span Naming Tests
@@ -226,141 +227,137 @@ type MockHandler(returnError: bool) =
     member this.CommandsHandled = commandsHandled :> seq<TestCommand>
 
     interface ICommandHandler<TestCommand, TestCommandResult> with
-        member this.HandleCommand command =
-            task {
-                commandsHandled.Add(command)
+        member this.HandleCommand command = task {
+            commandsHandled.Add(command)
 
-                if returnError then
-                    return Error(DomainError.ValidationError "Test error")
-                else
-                    return Ok(TestResult "success")
-            }
-
-[<Fact>]
-let ``createTracingDecorator creates span on command execution`` () : Task =
-    task {
-        // Arrange
-        let activitySource = new ActivitySource("test.autotracing")
-
-        let listener =
-            new ActivityListener(
-                ShouldListenTo = (fun source -> source.Name = "test.autotracing"),
-                Sample = (fun _ -> ActivitySamplingResult.AllData),
-                ActivityStarted = (fun _ -> ()),
-                ActivityStopped = (fun _ -> ())
-            )
-
-        ActivitySource.AddActivityListener(listener)
-
-        let mockHandler = MockHandler(false)
-
-        let tracingHandler =
-            AutoTracing.createTracingDecorator "test" mockHandler activitySource
-
-        // Act
-        let! result = tracingHandler.HandleCommand(CreateTestItem "myItem")
-
-        // Assert
-        Assert.True(Result.isOk result)
-        Assert.Single(mockHandler.CommandsHandled) |> ignore
-
-        // Cleanup
-        listener.Dispose()
-        activitySource.Dispose()
-    }
+            if returnError then
+                return Error(DomainError.ValidationError "Test error")
+            else
+                return Ok(TestResult "success")
+        }
 
 [<Fact>]
-let ``createTracingDecorator adds command attributes`` () : Task =
-    task {
-        // Arrange
-        let activitySource = new ActivitySource("test.autotracing.attributes")
-        let mutable capturedActivity: Activity option = None
+let ``createTracingDecorator creates span on command execution`` () : Task = task {
+    // Arrange
+    let activitySource = new ActivitySource("test.autotracing")
 
-        let listener =
-            new ActivityListener(
-                ShouldListenTo = (fun source -> source.Name = "test.autotracing.attributes"),
-                Sample = (fun _ -> ActivitySamplingResult.AllDataAndRecorded),
-                ActivityStarted = (fun activity -> capturedActivity <- Some activity),
-                ActivityStopped = (fun _ -> ())
-            )
+    let listener =
+        new ActivityListener(
+            ShouldListenTo = (fun source -> source.Name = "test.autotracing"),
+            Sample = (fun _ -> ActivitySamplingResult.AllData),
+            ActivityStarted = (fun _ -> ()),
+            ActivityStopped = (fun _ -> ())
+        )
 
-        ActivitySource.AddActivityListener(listener)
+    ActivitySource.AddActivityListener(listener)
 
-        let mockHandler = MockHandler(false)
+    let mockHandler = MockHandler(false)
 
-        let tracingHandler =
-            AutoTracing.createTracingDecorator "entity" mockHandler activitySource
+    let tracingHandler =
+        AutoTracing.createTracingDecorator "test" mockHandler activitySource
 
-        // Act
-        let! _ = tracingHandler.HandleCommand(CreateTestItem "testName")
+    // Act
+    let! result = tracingHandler.HandleCommand(CreateTestItem "myItem")
 
-        // Assert - verify the span was created with correct name
-        match capturedActivity with
-        | Some activity ->
-            Assert.Equal("entity.create_test_item", activity.OperationName)
-            // The operation.type attribute should be set
-            let operationTypeTag = activity.GetTagItem("operation.type")
-            Assert.NotNull(operationTypeTag)
-            Assert.Equal("create", operationTypeTag :?> string)
-        | None -> Assert.True(false, "No activity was captured")
+    // Assert
+    Assert.True(Result.isOk result)
+    Assert.Single(mockHandler.CommandsHandled) |> ignore
 
-        // Cleanup
-        listener.Dispose()
-        activitySource.Dispose()
-    }
+    // Cleanup
+    listener.Dispose()
+    activitySource.Dispose()
+}
 
 [<Fact>]
-let ``createTracingDecorator adds error event on failure`` () : Task =
-    task {
-        // Arrange
-        let activitySource = new ActivitySource("test.autotracing.errors")
-        let mutable stoppedActivity: Activity option = None
+let ``createTracingDecorator adds command attributes`` () : Task = task {
+    // Arrange
+    let activitySource = new ActivitySource("test.autotracing.attributes")
+    let mutable capturedActivity: Activity option = None
 
-        let listener =
-            new ActivityListener(
-                ShouldListenTo = (fun source -> source.Name = "test.autotracing.errors"),
-                Sample = (fun _ -> ActivitySamplingResult.AllDataAndRecorded),
-                ActivityStarted = (fun _ -> ()),
-                ActivityStopped = (fun activity -> stoppedActivity <- Some activity)
-            )
+    let listener =
+        new ActivityListener(
+            ShouldListenTo = (fun source -> source.Name = "test.autotracing.attributes"),
+            Sample = (fun _ -> ActivitySamplingResult.AllDataAndRecorded),
+            ActivityStarted = (fun activity -> capturedActivity <- Some activity),
+            ActivityStopped = (fun _ -> ())
+        )
 
-        ActivitySource.AddActivityListener(listener)
+    ActivitySource.AddActivityListener(listener)
 
-        let mockHandler = MockHandler(true) // Will return error
+    let mockHandler = MockHandler(false)
 
-        let tracingHandler =
-            AutoTracing.createTracingDecorator "entity" mockHandler activitySource
+    let tracingHandler =
+        AutoTracing.createTracingDecorator "entity" mockHandler activitySource
 
-        // Act
-        let! result = tracingHandler.HandleCommand(CreateTestItem "testName")
+    // Act
+    let! _ = tracingHandler.HandleCommand(CreateTestItem "testName")
 
-        // Assert
-        Assert.True(Result.isError result)
+    // Assert - verify the span was created with correct name
+    match capturedActivity with
+    | Some activity ->
+        Assert.Equal("entity.create_test_item", activity.OperationName)
+        // The operation.type attribute should be set
+        let operationTypeTag = activity.GetTagItem("operation.type")
+        Assert.NotNull(operationTypeTag)
+        Assert.Equal("create", operationTypeTag :?> string)
+    | None -> Assert.True(false, "No activity was captured")
 
-        match stoppedActivity with
-        | Some activity ->
-            // Verify error status is set
-            Assert.Equal(ActivityStatusCode.Error, activity.Status)
+    // Cleanup
+    listener.Dispose()
+    activitySource.Dispose()
+}
 
-            // Verify error tags are present
-            let errorType = activity.GetTagItem("error.type")
-            Assert.NotNull(errorType)
-            Assert.Equal("ValidationError", errorType :?> string)
+[<Fact>]
+let ``createTracingDecorator adds error event on failure`` () : Task = task {
+    // Arrange
+    let activitySource = new ActivitySource("test.autotracing.errors")
+    let mutable stoppedActivity: Activity option = None
 
-            let errorMessage = activity.GetTagItem("error.message")
-            Assert.NotNull(errorMessage)
-            Assert.Equal("Test error", errorMessage :?> string)
+    let listener =
+        new ActivityListener(
+            ShouldListenTo = (fun source -> source.Name = "test.autotracing.errors"),
+            Sample = (fun _ -> ActivitySamplingResult.AllDataAndRecorded),
+            ActivityStarted = (fun _ -> ()),
+            ActivityStopped = (fun activity -> stoppedActivity <- Some activity)
+        )
 
-            // Verify domain_error event was added
-            let events = activity.Events |> Seq.toList
-            let domainErrorEvent = events |> List.tryFind (fun e -> e.Name = "domain_error")
-            Assert.True(domainErrorEvent.IsSome, "domain_error event should be present")
-        | None -> Assert.True(false, "No activity was captured")
+    ActivitySource.AddActivityListener(listener)
 
-        // Cleanup
-        listener.Dispose()
-        activitySource.Dispose()
-    }
+    let mockHandler = MockHandler(true) // Will return error
+
+    let tracingHandler =
+        AutoTracing.createTracingDecorator "entity" mockHandler activitySource
+
+    // Act
+    let! result = tracingHandler.HandleCommand(CreateTestItem "testName")
+
+    // Assert
+    Assert.True(Result.isError result)
+
+    match stoppedActivity with
+    | Some activity ->
+        // Verify error status is set
+        Assert.Equal(ActivityStatusCode.Error, activity.Status)
+
+        // Verify error tags are present
+        let errorType = activity.GetTagItem("error.type")
+        Assert.NotNull(errorType)
+        Assert.Equal("ValidationError", errorType :?> string)
+
+        let errorMessage = activity.GetTagItem("error.message")
+        Assert.NotNull(errorMessage)
+        Assert.Equal("Test error", errorMessage :?> string)
+
+        // Verify domain_error event was added
+        let events = activity.Events |> Seq.toList
+        let domainErrorEvent = events |> List.tryFind (fun e -> e.Name = "domain_error")
+        Assert.True(domainErrorEvent.IsSome, "domain_error event should be present")
+    | None -> Assert.True(false, "No activity was captured")
+
+    // Cleanup
+    listener.Dispose()
+    activitySource.Dispose()
+}
 
 // ============================================================================
 // Additional Attribute Name Conversion Tests

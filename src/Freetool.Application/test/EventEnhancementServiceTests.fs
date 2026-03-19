@@ -135,185 +135,168 @@ let createService () =
 let createEventData (event: 'T :> IDomainEvent) (eventType: EventType) (entityType: EntityType) (entityId: string) =
     let eventDataStr = JsonSerializer.Serialize(event, jsonOptions)
 
-    { Id = Guid.NewGuid()
-      EventId = (event :> IDomainEvent).EventId.ToString()
-      EventType = eventType
-      EntityType = entityType
-      EntityId = entityId
-      EventData = eventDataStr
-      OccurredAt = (event :> IDomainEvent).OccurredAt
-      CreatedAt = DateTime.UtcNow
-      UserId = (event :> IDomainEvent).UserId }
-
-[<Fact>]
-let ``FolderCreatedEvent extracts name correctly`` () =
-    task {
-        let service = createService ()
-        let folderId = FolderId.NewId()
-
-        let folderName =
-            FolderName.Create(Some "My Test Folder") |> Result.toOption |> Option.get
-
-        let actorUserId = UserId.NewId()
-
-        let spaceId = SpaceId.NewId()
-        let event = FolderEvents.folderCreated actorUserId folderId folderName None spaceId
-
-        let eventData =
-            createEventData event (FolderEvents FolderCreatedEvent) EntityType.Folder (folderId.Value.ToString())
-
-        let! enhanced = service.EnhanceEventAsync(eventData)
-
-        Assert.Equal("My Test Folder", enhanced.EntityName)
-        Assert.Contains("created folder", enhanced.EventSummary)
+    {
+        Id = Guid.NewGuid()
+        EventId = (event :> IDomainEvent).EventId.ToString()
+        EventType = eventType
+        EntityType = entityType
+        EntityId = entityId
+        EventData = eventDataStr
+        OccurredAt = (event :> IDomainEvent).OccurredAt
+        CreatedAt = DateTime.UtcNow
+        UserId = (event :> IDomainEvent).UserId
     }
 
 [<Fact>]
-let ``FolderDeletedEvent extracts name from event`` () =
-    task {
-        let service = createService ()
-        let folderId = FolderId.NewId()
+let ``FolderCreatedEvent extracts name correctly`` () = task {
+    let service = createService ()
+    let folderId = FolderId.NewId()
 
-        let folderName =
-            FolderName.Create(Some "Deleted Folder") |> Result.toOption |> Option.get
+    let folderName =
+        FolderName.Create(Some "My Test Folder") |> Result.toOption |> Option.get
 
-        let actorUserId = UserId.NewId()
+    let actorUserId = UserId.NewId()
 
-        let event = FolderEvents.folderDeleted actorUserId folderId folderName
+    let spaceId = SpaceId.NewId()
+    let event = FolderEvents.folderCreated actorUserId folderId folderName None spaceId
 
-        let eventData =
-            createEventData event (FolderEvents FolderDeletedEvent) EntityType.Folder (folderId.Value.ToString())
+    let eventData =
+        createEventData event (FolderEvents FolderCreatedEvent) EntityType.Folder (folderId.Value.ToString())
 
-        let! enhanced = service.EnhanceEventAsync(eventData)
+    let! enhanced = service.EnhanceEventAsync(eventData)
 
-        Assert.Equal("Deleted Folder", enhanced.EntityName)
-        Assert.Contains("deleted folder", enhanced.EventSummary)
-    }
-
-[<Fact>]
-let ``ResourceDeletedEvent extracts name from event`` () =
-    task {
-        let service = createService ()
-        let resourceId = ResourceId.NewId()
-
-        let resourceName =
-            ResourceName.Create(Some "My Resource") |> Result.toOption |> Option.get
-
-        let actorUserId = UserId.NewId()
-
-        let event = ResourceEvents.resourceDeleted actorUserId resourceId resourceName
-
-        let eventData =
-            createEventData
-                event
-                (ResourceEvents ResourceDeletedEvent)
-                EntityType.Resource
-                (resourceId.Value.ToString())
-
-        let! enhanced = service.EnhanceEventAsync(eventData)
-
-        Assert.Equal("My Resource", enhanced.EntityName)
-        Assert.Contains("deleted resource", enhanced.EventSummary)
-    }
+    Assert.Equal("My Test Folder", enhanced.EntityName)
+    Assert.Contains("created folder", enhanced.EventSummary)
+}
 
 [<Fact>]
-let ``AppDeletedEvent extracts name from event`` () =
-    task {
-        let service = createService ()
-        let appId = AppId.NewId()
-        let appName = AppName.Create(Some "My App") |> Result.toOption |> Option.get
-        let actorUserId = UserId.NewId()
+let ``FolderDeletedEvent extracts name from event`` () = task {
+    let service = createService ()
+    let folderId = FolderId.NewId()
 
-        let event = AppEvents.appDeleted actorUserId appId appName
+    let folderName =
+        FolderName.Create(Some "Deleted Folder") |> Result.toOption |> Option.get
 
-        let eventData =
-            createEventData event (AppEvents AppDeletedEvent) EntityType.App (appId.Value.ToString())
+    let actorUserId = UserId.NewId()
 
-        let! enhanced = service.EnhanceEventAsync(eventData)
+    let event = FolderEvents.folderDeleted actorUserId folderId folderName
 
-        Assert.Equal("My App", enhanced.EntityName)
-        Assert.Contains("deleted app", enhanced.EventSummary)
-    }
+    let eventData =
+        createEventData event (FolderEvents FolderDeletedEvent) EntityType.Folder (folderId.Value.ToString())
 
-[<Fact>]
-let ``SpaceDefaultMemberPermissionsChangedEvent enhances with correct summary`` () =
-    task {
-        let service = createService ()
-        let actorUserId = UserId.NewId()
-        let spaceId = SpaceId.NewId()
+    let! enhanced = service.EnhanceEventAsync(eventData)
 
-        let event =
-            SpaceEvents.spaceDefaultMemberPermissionsChanged
-                actorUserId
-                spaceId
-                "Engineering"
-                [ "CreateApp"; "RunApp" ]
-                [ "DeleteApp" ]
-
-        let eventData =
-            createEventData
-                event
-                (SpaceEvents SpaceDefaultMemberPermissionsChangedEvent)
-                EntityType.Space
-                (spaceId.Value.ToString())
-
-        let! enhanced = service.EnhanceEventAsync(eventData)
-
-        Assert.Equal("Engineering", enhanced.EntityName)
-        Assert.Contains("changed default member permissions in space", enhanced.EventSummary)
-    }
+    Assert.Equal("Deleted Folder", enhanced.EntityName)
+    Assert.Contains("deleted folder", enhanced.EventSummary)
+}
 
 [<Fact>]
-let ``DashboardPreparedEvent enhances with runtime summary`` () =
-    task {
-        let service = createService ()
-        let actorUserId = UserId.NewId()
-        let dashboardId = DashboardId.NewId()
-        let prepareAppId = AppId.NewId()
-        let prepareRunId = RunId.NewId()
+let ``ResourceDeletedEvent extracts name from event`` () = task {
+    let service = createService ()
+    let resourceId = ResourceId.NewId()
 
-        let event =
-            DashboardEvents.dashboardPrepared actorUserId dashboardId prepareAppId prepareRunId
+    let resourceName =
+        ResourceName.Create(Some "My Resource") |> Result.toOption |> Option.get
 
-        let eventData =
-            createEventData
-                event
-                (DashboardEvents DashboardPreparedEvent)
-                EntityType.Dashboard
-                (dashboardId.Value.ToString())
+    let actorUserId = UserId.NewId()
 
-        let! enhanced = service.EnhanceEventAsync(eventData)
+    let event = ResourceEvents.resourceDeleted actorUserId resourceId resourceName
 
-        Assert.Contains("Dashboard", enhanced.EntityName)
-        Assert.Contains("prepared dashboard", enhanced.EventSummary)
-    }
+    let eventData =
+        createEventData event (ResourceEvents ResourceDeletedEvent) EntityType.Resource (resourceId.Value.ToString())
+
+    let! enhanced = service.EnhanceEventAsync(eventData)
+
+    Assert.Equal("My Resource", enhanced.EntityName)
+    Assert.Contains("deleted resource", enhanced.EventSummary)
+}
 
 [<Fact>]
-let ``DashboardActionFailedEvent enhances with runtime failure summary`` () =
-    task {
-        let service = createService ()
-        let actorUserId = UserId.NewId()
-        let dashboardId = DashboardId.NewId()
-        let actionId = ActionId.Create(Some "approve") |> Result.toOption |> Option.get
-        let actionAppId = AppId.NewId()
+let ``AppDeletedEvent extracts name from event`` () = task {
+    let service = createService ()
+    let appId = AppId.NewId()
+    let appName = AppName.Create(Some "My App") |> Result.toOption |> Option.get
+    let actorUserId = UserId.NewId()
 
-        let event =
-            DashboardEvents.dashboardActionFailed
-                actorUserId
-                dashboardId
-                actionId
-                (Some actionAppId)
-                "service unavailable"
+    let event = AppEvents.appDeleted actorUserId appId appName
 
-        let eventData =
-            createEventData
-                event
-                (DashboardEvents DashboardActionFailedEvent)
-                EntityType.Dashboard
-                (dashboardId.Value.ToString())
+    let eventData =
+        createEventData event (AppEvents AppDeletedEvent) EntityType.App (appId.Value.ToString())
 
-        let! enhanced = service.EnhanceEventAsync(eventData)
+    let! enhanced = service.EnhanceEventAsync(eventData)
 
-        Assert.Contains("Dashboard", enhanced.EntityName)
-        Assert.Contains("failed a dashboard action", enhanced.EventSummary)
-    }
+    Assert.Equal("My App", enhanced.EntityName)
+    Assert.Contains("deleted app", enhanced.EventSummary)
+}
+
+[<Fact>]
+let ``SpaceDefaultMemberPermissionsChangedEvent enhances with correct summary`` () = task {
+    let service = createService ()
+    let actorUserId = UserId.NewId()
+    let spaceId = SpaceId.NewId()
+
+    let event =
+        SpaceEvents.spaceDefaultMemberPermissionsChanged actorUserId spaceId "Engineering" [ "CreateApp"; "RunApp" ] [
+            "DeleteApp"
+        ]
+
+    let eventData =
+        createEventData
+            event
+            (SpaceEvents SpaceDefaultMemberPermissionsChangedEvent)
+            EntityType.Space
+            (spaceId.Value.ToString())
+
+    let! enhanced = service.EnhanceEventAsync(eventData)
+
+    Assert.Equal("Engineering", enhanced.EntityName)
+    Assert.Contains("changed default member permissions in space", enhanced.EventSummary)
+}
+
+[<Fact>]
+let ``DashboardPreparedEvent enhances with runtime summary`` () = task {
+    let service = createService ()
+    let actorUserId = UserId.NewId()
+    let dashboardId = DashboardId.NewId()
+    let prepareAppId = AppId.NewId()
+    let prepareRunId = RunId.NewId()
+
+    let event =
+        DashboardEvents.dashboardPrepared actorUserId dashboardId prepareAppId prepareRunId
+
+    let eventData =
+        createEventData
+            event
+            (DashboardEvents DashboardPreparedEvent)
+            EntityType.Dashboard
+            (dashboardId.Value.ToString())
+
+    let! enhanced = service.EnhanceEventAsync(eventData)
+
+    Assert.Contains("Dashboard", enhanced.EntityName)
+    Assert.Contains("prepared dashboard", enhanced.EventSummary)
+}
+
+[<Fact>]
+let ``DashboardActionFailedEvent enhances with runtime failure summary`` () = task {
+    let service = createService ()
+    let actorUserId = UserId.NewId()
+    let dashboardId = DashboardId.NewId()
+    let actionId = ActionId.Create(Some "approve") |> Result.toOption |> Option.get
+    let actionAppId = AppId.NewId()
+
+    let event =
+        DashboardEvents.dashboardActionFailed actorUserId dashboardId actionId (Some actionAppId) "service unavailable"
+
+    let eventData =
+        createEventData
+            event
+            (DashboardEvents DashboardActionFailedEvent)
+            EntityType.Dashboard
+            (dashboardId.Value.ToString())
+
+    let! enhanced = service.EnhanceEventAsync(eventData)
+
+    Assert.Contains("Dashboard", enhanced.EntityName)
+    Assert.Contains("failed a dashboard action", enhanced.EventSummary)
+}

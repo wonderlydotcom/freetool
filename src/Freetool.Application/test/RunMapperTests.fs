@@ -23,9 +23,10 @@ let ``runInputValueFromDto should convert DTO to domain model correctly`` () =
 [<Fact>]
 let ``runInputValueToDto should convert domain model to DTO correctly`` () =
     // Arrange
-    let inputValue: RunInputValue =
-        { Title = "email"
-          Value = "test@example.com" }
+    let inputValue: RunInputValue = {
+        Title = "email"
+        Value = "test@example.com"
+    }
 
     // Act
     let result = RunMapper.runInputValueToDto inputValue
@@ -37,12 +38,16 @@ let ``runInputValueToDto should convert domain model to DTO correctly`` () =
 [<Fact>]
 let ``fromCreateDto should convert CreateRunDto to domain input values`` () =
     // Arrange
-    let dto =
-        { InputValues =
-            [ { Title = "userId"; Value = "123" }
-              { Title = "email"
-                Value = "test@example.com" } ]
-          DynamicBody = None }
+    let dto = {
+        InputValues = [
+            { Title = "userId"; Value = "123" }
+            {
+                Title = "email"
+                Value = "test@example.com"
+            }
+        ]
+        DynamicBody = None
+    }
 
     // Act
     let result = RunMapper.fromCreateDto dto
@@ -57,13 +62,14 @@ let ``fromCreateDto should convert CreateRunDto to domain input values`` () =
 [<Fact>]
 let ``executableHttpRequestToDto should convert domain model to DTO correctly`` () =
     // Arrange
-    let request: ExecutableHttpRequest =
-        { BaseUrl = "https://api.example.com/users/123"
-          UrlParameters = [ "limit", "10"; "offset", "0" ]
-          Headers = [ "Authorization", "Bearer token"; "Content-Type", "application/json" ]
-          Body = [ "email", "test@example.com"; "name", "John Doe" ]
-          HttpMethod = "POST"
-          UseJsonBody = false }
+    let request: ExecutableHttpRequest = {
+        BaseUrl = "https://api.example.com/users/123"
+        UrlParameters = [ "limit", "10"; "offset", "0" ]
+        Headers = [ "Authorization", "Bearer token"; "Content-Type", "application/json" ]
+        Body = [ "email", "test@example.com"; "name", "John Doe" ]
+        HttpMethod = "POST"
+        UseJsonBody = false
+    }
 
     // Act
     let result = RunMapper.executableHttpRequestToDto request
@@ -79,22 +85,28 @@ let ``executableHttpRequestToDto should convert domain model to DTO correctly`` 
     Assert.Equal(2, result.Headers.Length)
 
     Assert.Contains(
-        { Key = "Authorization"
-          Value = "Bearer token" },
+        {
+            Key = "Authorization"
+            Value = "Bearer token"
+        },
         result.Headers
     )
 
     Assert.Contains(
-        { Key = "Content-Type"
-          Value = "application/json" },
+        {
+            Key = "Content-Type"
+            Value = "application/json"
+        },
         result.Headers
     )
 
     Assert.Equal(2, result.Body.Length)
 
     Assert.Contains(
-        { Key = "email"
-          Value = "test@example.com" },
+        {
+            Key = "email"
+            Value = "test@example.com"
+        },
         result.Body
     )
 
@@ -104,31 +116,36 @@ let ``executableHttpRequestToDto should convert domain model to DTO correctly`` 
 let createTestRun () =
     let appId = AppId.NewId()
 
-    let inputValues: RunInputValue list =
-        [ { Title = "userId"; Value = "123" }
-          { Title = "email"
-            Value = "test@example.com" } ]
+    let inputValues: RunInputValue list = [
+        { Title = "userId"; Value = "123" }
+        {
+            Title = "email"
+            Value = "test@example.com"
+        }
+    ]
 
-    let executableRequest: ExecutableHttpRequest =
-        { BaseUrl = "https://api.example.com/users/123"
-          UrlParameters = [ "limit", "10" ]
-          Headers = [ "Authorization", "Bearer token" ]
-          Body = [ "email", "test@example.com" ]
-          HttpMethod = "GET"
-          UseJsonBody = false }
+    let executableRequest: ExecutableHttpRequest = {
+        BaseUrl = "https://api.example.com/users/123"
+        UrlParameters = [ "limit", "10" ]
+        Headers = [ "Authorization", "Bearer token" ]
+        Body = [ "email", "test@example.com" ]
+        HttpMethod = "GET"
+        UseJsonBody = false
+    }
 
-    let runData: RunData =
-        { Id = RunId.NewId()
-          AppId = appId
-          Status = Success
-          InputValues = inputValues
-          ExecutableRequest = Some executableRequest
-          ExecutedSql = None
-          Response = Some """{"id": 123, "name": "John Doe"}"""
-          ErrorMessage = None
-          StartedAt = Some(DateTime(2024, 1, 15, 10, 30, 0))
-          CompletedAt = Some(DateTime(2024, 1, 15, 10, 30, 5))
-          CreatedAt = DateTime(2024, 1, 15, 10, 29, 0)
-          IsDeleted = false }
+    let runData: RunData = {
+        Id = RunId.NewId()
+        AppId = appId
+        Status = Success
+        InputValues = inputValues
+        ExecutableRequest = Some executableRequest
+        ExecutedSql = None
+        Response = Some """{"id": 123, "name": "John Doe"}"""
+        ErrorMessage = None
+        StartedAt = Some(DateTime(2024, 1, 15, 10, 30, 0))
+        CompletedAt = Some(DateTime(2024, 1, 15, 10, 30, 5))
+        CreatedAt = DateTime(2024, 1, 15, 10, 29, 0)
+        IsDeleted = false
+    }
 
     Run.fromData runData

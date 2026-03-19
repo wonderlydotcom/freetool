@@ -101,10 +101,11 @@ module AuthTypes =
         | OrganizationObject orgId -> $"organization:{orgId}"
 
 /// Represents a strongly-typed relationship tuple
-type RelationshipTuple =
-    { Subject: AuthSubject
-      Relation: AuthRelation
-      Object: AuthObject }
+type RelationshipTuple = {
+    Subject: AuthSubject
+    Relation: AuthRelation
+    Object: AuthObject
+}
 
 /// Helper module for RelationshipTuple operations
 module RelationshipTuple =
@@ -115,9 +116,10 @@ module RelationshipTuple =
          AuthTypes.objectToString tuple.Object)
 
 /// Request to update relationships (add and/or remove tuples)
-type UpdateRelationshipsRequest =
-    { TuplesToAdd: RelationshipTuple list
-      TuplesToRemove: RelationshipTuple list }
+type UpdateRelationshipsRequest = {
+    TuplesToAdd: RelationshipTuple list
+    TuplesToRemove: RelationshipTuple list
+}
 
 /// Interface for OpenFGA authorization operations
 type IAuthorizationService =

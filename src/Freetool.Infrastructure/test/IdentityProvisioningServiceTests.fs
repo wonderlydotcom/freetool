@@ -101,14 +101,15 @@ type TestIdentityGroupSpaceMappingRepository(initialMappings: IdentityGroupSpace
         member _.AddAsync actorUserId groupKey spaceId =
             let now = DateTime.UtcNow
 
-            let mapping: IdentityGroupSpaceMappingDto =
-                { Id = Guid.NewGuid().ToString()
-                  GroupKey = groupKey
-                  SpaceId = spaceId.Value.ToString()
-                  SpaceName = None
-                  IsActive = true
-                  CreatedAt = now
-                  UpdatedAt = now }
+            let mapping: IdentityGroupSpaceMappingDto = {
+                Id = Guid.NewGuid().ToString()
+                GroupKey = groupKey
+                SpaceId = spaceId.Value.ToString()
+                SpaceName = None
+                IsActive = true
+                CreatedAt = now
+                UpdatedAt = now
+            }
 
             mappings <- mapping :: mappings
             Task.FromResult(Ok mapping)
@@ -187,298 +188,303 @@ let createUser (email: string) (name: string) =
     User.create name validEmail None
 
 [<Fact>]
-let ``EnsureUserAsync adds existing OU user as space member in repository and OpenFGA`` () : Task =
-    task {
-        let moderator = createUser "moderator@example.com" "Moderator"
-        let user = createUser "dev2@example.com" "Dev Two"
+let ``EnsureUserAsync adds existing OU user as space member in repository and OpenFGA`` () : Task = task {
+    let moderator = createUser "moderator@example.com" "Moderator"
+    let user = createUser "dev2@example.com" "Dev Two"
 
-        let engineeringSpace =
-            Space.create moderator.State.Id "Engineering" moderator.State.Id None
-            |> Result.defaultWith (fun error -> failwith $"Failed to create test space: {error}")
+    let engineeringSpace =
+        Space.create moderator.State.Id "Engineering" moderator.State.Id None
+        |> Result.defaultWith (fun error -> failwith $"Failed to create test space: {error}")
 
-        let mapping: IdentityGroupSpaceMappingDto =
-            { Id = Guid.NewGuid().ToString()
-              GroupKey = "ou:/Engineering"
-              SpaceId = engineeringSpace.State.Id.Value.ToString()
-              SpaceName = Some "Engineering"
-              IsActive = true
-              CreatedAt = DateTime.UtcNow
-              UpdatedAt = DateTime.UtcNow }
+    let mapping: IdentityGroupSpaceMappingDto = {
+        Id = Guid.NewGuid().ToString()
+        GroupKey = "ou:/Engineering"
+        SpaceId = engineeringSpace.State.Id.Value.ToString()
+        SpaceName = Some "Engineering"
+        IsActive = true
+        CreatedAt = DateTime.UtcNow
+        UpdatedAt = DateTime.UtcNow
+    }
 
-        let userRepository = TestUserRepository([ user ]) :> IUserRepository
-        let authServiceImpl = TestAuthorizationService()
-        let authService = authServiceImpl :> IAuthorizationService
+    let userRepository = TestUserRepository([ user ]) :> IUserRepository
+    let authServiceImpl = TestAuthorizationService()
+    let authService = authServiceImpl :> IAuthorizationService
 
-        let mappingRepository =
-            TestIdentityGroupSpaceMappingRepository([ mapping ]) :> IIdentityGroupSpaceMappingRepository
+    let mappingRepository =
+        TestIdentityGroupSpaceMappingRepository([ mapping ]) :> IIdentityGroupSpaceMappingRepository
 
-        let spaceRepositoryImpl = TestSpaceRepository([ engineeringSpace ])
-        let spaceRepository = spaceRepositoryImpl :> ISpaceRepository
+    let spaceRepositoryImpl = TestSpaceRepository([ engineeringSpace ])
+    let spaceRepository = spaceRepositoryImpl :> ISpaceRepository
 
-        let configuration =
-            ConfigurationBuilder().AddInMemoryCollection(dict []).Build() :> IConfiguration
+    let configuration =
+        ConfigurationBuilder().AddInMemoryCollection(dict []).Build() :> IConfiguration
 
-        let service =
-            IdentityProvisioningService(
-                userRepository,
-                authService,
-                mappingRepository,
-                spaceRepository,
-                configuration,
-                NullLogger<IdentityProvisioningService>.Instance
-            )
-            :> IIdentityProvisioningService
+    let service =
+        IdentityProvisioningService(
+            userRepository,
+            authService,
+            mappingRepository,
+            spaceRepository,
+            configuration,
+            NullLogger<IdentityProvisioningService>.Instance
+        )
+        :> IIdentityProvisioningService
 
-        let! result =
-            service.EnsureUserAsync(
-                { Email = user.State.Email
-                  Name = Some user.State.Name
-                  ProfilePicUrl = user.State.ProfilePicUrl
-                  GroupKeys = [ "ou:/Engineering" ]
-                  Source = "test" }
-            )
+    let! result =
+        service.EnsureUserAsync(
+            {
+                Email = user.State.Email
+                Name = Some user.State.Name
+                ProfilePicUrl = user.State.ProfilePicUrl
+                GroupKeys = [ "ou:/Engineering" ]
+                Source = "test"
+            }
+        )
 
-        match result with
-        | Error error ->
-            Assert.Fail($"Expected provisioning to succeed, but got: {IdentityProvisioningError.toMessage error}")
-        | Ok provisionedUserId ->
-            Assert.Equal(user.State.Id, provisionedUserId)
+    match result with
+    | Error error ->
+        Assert.Fail($"Expected provisioning to succeed, but got: {IdentityProvisioningError.toMessage error}")
+    | Ok provisionedUserId ->
+        Assert.Equal(user.State.Id, provisionedUserId)
 
-            let updatedSpace = spaceRepositoryImpl.GetById(engineeringSpace.State.Id)
-            Assert.True(updatedSpace.IsSome, "Expected Engineering space to remain available")
+        let updatedSpace = spaceRepositoryImpl.GetById(engineeringSpace.State.Id)
+        Assert.True(updatedSpace.IsSome, "Expected Engineering space to remain available")
 
-            match updatedSpace with
-            | None -> ()
-            | Some space -> Assert.Contains(user.State.Id, space.State.MemberIds)
+        match updatedSpace with
+        | None -> ()
+        | Some space -> Assert.Contains(user.State.Id, space.State.MemberIds)
 
-            let hasOpenFgaMemberTuple =
+        let hasOpenFgaMemberTuple =
+            authServiceImpl.CreatedTuples
+            |> List.exists (fun tuple ->
+                tuple.Subject = User(user.State.Id.Value.ToString())
+                && tuple.Relation = SpaceMember
+                && tuple.Object = SpaceObject(engineeringSpace.State.Id.Value.ToString()))
+
+        Assert.True(hasOpenFgaMemberTuple, "Expected OpenFGA member relationship to be created")
+}
+
+[<Fact>]
+let ``EnsureUserAsync creates space from final OU segment when no collision`` () : Task = task {
+    let userRepository = TestUserRepository([]) :> IUserRepository
+    let authServiceImpl = TestAuthorizationService()
+    let authService = authServiceImpl :> IAuthorizationService
+
+    let mappingRepository =
+        TestIdentityGroupSpaceMappingRepository([]) :> IIdentityGroupSpaceMappingRepository
+
+    let spaceRepositoryImpl = TestSpaceRepository([])
+    let spaceRepository = spaceRepositoryImpl :> ISpaceRepository
+
+    let configuration =
+        ConfigurationBuilder().AddInMemoryCollection(dict []).Build() :> IConfiguration
+
+    let service =
+        IdentityProvisioningService(
+            userRepository,
+            authService,
+            mappingRepository,
+            spaceRepository,
+            configuration,
+            NullLogger<IdentityProvisioningService>.Instance
+        )
+        :> IIdentityProvisioningService
+
+    let! result =
+        service.EnsureUserAsync(
+            {
+                Email = "new.support.manager@example.com"
+                Name = Some "New Support Manager"
+                ProfilePicUrl = None
+                GroupKeys = [ "ou:/Support/Support Managers" ]
+                Source = "test"
+            }
+        )
+
+    match result with
+    | Error error ->
+        Assert.Fail($"Expected provisioning to succeed, but got: {IdentityProvisioningError.toMessage error}")
+    | Ok provisionedUserId ->
+        let createdSpace = spaceRepositoryImpl.GetByName("Support Managers")
+        Assert.True(createdSpace.IsSome, "Expected a space named 'Support Managers' to be created")
+
+        match createdSpace with
+        | None -> ()
+        | Some space ->
+            Assert.Equal(provisionedUserId, space.State.ModeratorUserId)
+
+            let hasModeratorTuple =
                 authServiceImpl.CreatedTuples
                 |> List.exists (fun tuple ->
-                    tuple.Subject = User(user.State.Id.Value.ToString())
+                    tuple.Subject = User(provisionedUserId.Value.ToString())
+                    && tuple.Relation = SpaceModerator
+                    && tuple.Object = SpaceObject(space.State.Id.Value.ToString()))
+
+            Assert.True(hasModeratorTuple, "Expected OpenFGA moderator relationship to be created")
+}
+
+[<Fact>]
+let ``EnsureUserAsync reuses final OU segment when matching space name already exists`` () : Task = task {
+    let existingModerator = createUser "existing.mod@example.com" "Existing Moderator"
+
+    let existingSpaceWithFinalSegmentName =
+        Space.create existingModerator.State.Id "Support Managers" existingModerator.State.Id None
+        |> Result.defaultWith (fun error -> failwith $"Failed to create test space: {error}")
+
+    let userRepository = TestUserRepository([]) :> IUserRepository
+    let authServiceImpl = TestAuthorizationService()
+    let authService = authServiceImpl :> IAuthorizationService
+
+    let mappingRepository =
+        TestIdentityGroupSpaceMappingRepository([]) :> IIdentityGroupSpaceMappingRepository
+
+    let spaceRepositoryImpl = TestSpaceRepository([ existingSpaceWithFinalSegmentName ])
+    let spaceRepository = spaceRepositoryImpl :> ISpaceRepository
+
+    let configuration =
+        ConfigurationBuilder().AddInMemoryCollection(dict []).Build() :> IConfiguration
+
+    let service =
+        IdentityProvisioningService(
+            userRepository,
+            authService,
+            mappingRepository,
+            spaceRepository,
+            configuration,
+            NullLogger<IdentityProvisioningService>.Instance
+        )
+        :> IIdentityProvisioningService
+
+    let! result =
+        service.EnsureUserAsync(
+            {
+                Email = "new.support.manager.2@example.com"
+                Name = Some "New Support Manager Two"
+                ProfilePicUrl = None
+                GroupKeys = [ "ou:/Support/Support Managers" ]
+                Source = "test"
+            }
+        )
+
+    match result with
+    | Error error ->
+        Assert.Fail($"Expected provisioning to succeed, but got: {IdentityProvisioningError.toMessage error}")
+    | Ok provisionedUserId ->
+        let targetSpace = spaceRepositoryImpl.GetByName("Support Managers")
+        Assert.True(targetSpace.IsSome, "Expected existing space 'Support Managers' to be reused")
+
+        Assert.True(
+            spaceRepositoryImpl.GetByName("Support/Support Managers").IsNone,
+            "Expected no fallback space name to be created"
+        )
+
+        match targetSpace with
+        | None -> ()
+        | Some space ->
+            Assert.Equal(existingModerator.State.Id, space.State.ModeratorUserId)
+
+            let hasModeratorTupleForNewUser =
+                authServiceImpl.CreatedTuples
+                |> List.exists (fun tuple ->
+                    tuple.Subject = User(provisionedUserId.Value.ToString())
+                    && tuple.Relation = SpaceModerator
+                    && tuple.Object = SpaceObject(space.State.Id.Value.ToString()))
+
+            Assert.False(
+                hasModeratorTupleForNewUser,
+                "Expected no moderator relationship for new user when target space already exists"
+            )
+
+            let hasMemberTupleForNewUser =
+                authServiceImpl.CreatedTuples
+                |> List.exists (fun tuple ->
+                    tuple.Subject = User(provisionedUserId.Value.ToString())
                     && tuple.Relation = SpaceMember
-                    && tuple.Object = SpaceObject(engineeringSpace.State.Id.Value.ToString()))
-
-            Assert.True(hasOpenFgaMemberTuple, "Expected OpenFGA member relationship to be created")
-    }
-
-[<Fact>]
-let ``EnsureUserAsync creates space from final OU segment when no collision`` () : Task =
-    task {
-        let userRepository = TestUserRepository([]) :> IUserRepository
-        let authServiceImpl = TestAuthorizationService()
-        let authService = authServiceImpl :> IAuthorizationService
-
-        let mappingRepository =
-            TestIdentityGroupSpaceMappingRepository([]) :> IIdentityGroupSpaceMappingRepository
-
-        let spaceRepositoryImpl = TestSpaceRepository([])
-        let spaceRepository = spaceRepositoryImpl :> ISpaceRepository
-
-        let configuration =
-            ConfigurationBuilder().AddInMemoryCollection(dict []).Build() :> IConfiguration
-
-        let service =
-            IdentityProvisioningService(
-                userRepository,
-                authService,
-                mappingRepository,
-                spaceRepository,
-                configuration,
-                NullLogger<IdentityProvisioningService>.Instance
-            )
-            :> IIdentityProvisioningService
-
-        let! result =
-            service.EnsureUserAsync(
-                { Email = "new.support.manager@example.com"
-                  Name = Some "New Support Manager"
-                  ProfilePicUrl = None
-                  GroupKeys = [ "ou:/Support/Support Managers" ]
-                  Source = "test" }
-            )
-
-        match result with
-        | Error error ->
-            Assert.Fail($"Expected provisioning to succeed, but got: {IdentityProvisioningError.toMessage error}")
-        | Ok provisionedUserId ->
-            let createdSpace = spaceRepositoryImpl.GetByName("Support Managers")
-            Assert.True(createdSpace.IsSome, "Expected a space named 'Support Managers' to be created")
-
-            match createdSpace with
-            | None -> ()
-            | Some space ->
-                Assert.Equal(provisionedUserId, space.State.ModeratorUserId)
-
-                let hasModeratorTuple =
-                    authServiceImpl.CreatedTuples
-                    |> List.exists (fun tuple ->
-                        tuple.Subject = User(provisionedUserId.Value.ToString())
-                        && tuple.Relation = SpaceModerator
-                        && tuple.Object = SpaceObject(space.State.Id.Value.ToString()))
-
-                Assert.True(hasModeratorTuple, "Expected OpenFGA moderator relationship to be created")
-    }
-
-[<Fact>]
-let ``EnsureUserAsync reuses final OU segment when matching space name already exists`` () : Task =
-    task {
-        let existingModerator = createUser "existing.mod@example.com" "Existing Moderator"
-
-        let existingSpaceWithFinalSegmentName =
-            Space.create existingModerator.State.Id "Support Managers" existingModerator.State.Id None
-            |> Result.defaultWith (fun error -> failwith $"Failed to create test space: {error}")
-
-        let userRepository = TestUserRepository([]) :> IUserRepository
-        let authServiceImpl = TestAuthorizationService()
-        let authService = authServiceImpl :> IAuthorizationService
-
-        let mappingRepository =
-            TestIdentityGroupSpaceMappingRepository([]) :> IIdentityGroupSpaceMappingRepository
-
-        let spaceRepositoryImpl = TestSpaceRepository([ existingSpaceWithFinalSegmentName ])
-        let spaceRepository = spaceRepositoryImpl :> ISpaceRepository
-
-        let configuration =
-            ConfigurationBuilder().AddInMemoryCollection(dict []).Build() :> IConfiguration
-
-        let service =
-            IdentityProvisioningService(
-                userRepository,
-                authService,
-                mappingRepository,
-                spaceRepository,
-                configuration,
-                NullLogger<IdentityProvisioningService>.Instance
-            )
-            :> IIdentityProvisioningService
-
-        let! result =
-            service.EnsureUserAsync(
-                { Email = "new.support.manager.2@example.com"
-                  Name = Some "New Support Manager Two"
-                  ProfilePicUrl = None
-                  GroupKeys = [ "ou:/Support/Support Managers" ]
-                  Source = "test" }
-            )
-
-        match result with
-        | Error error ->
-            Assert.Fail($"Expected provisioning to succeed, but got: {IdentityProvisioningError.toMessage error}")
-        | Ok provisionedUserId ->
-            let targetSpace = spaceRepositoryImpl.GetByName("Support Managers")
-            Assert.True(targetSpace.IsSome, "Expected existing space 'Support Managers' to be reused")
+                    && tuple.Object = SpaceObject(space.State.Id.Value.ToString()))
 
             Assert.True(
-                spaceRepositoryImpl.GetByName("Support/Support Managers").IsNone,
-                "Expected no fallback space name to be created"
+                hasMemberTupleForNewUser,
+                "Expected new user to still be provisioned as member via mapping reconciliation"
             )
-
-            match targetSpace with
-            | None -> ()
-            | Some space ->
-                Assert.Equal(existingModerator.State.Id, space.State.ModeratorUserId)
-
-                let hasModeratorTupleForNewUser =
-                    authServiceImpl.CreatedTuples
-                    |> List.exists (fun tuple ->
-                        tuple.Subject = User(provisionedUserId.Value.ToString())
-                        && tuple.Relation = SpaceModerator
-                        && tuple.Object = SpaceObject(space.State.Id.Value.ToString()))
-
-                Assert.False(
-                    hasModeratorTupleForNewUser,
-                    "Expected no moderator relationship for new user when target space already exists"
-                )
-
-                let hasMemberTupleForNewUser =
-                    authServiceImpl.CreatedTuples
-                    |> List.exists (fun tuple ->
-                        tuple.Subject = User(provisionedUserId.Value.ToString())
-                        && tuple.Relation = SpaceMember
-                        && tuple.Object = SpaceObject(space.State.Id.Value.ToString()))
-
-                Assert.True(
-                    hasMemberTupleForNewUser,
-                    "Expected new user to still be provisioned as member via mapping reconciliation"
-                )
-    }
+}
 
 [<Fact>]
-let ``EnsureUserAsync does not grant moderator when OU remap targets existing space`` () : Task =
-    task {
-        let existingModerator =
-            createUser "existing.mod2@example.com" "Existing Moderator 2"
+let ``EnsureUserAsync does not grant moderator when OU remap targets existing space`` () : Task = task {
+    let existingModerator =
+        createUser "existing.mod2@example.com" "Existing Moderator 2"
 
-        let existingFinalSegmentSpace =
-            Space.create existingModerator.State.Id "Support Managers" existingModerator.State.Id None
-            |> Result.defaultWith (fun error -> failwith $"Failed to create test space: {error}")
+    let existingFinalSegmentSpace =
+        Space.create existingModerator.State.Id "Support Managers" existingModerator.State.Id None
+        |> Result.defaultWith (fun error -> failwith $"Failed to create test space: {error}")
 
-        let userRepository = TestUserRepository([]) :> IUserRepository
-        let authServiceImpl = TestAuthorizationService()
-        let authService = authServiceImpl :> IAuthorizationService
+    let userRepository = TestUserRepository([]) :> IUserRepository
+    let authServiceImpl = TestAuthorizationService()
+    let authService = authServiceImpl :> IAuthorizationService
 
-        let mappingRepository =
-            TestIdentityGroupSpaceMappingRepository([]) :> IIdentityGroupSpaceMappingRepository
+    let mappingRepository =
+        TestIdentityGroupSpaceMappingRepository([]) :> IIdentityGroupSpaceMappingRepository
 
-        let spaceRepositoryImpl = TestSpaceRepository([ existingFinalSegmentSpace ])
-        let spaceRepository = spaceRepositoryImpl :> ISpaceRepository
+    let spaceRepositoryImpl = TestSpaceRepository([ existingFinalSegmentSpace ])
+    let spaceRepository = spaceRepositoryImpl :> ISpaceRepository
 
-        let configuration =
-            ConfigurationBuilder().AddInMemoryCollection(dict []).Build() :> IConfiguration
+    let configuration =
+        ConfigurationBuilder().AddInMemoryCollection(dict []).Build() :> IConfiguration
 
-        let service =
-            IdentityProvisioningService(
-                userRepository,
-                authService,
-                mappingRepository,
-                spaceRepository,
-                configuration,
-                NullLogger<IdentityProvisioningService>.Instance
+    let service =
+        IdentityProvisioningService(
+            userRepository,
+            authService,
+            mappingRepository,
+            spaceRepository,
+            configuration,
+            NullLogger<IdentityProvisioningService>.Instance
+        )
+        :> IIdentityProvisioningService
+
+    let! result =
+        service.EnsureUserAsync(
+            {
+                Email = "new.support.manager.3@example.com"
+                Name = Some "New Support Manager Three"
+                ProfilePicUrl = None
+                GroupKeys = [ "ou:/Support/Support Managers" ]
+                Source = "test"
+            }
+        )
+
+    match result with
+    | Error error ->
+        Assert.Fail($"Expected provisioning to succeed, but got: {IdentityProvisioningError.toMessage error}")
+    | Ok provisionedUserId ->
+        let targetSpace = spaceRepositoryImpl.GetByName("Support Managers")
+        Assert.True(targetSpace.IsSome, "Expected existing final segment space to be targeted")
+
+        match targetSpace with
+        | None -> ()
+        | Some space ->
+            Assert.Equal(existingModerator.State.Id, space.State.ModeratorUserId)
+
+            let hasModeratorTupleForNewUser =
+                authServiceImpl.CreatedTuples
+                |> List.exists (fun tuple ->
+                    tuple.Subject = User(provisionedUserId.Value.ToString())
+                    && tuple.Relation = SpaceModerator
+                    && tuple.Object = SpaceObject(space.State.Id.Value.ToString()))
+
+            Assert.False(
+                hasModeratorTupleForNewUser,
+                "Expected no moderator relationship for new user when target space already exists"
             )
-            :> IIdentityProvisioningService
 
-        let! result =
-            service.EnsureUserAsync(
-                { Email = "new.support.manager.3@example.com"
-                  Name = Some "New Support Manager Three"
-                  ProfilePicUrl = None
-                  GroupKeys = [ "ou:/Support/Support Managers" ]
-                  Source = "test" }
+            let hasMemberTupleForNewUser =
+                authServiceImpl.CreatedTuples
+                |> List.exists (fun tuple ->
+                    tuple.Subject = User(provisionedUserId.Value.ToString())
+                    && tuple.Relation = SpaceMember
+                    && tuple.Object = SpaceObject(space.State.Id.Value.ToString()))
+
+            Assert.True(
+                hasMemberTupleForNewUser,
+                "Expected new user to still be provisioned as member via mapping reconciliation"
             )
-
-        match result with
-        | Error error ->
-            Assert.Fail($"Expected provisioning to succeed, but got: {IdentityProvisioningError.toMessage error}")
-        | Ok provisionedUserId ->
-            let targetSpace = spaceRepositoryImpl.GetByName("Support Managers")
-            Assert.True(targetSpace.IsSome, "Expected existing final segment space to be targeted")
-
-            match targetSpace with
-            | None -> ()
-            | Some space ->
-                Assert.Equal(existingModerator.State.Id, space.State.ModeratorUserId)
-
-                let hasModeratorTupleForNewUser =
-                    authServiceImpl.CreatedTuples
-                    |> List.exists (fun tuple ->
-                        tuple.Subject = User(provisionedUserId.Value.ToString())
-                        && tuple.Relation = SpaceModerator
-                        && tuple.Object = SpaceObject(space.State.Id.Value.ToString()))
-
-                Assert.False(
-                    hasModeratorTupleForNewUser,
-                    "Expected no moderator relationship for new user when target space already exists"
-                )
-
-                let hasMemberTupleForNewUser =
-                    authServiceImpl.CreatedTuples
-                    |> List.exists (fun tuple ->
-                        tuple.Subject = User(provisionedUserId.Value.ToString())
-                        && tuple.Relation = SpaceMember
-                        && tuple.Object = SpaceObject(space.State.Id.Value.ToString()))
-
-                Assert.True(
-                    hasMemberTupleForNewUser,
-                    "Expected new user to still be provisioned as member via mapping reconciliation"
-                )
-    }
+}

@@ -13,60 +13,61 @@ open Freetool.Domain.Events
 [<Index([| "Name"; "FolderId" |], IsUnique = true, Name = "IX_Apps_Name_FolderId")>]
 // CLIMutable for EntityFramework
 [<CLIMutable>]
-type AppData =
-    { [<Key>]
-      Id: AppId
+type AppData = {
+    [<Key>]
+    Id: AppId
 
-      [<Required>]
-      [<MaxLength(100)>]
-      Name: string
+    [<Required>]
+    [<MaxLength(100)>]
+    Name: string
 
-      [<Required>]
-      FolderId: FolderId
+    [<Required>]
+    FolderId: FolderId
 
-      [<Required>]
-      ResourceId: ResourceId
+    [<Required>]
+    ResourceId: ResourceId
 
-      [<Required>]
-      [<MaxLength(10)>]
-      HttpMethod: HttpMethod
+    [<Required>]
+    [<MaxLength(10)>]
+    HttpMethod: HttpMethod
 
-      [<Required>]
-      [<Column(TypeName = "TEXT")>] // JSON serialized list of inputs
-      Inputs: Input list
+    [<Required>]
+    [<Column(TypeName = "TEXT")>] // JSON serialized list of inputs
+    Inputs: Input list
 
-      [<MaxLength(500)>]
-      UrlPath: string option
+    [<MaxLength(500)>]
+    UrlPath: string option
 
-      [<Required>]
-      [<Column(TypeName = "TEXT")>] // JSON serialized key-value pairs
-      UrlParameters: KeyValuePair list
+    [<Required>]
+    [<Column(TypeName = "TEXT")>] // JSON serialized key-value pairs
+    UrlParameters: KeyValuePair list
 
-      [<Required>]
-      [<Column(TypeName = "TEXT")>] // JSON serialized key-value pairs
-      Headers: KeyValuePair list
+    [<Required>]
+    [<Column(TypeName = "TEXT")>] // JSON serialized key-value pairs
+    Headers: KeyValuePair list
 
-      [<Required>]
-      [<Column(TypeName = "TEXT")>] // JSON serialized key-value pairs
-      Body: KeyValuePair list
+    [<Required>]
+    [<Column(TypeName = "TEXT")>] // JSON serialized key-value pairs
+    Body: KeyValuePair list
 
-      [<Required>]
-      UseDynamicJsonBody: bool
+    [<Required>]
+    UseDynamicJsonBody: bool
 
-      [<Column(TypeName = "TEXT")>] // JSON serialized SQL config (null for HTTP apps)
-      SqlConfig: SqlQueryConfig option
+    [<Column(TypeName = "TEXT")>] // JSON serialized SQL config (null for HTTP apps)
+    SqlConfig: SqlQueryConfig option
 
-      [<MaxLength(500)>]
-      Description: string option
+    [<MaxLength(500)>]
+    Description: string option
 
-      [<Required>]
-      CreatedAt: DateTime
+    [<Required>]
+    CreatedAt: DateTime
 
-      [<Required>]
-      UpdatedAt: DateTime
+    [<Required>]
+    UpdatedAt: DateTime
 
-      [<JsonIgnore>]
-      IsDeleted: bool }
+    [<JsonIgnore>]
+    IsDeleted: bool
+}
 
 type App = EventSourcingAggregate<AppData>
 
@@ -75,7 +76,8 @@ module AppAggregateHelpers =
 
     let implementsIEntity (app: App) =
         { new IEntity<AppId> with
-            member _.Id = app.State.Id }
+            member _.Id = app.State.Id
+        }
 
 // Type aliases for clarity
 type UnvalidatedApp = App // From DTOs - potentially unsafe
@@ -109,9 +111,10 @@ module App =
 
             let normalizedOrderBy =
                 config.OrderBy
-                |> List.map (fun order ->
-                    { order with
-                        Column = order.Column.Trim() })
+                |> List.map (fun order -> {
+                    order with
+                        Column = order.Column.Trim()
+                })
                 |> List.filter (fun order -> order.Column <> "")
 
             let validateFilter (filter: SqlFilter) =
@@ -124,18 +127,20 @@ module App =
                         if filter.Value.IsSome then
                             Error(ValidationError "SQL filter value must be empty for IS NULL operators")
                         else
-                            Ok
-                                { filter with
+                            Ok {
+                                filter with
                                     Column = filter.Column.Trim()
-                                    Value = None }
+                                    Value = None
+                            }
                     | _ ->
                         match normalizeSqlText filter.Value with
                         | None -> Error(ValidationError "SQL filter value is required")
                         | Some value ->
-                            Ok
-                                { filter with
+                            Ok {
+                                filter with
                                     Column = filter.Column.Trim()
-                                    Value = Some value }
+                                    Value = Some value
+                            }
 
             let validateFilters =
                 config.Filters
@@ -164,33 +169,36 @@ module App =
                     | _, Error err -> Error err
                     | Ok validFilters, Ok validLimit ->
                         Ok(
-                            Some
-                                { config with
+                            Some {
+                                config with
                                     Table = Some table
                                     Columns = normalizedColumns
                                     Filters = validFilters
                                     Limit = validLimit
                                     OrderBy = normalizedOrderBy
-                                    RawSql = None }
+                                    RawSql = None
+                            }
                         )
             | SqlQueryMode.Raw ->
                 match normalizeSqlText config.RawSql with
                 | None -> Error(ValidationError "Raw SQL is required for SQL raw mode")
                 | Some rawSql ->
                     Ok(
-                        Some
-                            { config with
+                        Some {
+                            config with
                                 Table = None
                                 Columns = []
                                 Filters = []
                                 Limit = None
                                 OrderBy = []
-                                RawSql = Some rawSql }
+                                RawSql = Some rawSql
+                        }
                     )
 
-    let fromData (appData: AppData) : ValidatedApp =
-        { State = appData
-          UncommittedEvents = [] }
+    let fromData (appData: AppData) : ValidatedApp = {
+        State = appData
+        UncommittedEvents = []
+    }
 
     let validate (app: UnvalidatedApp) : Result<ValidatedApp, DomainError> =
         let appData = app.State
@@ -213,12 +221,14 @@ module App =
             match validateInputs appData.Inputs with
             | Error err -> Error err
             | Ok validInputs ->
-                Ok
-                    { State =
-                        { appData with
+                Ok {
+                    State = {
+                        appData with
                             Name = validName.Value
-                            Inputs = validInputs }
-                      UncommittedEvents = app.UncommittedEvents }
+                            Inputs = validInputs
+                    }
+                    UncommittedEvents = app.UncommittedEvents
+                }
 
     let updateName (actorUserId: UserId) (newName: string) (app: ValidatedApp) : Result<ValidatedApp, DomainError> =
         match AppName.Create(Some newName) with
@@ -227,17 +237,19 @@ module App =
             let oldName =
                 AppName.Create(Some app.State.Name) |> Result.defaultValue (AppName(""))
 
-            let updatedAppData =
-                { app.State with
+            let updatedAppData = {
+                app.State with
                     Name = validName.Value
-                    UpdatedAt = DateTime.UtcNow }
+                    UpdatedAt = DateTime.UtcNow
+            }
 
             let nameChangedEvent =
                 AppEvents.appUpdated actorUserId app.State.Id [ AppChange.NameChanged(oldName, validName) ]
 
-            Ok
-                { State = updatedAppData
-                  UncommittedEvents = app.UncommittedEvents @ [ nameChangedEvent :> IDomainEvent ] }
+            Ok {
+                State = updatedAppData
+                UncommittedEvents = app.UncommittedEvents @ [ nameChangedEvent :> IDomainEvent ]
+            }
 
     let updateInputs
         (actorUserId: UserId)
@@ -260,17 +272,19 @@ module App =
         | Ok validInputs ->
             let oldInputs = app.State.Inputs
 
-            let updatedAppData =
-                { app.State with
+            let updatedAppData = {
+                app.State with
                     Inputs = validInputs
-                    UpdatedAt = DateTime.UtcNow }
+                    UpdatedAt = DateTime.UtcNow
+            }
 
             let inputsChangedEvent =
                 AppEvents.appUpdated actorUserId app.State.Id [ AppChange.InputsChanged(oldInputs, validInputs) ]
 
-            Ok
-                { State = updatedAppData
-                  UncommittedEvents = app.UncommittedEvents @ [ inputsChangedEvent :> IDomainEvent ] }
+            Ok {
+                State = updatedAppData
+                UncommittedEvents = app.UncommittedEvents @ [ inputsChangedEvent :> IDomainEvent ]
+            }
 
     let private checkResourceConflicts
         (resource: ResourceAppConflictData)
@@ -321,27 +335,29 @@ module App =
                     match validateSqlConfig sqlConfig with
                     | Error err -> Error err
                     | Ok validSqlConfig ->
-                        let appData =
-                            { Id = AppId.NewId()
-                              Name = name
-                              FolderId = folderId
-                              ResourceId = resourceId
-                              HttpMethod = httpMethod
-                              Inputs = inputs
-                              UrlPath = urlPath
-                              UrlParameters = validUrlParameters
-                              Headers = validHeaders
-                              Body = validBody
-                              UseDynamicJsonBody = useDynamicJsonBody
-                              SqlConfig = validSqlConfig
-                              Description = description
-                              CreatedAt = DateTime.UtcNow
-                              UpdatedAt = DateTime.UtcNow
-                              IsDeleted = false }
+                        let appData = {
+                            Id = AppId.NewId()
+                            Name = name
+                            FolderId = folderId
+                            ResourceId = resourceId
+                            HttpMethod = httpMethod
+                            Inputs = inputs
+                            UrlPath = urlPath
+                            UrlParameters = validUrlParameters
+                            Headers = validHeaders
+                            Body = validBody
+                            UseDynamicJsonBody = useDynamicJsonBody
+                            SqlConfig = validSqlConfig
+                            Description = description
+                            CreatedAt = DateTime.UtcNow
+                            UpdatedAt = DateTime.UtcNow
+                            IsDeleted = false
+                        }
 
-                        let unvalidatedApp =
-                            { State = appData
-                              UncommittedEvents = [] }
+                        let unvalidatedApp = {
+                            State = appData
+                            UncommittedEvents = []
+                        }
 
                         match validate unvalidatedApp with
                         | Error err -> Error err
@@ -358,9 +374,10 @@ module App =
                                     httpMethod
                                     inputs
 
-                            Ok
-                                { validatedApp with
-                                    UncommittedEvents = [ appCreatedEvent :> IDomainEvent ] }
+                            Ok {
+                                validatedApp with
+                                    UncommittedEvents = [ appCreatedEvent :> IDomainEvent ]
+                            }
 
     let createWithSqlConfig
         (actorUserId: UserId)
@@ -472,21 +489,26 @@ module App =
 
         let appDeletedEvent = AppEvents.appDeleted actorUserId app.State.Id appName
 
-        { app with
-            UncommittedEvents = app.UncommittedEvents @ [ appDeletedEvent :> IDomainEvent ] }
+        {
+            app with
+                UncommittedEvents = app.UncommittedEvents @ [ appDeletedEvent :> IDomainEvent ]
+        }
 
     let restore (actorUserId: UserId) (newName: string option) (app: ValidatedApp) : ValidatedApp =
         let finalName = newName |> Option.defaultValue app.State.Name
         let appName = AppName.Create(Some finalName) |> Result.defaultValue (AppName(""))
         let appRestoredEvent = AppEvents.appRestored actorUserId app.State.Id appName
 
-        { app with
-            State =
-                { app.State with
-                    Name = finalName
-                    IsDeleted = false
-                    UpdatedAt = DateTime.UtcNow }
-            UncommittedEvents = app.UncommittedEvents @ [ appRestoredEvent :> IDomainEvent ] }
+        {
+            app with
+                State = {
+                    app.State with
+                        Name = finalName
+                        IsDeleted = false
+                        UpdatedAt = DateTime.UtcNow
+                }
+                UncommittedEvents = app.UncommittedEvents @ [ appRestoredEvent :> IDomainEvent ]
+        }
 
     let getUncommittedEvents (app: ValidatedApp) : IDomainEvent list = app.UncommittedEvents
 
@@ -525,28 +547,31 @@ module App =
 
     let getDescription (app: App) : string option = app.State.Description
 
-    let toConflictData (app: App) : AppResourceConflictData =
-        { AppId = (getId app).ToString()
-          UrlParameters = getUrlParameters app
-          Headers = getHeaders app
-          Body = getBody app }
+    let toConflictData (app: App) : AppResourceConflictData = {
+        AppId = (getId app).ToString()
+        UrlParameters = getUrlParameters app
+        Headers = getHeaders app
+        Body = getBody app
+    }
 
     let updateUrlPath
         (actorUserId: UserId)
         (newUrlPath: string option)
         (app: ValidatedApp)
         : Result<ValidatedApp, DomainError> =
-        let updatedAppData =
-            { app.State with
+        let updatedAppData = {
+            app.State with
                 UrlPath = newUrlPath
-                UpdatedAt = DateTime.UtcNow }
+                UpdatedAt = DateTime.UtcNow
+        }
 
         let urlPathChangedEvent =
             AppEvents.appUpdated actorUserId app.State.Id [ AppChange.UrlPathChanged(app.State.UrlPath, newUrlPath) ]
 
-        Ok
-            { State = updatedAppData
-              UncommittedEvents = app.UncommittedEvents @ [ urlPathChangedEvent :> IDomainEvent ] }
+        Ok {
+            State = updatedAppData
+            UncommittedEvents = app.UncommittedEvents @ [ urlPathChangedEvent :> IDomainEvent ]
+        }
 
     let updateUrlParameters
         (actorUserId: UserId)
@@ -575,20 +600,21 @@ module App =
             | Ok() ->
                 let oldUrlParams = app.State.UrlParameters
 
-                let updatedAppData =
-                    { app.State with
+                let updatedAppData = {
+                    app.State with
                         UrlParameters = validUrlParams
-                        UpdatedAt = DateTime.UtcNow }
+                        UpdatedAt = DateTime.UtcNow
+                }
 
                 let urlParamsChangedEvent =
-                    AppEvents.appUpdated
-                        actorUserId
-                        app.State.Id
-                        [ AppChange.UrlParametersChanged(oldUrlParams, validUrlParams) ]
+                    AppEvents.appUpdated actorUserId app.State.Id [
+                        AppChange.UrlParametersChanged(oldUrlParams, validUrlParams)
+                    ]
 
-                Ok
-                    { State = updatedAppData
-                      UncommittedEvents = app.UncommittedEvents @ [ urlParamsChangedEvent :> IDomainEvent ] }
+                Ok {
+                    State = updatedAppData
+                    UncommittedEvents = app.UncommittedEvents @ [ urlParamsChangedEvent :> IDomainEvent ]
+                }
 
     let updateHeaders
         (actorUserId: UserId)
@@ -617,17 +643,19 @@ module App =
             | Ok() ->
                 let oldHeaders = app.State.Headers
 
-                let updatedAppData =
-                    { app.State with
+                let updatedAppData = {
+                    app.State with
                         Headers = validHeaders
-                        UpdatedAt = DateTime.UtcNow }
+                        UpdatedAt = DateTime.UtcNow
+                }
 
                 let headersChangedEvent =
                     AppEvents.appUpdated actorUserId app.State.Id [ AppChange.HeadersChanged(oldHeaders, validHeaders) ]
 
-                Ok
-                    { State = updatedAppData
-                      UncommittedEvents = app.UncommittedEvents @ [ headersChangedEvent :> IDomainEvent ] }
+                Ok {
+                    State = updatedAppData
+                    UncommittedEvents = app.UncommittedEvents @ [ headersChangedEvent :> IDomainEvent ]
+                }
 
     let updateBody
         (actorUserId: UserId)
@@ -656,17 +684,19 @@ module App =
             | Ok() ->
                 let oldBody = app.State.Body
 
-                let updatedAppData =
-                    { app.State with
+                let updatedAppData = {
+                    app.State with
                         Body = validBody
-                        UpdatedAt = DateTime.UtcNow }
+                        UpdatedAt = DateTime.UtcNow
+                }
 
                 let bodyChangedEvent =
                     AppEvents.appUpdated actorUserId app.State.Id [ AppChange.BodyChanged(oldBody, validBody) ]
 
-                Ok
-                    { State = updatedAppData
-                      UncommittedEvents = app.UncommittedEvents @ [ bodyChangedEvent :> IDomainEvent ] }
+                Ok {
+                    State = updatedAppData
+                    UncommittedEvents = app.UncommittedEvents @ [ bodyChangedEvent :> IDomainEvent ]
+                }
 
     let updateHttpMethod
         (actorUserId: UserId)
@@ -678,20 +708,21 @@ module App =
         | Ok validHttpMethod ->
             let oldHttpMethod = app.State.HttpMethod
 
-            let updatedAppData =
-                { app.State with
+            let updatedAppData = {
+                app.State with
                     HttpMethod = validHttpMethod
-                    UpdatedAt = DateTime.UtcNow }
+                    UpdatedAt = DateTime.UtcNow
+            }
 
             let httpMethodChangedEvent =
-                AppEvents.appUpdated
-                    actorUserId
-                    app.State.Id
-                    [ AppChange.HttpMethodChanged(oldHttpMethod, validHttpMethod) ]
+                AppEvents.appUpdated actorUserId app.State.Id [
+                    AppChange.HttpMethodChanged(oldHttpMethod, validHttpMethod)
+                ]
 
-            Ok
-                { State = updatedAppData
-                  UncommittedEvents = app.UncommittedEvents @ [ httpMethodChangedEvent :> IDomainEvent ] }
+            Ok {
+                State = updatedAppData
+                UncommittedEvents = app.UncommittedEvents @ [ httpMethodChangedEvent :> IDomainEvent ]
+            }
 
     let updateUseDynamicJsonBody
         (actorUserId: UserId)
@@ -700,20 +731,21 @@ module App =
         : Result<ValidatedApp, DomainError> =
         let oldUseDynamicJsonBody = app.State.UseDynamicJsonBody
 
-        let updatedAppData =
-            { app.State with
+        let updatedAppData = {
+            app.State with
                 UseDynamicJsonBody = newUseDynamicJsonBody
-                UpdatedAt = DateTime.UtcNow }
+                UpdatedAt = DateTime.UtcNow
+        }
 
         let useDynamicJsonBodyChangedEvent =
-            AppEvents.appUpdated
-                actorUserId
-                app.State.Id
-                [ AppChange.UseDynamicJsonBodyChanged(oldUseDynamicJsonBody, newUseDynamicJsonBody) ]
+            AppEvents.appUpdated actorUserId app.State.Id [
+                AppChange.UseDynamicJsonBodyChanged(oldUseDynamicJsonBody, newUseDynamicJsonBody)
+            ]
 
-        Ok
-            { State = updatedAppData
-              UncommittedEvents = app.UncommittedEvents @ [ useDynamicJsonBodyChangedEvent :> IDomainEvent ] }
+        Ok {
+            State = updatedAppData
+            UncommittedEvents = app.UncommittedEvents @ [ useDynamicJsonBodyChangedEvent :> IDomainEvent ]
+        }
 
     let updateSqlConfig
         (actorUserId: UserId)
@@ -723,20 +755,21 @@ module App =
         match validateSqlConfig newSqlConfig with
         | Error err -> Error err
         | Ok validSqlConfig ->
-            let updatedAppData =
-                { app.State with
+            let updatedAppData = {
+                app.State with
                     SqlConfig = validSqlConfig
-                    UpdatedAt = DateTime.UtcNow }
+                    UpdatedAt = DateTime.UtcNow
+            }
 
             let sqlConfigChangedEvent =
-                AppEvents.appUpdated
-                    actorUserId
-                    app.State.Id
-                    [ AppChange.SqlConfigChanged(app.State.SqlConfig, validSqlConfig) ]
+                AppEvents.appUpdated actorUserId app.State.Id [
+                    AppChange.SqlConfigChanged(app.State.SqlConfig, validSqlConfig)
+                ]
 
-            Ok
-                { State = updatedAppData
-                  UncommittedEvents = app.UncommittedEvents @ [ sqlConfigChangedEvent :> IDomainEvent ] }
+            Ok {
+                State = updatedAppData
+                UncommittedEvents = app.UncommittedEvents @ [ sqlConfigChangedEvent :> IDomainEvent ]
+            }
 
     let updateDescription
         (actorUserId: UserId)
@@ -749,17 +782,18 @@ module App =
         | _ ->
             let oldDescription = app.State.Description
 
-            let updatedAppData =
-                { app.State with
+            let updatedAppData = {
+                app.State with
                     Description = newDescription
-                    UpdatedAt = DateTime.UtcNow }
+                    UpdatedAt = DateTime.UtcNow
+            }
 
             let descriptionChangedEvent =
-                AppEvents.appUpdated
-                    actorUserId
-                    app.State.Id
-                    [ AppChange.DescriptionChanged(oldDescription, newDescription) ]
+                AppEvents.appUpdated actorUserId app.State.Id [
+                    AppChange.DescriptionChanged(oldDescription, newDescription)
+                ]
 
-            Ok
-                { State = updatedAppData
-                  UncommittedEvents = app.UncommittedEvents @ [ descriptionChangedEvent :> IDomainEvent ] }
+            Ok {
+                State = updatedAppData
+                UncommittedEvents = app.UncommittedEvents @ [ descriptionChangedEvent :> IDomainEvent ]
+            }

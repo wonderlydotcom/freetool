@@ -94,169 +94,167 @@ let createTestController
 
     controller
 
-let createMappingDto (id: Guid) (spaceId: SpaceId) =
-    { Id = id.ToString()
-      GroupKey = "eng"
-      SpaceId = spaceId.Value.ToString()
-      SpaceName = Some "Engineering"
-      IsActive = true
-      CreatedAt = DateTime.UtcNow
-      UpdatedAt = DateTime.UtcNow }
+let createMappingDto (id: Guid) (spaceId: SpaceId) = {
+    Id = id.ToString()
+    GroupKey = "eng"
+    SpaceId = spaceId.Value.ToString()
+    SpaceName = Some "Engineering"
+    IsActive = true
+    CreatedAt = DateTime.UtcNow
+    UpdatedAt = DateTime.UtcNow
+}
 
 // ============================================================================
 // Tests
 // ============================================================================
 
 [<Fact>]
-let ``GetMappings returns 403 for non-org-admin`` () : Task =
-    task {
-        let userId = UserId.NewId()
+let ``GetMappings returns 403 for non-org-admin`` () : Task = task {
+    let userId = UserId.NewId()
 
-        let checkPermission _ _ _ = false
+    let checkPermission _ _ _ = false
 
-        let controller =
-            createTestController
-                checkPermission
-                (fun () -> Task.FromResult([]))
-                (fun _ _ _ -> Task.FromResult(Error(InvalidOperation "Not used")))
-                (fun _ _ _ -> Task.FromResult(Error(InvalidOperation "Not used")))
-                (fun _ -> Task.FromResult(Error(InvalidOperation "Not used")))
-                userId
+    let controller =
+        createTestController
+            checkPermission
+            (fun () -> Task.FromResult([]))
+            (fun _ _ _ -> Task.FromResult(Error(InvalidOperation "Not used")))
+            (fun _ _ _ -> Task.FromResult(Error(InvalidOperation "Not used")))
+            (fun _ -> Task.FromResult(Error(InvalidOperation "Not used")))
+            userId
 
-        let! result = controller.GetMappings()
+    let! result = controller.GetMappings()
 
-        match result with
-        | :? ObjectResult as objResult -> Assert.Equal(403, objResult.StatusCode.Value)
-        | _ -> Assert.True(false, "Expected ObjectResult with status code 403")
-    }
-
-[<Fact>]
-let ``CreateMapping returns 400 for invalid space ID format`` () : Task =
-    task {
-        let userId = UserId.NewId()
-
-        let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
-            match subject, relation, obj with
-            | User uid, OrganizationAdmin, OrganizationObject "default" -> uid = userId.Value.ToString()
-            | _ -> false
-
-        let controller =
-            createTestController
-                checkPermission
-                (fun () -> Task.FromResult([]))
-                (fun _ _ _ -> Task.FromResult(Error(InvalidOperation "Should not be called")))
-                (fun _ _ _ -> Task.FromResult(Error(InvalidOperation "Not used")))
-                (fun _ -> Task.FromResult(Error(InvalidOperation "Not used")))
-                userId
-
-        let dto: CreateIdentityGroupSpaceMappingDto =
-            { GroupKey = "eng"
-              SpaceId = "not-a-guid" }
-
-        let! result = controller.CreateMapping(dto)
-
-        match result with
-        | :? BadRequestObjectResult -> Assert.True(true)
-        | :? ObjectResult as objResult -> Assert.Equal(400, objResult.StatusCode.Value)
-        | _ -> Assert.True(false, "Expected bad request")
-    }
+    match result with
+    | :? ObjectResult as objResult -> Assert.Equal(403, objResult.StatusCode.Value)
+    | _ -> Assert.True(false, "Expected ObjectResult with status code 403")
+}
 
 [<Fact>]
-let ``CreateMapping returns 201 and mapping payload for org-admin`` () : Task =
-    task {
-        let userId = UserId.NewId()
-        let spaceId = SpaceId.NewId()
-        let mappingId = Guid.NewGuid()
-        let expected = createMappingDto mappingId spaceId
+let ``CreateMapping returns 400 for invalid space ID format`` () : Task = task {
+    let userId = UserId.NewId()
 
-        let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
-            match subject, relation, obj with
-            | User uid, OrganizationAdmin, OrganizationObject "default" -> uid = userId.Value.ToString()
-            | _ -> false
+    let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
+        match subject, relation, obj with
+        | User uid, OrganizationAdmin, OrganizationObject "default" -> uid = userId.Value.ToString()
+        | _ -> false
 
-        let controller =
-            createTestController
-                checkPermission
-                (fun () -> Task.FromResult([]))
-                (fun actor groupKey targetSpaceId ->
-                    Assert.Equal(userId, actor)
-                    Assert.Equal("eng", groupKey)
-                    Assert.Equal(spaceId, targetSpaceId)
-                    Task.FromResult(Ok expected))
-                (fun _ _ _ -> Task.FromResult(Error(InvalidOperation "Not used")))
-                (fun _ -> Task.FromResult(Error(InvalidOperation "Not used")))
-                userId
+    let controller =
+        createTestController
+            checkPermission
+            (fun () -> Task.FromResult([]))
+            (fun _ _ _ -> Task.FromResult(Error(InvalidOperation "Should not be called")))
+            (fun _ _ _ -> Task.FromResult(Error(InvalidOperation "Not used")))
+            (fun _ -> Task.FromResult(Error(InvalidOperation "Not used")))
+            userId
 
-        let dto: CreateIdentityGroupSpaceMappingDto =
-            { GroupKey = "eng"
-              SpaceId = spaceId.Value.ToString() }
-
-        let! result = controller.CreateMapping(dto)
-
-        match result with
-        | :? ObjectResult as objResult ->
-            Assert.Equal(201, objResult.StatusCode.Value)
-            let payload = Assert.IsType<IdentityGroupSpaceMappingDto>(objResult.Value)
-            Assert.Equal(expected.Id, payload.Id)
-            Assert.Equal(expected.GroupKey, payload.GroupKey)
-            Assert.Equal(expected.SpaceId, payload.SpaceId)
-        | _ -> Assert.True(false, "Expected 201 ObjectResult")
+    let dto: CreateIdentityGroupSpaceMappingDto = {
+        GroupKey = "eng"
+        SpaceId = "not-a-guid"
     }
+
+    let! result = controller.CreateMapping(dto)
+
+    match result with
+    | :? BadRequestObjectResult -> Assert.True(true)
+    | :? ObjectResult as objResult -> Assert.Equal(400, objResult.StatusCode.Value)
+    | _ -> Assert.True(false, "Expected bad request")
+}
 
 [<Fact>]
-let ``UpdateMapping returns 400 for invalid mapping ID format`` () : Task =
-    task {
-        let userId = UserId.NewId()
+let ``CreateMapping returns 201 and mapping payload for org-admin`` () : Task = task {
+    let userId = UserId.NewId()
+    let spaceId = SpaceId.NewId()
+    let mappingId = Guid.NewGuid()
+    let expected = createMappingDto mappingId spaceId
 
-        let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
-            match subject, relation, obj with
-            | User uid, OrganizationAdmin, OrganizationObject "default" -> uid = userId.Value.ToString()
-            | _ -> false
+    let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
+        match subject, relation, obj with
+        | User uid, OrganizationAdmin, OrganizationObject "default" -> uid = userId.Value.ToString()
+        | _ -> false
 
-        let controller =
-            createTestController
-                checkPermission
-                (fun () -> Task.FromResult([]))
-                (fun _ _ _ -> Task.FromResult(Error(InvalidOperation "Not used")))
-                (fun _ _ _ -> Task.FromResult(Error(InvalidOperation "Should not be called")))
-                (fun _ -> Task.FromResult(Error(InvalidOperation "Not used")))
-                userId
+    let controller =
+        createTestController
+            checkPermission
+            (fun () -> Task.FromResult([]))
+            (fun actor groupKey targetSpaceId ->
+                Assert.Equal(userId, actor)
+                Assert.Equal("eng", groupKey)
+                Assert.Equal(spaceId, targetSpaceId)
+                Task.FromResult(Ok expected))
+            (fun _ _ _ -> Task.FromResult(Error(InvalidOperation "Not used")))
+            (fun _ -> Task.FromResult(Error(InvalidOperation "Not used")))
+            userId
 
-        let dto: UpdateIdentityGroupSpaceMappingDto = { IsActive = false }
-        let! result = controller.UpdateMapping("not-a-guid", dto)
-
-        match result with
-        | :? BadRequestObjectResult -> Assert.True(true)
-        | :? ObjectResult as objResult -> Assert.Equal(400, objResult.StatusCode.Value)
-        | _ -> Assert.True(false, "Expected bad request")
+    let dto: CreateIdentityGroupSpaceMappingDto = {
+        GroupKey = "eng"
+        SpaceId = spaceId.Value.ToString()
     }
+
+    let! result = controller.CreateMapping(dto)
+
+    match result with
+    | :? ObjectResult as objResult ->
+        Assert.Equal(201, objResult.StatusCode.Value)
+        let payload = Assert.IsType<IdentityGroupSpaceMappingDto>(objResult.Value)
+        Assert.Equal(expected.Id, payload.Id)
+        Assert.Equal(expected.GroupKey, payload.GroupKey)
+        Assert.Equal(expected.SpaceId, payload.SpaceId)
+    | _ -> Assert.True(false, "Expected 201 ObjectResult")
+}
 
 [<Fact>]
-let ``DeleteMapping returns 204 for org-admin`` () : Task =
-    task {
-        let userId = UserId.NewId()
-        let mappingId = Guid.NewGuid()
+let ``UpdateMapping returns 400 for invalid mapping ID format`` () : Task = task {
+    let userId = UserId.NewId()
 
-        let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
-            match subject, relation, obj with
-            | User uid, OrganizationAdmin, OrganizationObject "default" -> uid = userId.Value.ToString()
-            | _ -> false
+    let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
+        match subject, relation, obj with
+        | User uid, OrganizationAdmin, OrganizationObject "default" -> uid = userId.Value.ToString()
+        | _ -> false
 
-        let controller =
-            createTestController
-                checkPermission
-                (fun () -> Task.FromResult([]))
-                (fun _ _ _ -> Task.FromResult(Error(InvalidOperation "Not used")))
-                (fun _ _ _ -> Task.FromResult(Error(InvalidOperation "Not used")))
-                (fun id ->
-                    Assert.Equal(mappingId, id)
-                    Task.FromResult(Ok()))
-                userId
+    let controller =
+        createTestController
+            checkPermission
+            (fun () -> Task.FromResult([]))
+            (fun _ _ _ -> Task.FromResult(Error(InvalidOperation "Not used")))
+            (fun _ _ _ -> Task.FromResult(Error(InvalidOperation "Should not be called")))
+            (fun _ -> Task.FromResult(Error(InvalidOperation "Not used")))
+            userId
 
-        let! result = controller.DeleteMapping(mappingId.ToString())
+    let dto: UpdateIdentityGroupSpaceMappingDto = { IsActive = false }
+    let! result = controller.UpdateMapping("not-a-guid", dto)
 
-        match result with
-        | :? NoContentResult -> Assert.True(true)
-        | :? StatusCodeResult as status -> Assert.Equal(204, status.StatusCode)
-        | _ -> Assert.True(false, "Expected NoContentResult")
-    }
+    match result with
+    | :? BadRequestObjectResult -> Assert.True(true)
+    | :? ObjectResult as objResult -> Assert.Equal(400, objResult.StatusCode.Value)
+    | _ -> Assert.True(false, "Expected bad request")
+}
+
+[<Fact>]
+let ``DeleteMapping returns 204 for org-admin`` () : Task = task {
+    let userId = UserId.NewId()
+    let mappingId = Guid.NewGuid()
+
+    let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
+        match subject, relation, obj with
+        | User uid, OrganizationAdmin, OrganizationObject "default" -> uid = userId.Value.ToString()
+        | _ -> false
+
+    let controller =
+        createTestController
+            checkPermission
+            (fun () -> Task.FromResult([]))
+            (fun _ _ _ -> Task.FromResult(Error(InvalidOperation "Not used")))
+            (fun _ _ _ -> Task.FromResult(Error(InvalidOperation "Not used")))
+            (fun id ->
+                Assert.Equal(mappingId, id)
+                Task.FromResult(Ok()))
+            userId
+
+    let! result = controller.DeleteMapping(mappingId.ToString())
+
+    match result with
+    | :? NoContentResult -> Assert.True(true)
+    | :? StatusCodeResult as status -> Assert.Equal(204, status.StatusCode)
+    | _ -> Assert.True(false, "Expected NoContentResult")
+}

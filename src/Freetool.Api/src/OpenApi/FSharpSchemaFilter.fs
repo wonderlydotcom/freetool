@@ -136,31 +136,32 @@ type FSharpUnionSchemaFilter() =
             elif context.Type = typeof<EventType> then
                 schema.Type <- "string"
 
-                schema.Enum <-
-                    [| OpenApiString("UserCreatedEvent") :> IOpenApiAny
-                       OpenApiString("UserUpdatedEvent") :> IOpenApiAny
-                       OpenApiString("UserDeletedEvent") :> IOpenApiAny
-                       OpenApiString("AppCreatedEvent") :> IOpenApiAny
-                       OpenApiString("AppUpdatedEvent") :> IOpenApiAny
-                       OpenApiString("AppDeletedEvent") :> IOpenApiAny
-                       OpenApiString("DashboardCreatedEvent") :> IOpenApiAny
-                       OpenApiString("DashboardUpdatedEvent") :> IOpenApiAny
-                       OpenApiString("DashboardDeletedEvent") :> IOpenApiAny
-                       OpenApiString("DashboardPreparedEvent") :> IOpenApiAny
-                       OpenApiString("DashboardPrepareFailedEvent") :> IOpenApiAny
-                       OpenApiString("DashboardActionExecutedEvent") :> IOpenApiAny
-                       OpenApiString("DashboardActionFailedEvent") :> IOpenApiAny
-                       OpenApiString("ResourceCreatedEvent") :> IOpenApiAny
-                       OpenApiString("ResourceUpdatedEvent") :> IOpenApiAny
-                       OpenApiString("ResourceDeletedEvent") :> IOpenApiAny
-                       OpenApiString("FolderCreatedEvent") :> IOpenApiAny
-                       OpenApiString("FolderUpdatedEvent") :> IOpenApiAny
-                       OpenApiString("FolderDeletedEvent") :> IOpenApiAny
-                       OpenApiString("RunCreatedEvent") :> IOpenApiAny
-                       OpenApiString("RunStatusChangedEvent") :> IOpenApiAny
-                       OpenApiString("SpaceCreatedEvent") :> IOpenApiAny
-                       OpenApiString("SpaceUpdatedEvent") :> IOpenApiAny
-                       OpenApiString("SpaceDeletedEvent") :> IOpenApiAny |]
+                schema.Enum <- [|
+                    OpenApiString("UserCreatedEvent") :> IOpenApiAny
+                    OpenApiString("UserUpdatedEvent") :> IOpenApiAny
+                    OpenApiString("UserDeletedEvent") :> IOpenApiAny
+                    OpenApiString("AppCreatedEvent") :> IOpenApiAny
+                    OpenApiString("AppUpdatedEvent") :> IOpenApiAny
+                    OpenApiString("AppDeletedEvent") :> IOpenApiAny
+                    OpenApiString("DashboardCreatedEvent") :> IOpenApiAny
+                    OpenApiString("DashboardUpdatedEvent") :> IOpenApiAny
+                    OpenApiString("DashboardDeletedEvent") :> IOpenApiAny
+                    OpenApiString("DashboardPreparedEvent") :> IOpenApiAny
+                    OpenApiString("DashboardPrepareFailedEvent") :> IOpenApiAny
+                    OpenApiString("DashboardActionExecutedEvent") :> IOpenApiAny
+                    OpenApiString("DashboardActionFailedEvent") :> IOpenApiAny
+                    OpenApiString("ResourceCreatedEvent") :> IOpenApiAny
+                    OpenApiString("ResourceUpdatedEvent") :> IOpenApiAny
+                    OpenApiString("ResourceDeletedEvent") :> IOpenApiAny
+                    OpenApiString("FolderCreatedEvent") :> IOpenApiAny
+                    OpenApiString("FolderUpdatedEvent") :> IOpenApiAny
+                    OpenApiString("FolderDeletedEvent") :> IOpenApiAny
+                    OpenApiString("RunCreatedEvent") :> IOpenApiAny
+                    OpenApiString("RunStatusChangedEvent") :> IOpenApiAny
+                    OpenApiString("SpaceCreatedEvent") :> IOpenApiAny
+                    OpenApiString("SpaceUpdatedEvent") :> IOpenApiAny
+                    OpenApiString("SpaceDeletedEvent") :> IOpenApiAny
+                |]
 
                 schema.Properties <- null
                 schema.AdditionalProperties <- null
@@ -170,12 +171,13 @@ type FSharpUnionSchemaFilter() =
             elif context.Type = typeof<HttpMethod> then
                 schema.Type <- "string"
 
-                schema.Enum <-
-                    [| OpenApiString("DELETE") :> IOpenApiAny
-                       OpenApiString("GET") :> IOpenApiAny
-                       OpenApiString("PATCH") :> IOpenApiAny
-                       OpenApiString("POST") :> IOpenApiAny
-                       OpenApiString("PUT") :> IOpenApiAny |]
+                schema.Enum <- [|
+                    OpenApiString("DELETE") :> IOpenApiAny
+                    OpenApiString("GET") :> IOpenApiAny
+                    OpenApiString("PATCH") :> IOpenApiAny
+                    OpenApiString("POST") :> IOpenApiAny
+                    OpenApiString("PUT") :> IOpenApiAny
+                |]
 
                 schema.Properties <- null
                 schema.AdditionalProperties <- null
@@ -195,14 +197,15 @@ type FSharpUnionSchemaFilter() =
             elif context.Type = typeof<EntityType> then
                 schema.Type <- "string"
 
-                schema.Enum <-
-                    [| OpenApiString("User") :> IOpenApiAny
-                       OpenApiString("App") :> IOpenApiAny
-                       OpenApiString("Dashboard") :> IOpenApiAny
-                       OpenApiString("Resource") :> IOpenApiAny
-                       OpenApiString("Folder") :> IOpenApiAny
-                       OpenApiString("Run") :> IOpenApiAny
-                       OpenApiString("Space") :> IOpenApiAny |]
+                schema.Enum <- [|
+                    OpenApiString("User") :> IOpenApiAny
+                    OpenApiString("App") :> IOpenApiAny
+                    OpenApiString("Dashboard") :> IOpenApiAny
+                    OpenApiString("Resource") :> IOpenApiAny
+                    OpenApiString("Folder") :> IOpenApiAny
+                    OpenApiString("Run") :> IOpenApiAny
+                    OpenApiString("Space") :> IOpenApiAny
+                |]
 
                 schema.Properties <- null
                 schema.AdditionalProperties <- null

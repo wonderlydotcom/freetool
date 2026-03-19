@@ -14,43 +14,44 @@ open Freetool.Domain.Services
 [<Table("Runs")>]
 // CLIMutable for EntityFramework
 [<CLIMutable>]
-type RunData =
-    { [<Key>]
-      Id: RunId
+type RunData = {
+    [<Key>]
+    Id: RunId
 
-      [<Required>]
-      AppId: AppId
+    [<Required>]
+    AppId: AppId
 
-      [<Required>]
-      [<MaxLength(50)>]
-      Status: RunStatus
+    [<Required>]
+    [<MaxLength(50)>]
+    Status: RunStatus
 
-      [<Required>]
-      [<Column(TypeName = "TEXT")>] // JSON serialized list of RunInputValue
-      InputValues: RunInputValue list
+    [<Required>]
+    [<Column(TypeName = "TEXT")>] // JSON serialized list of RunInputValue
+    InputValues: RunInputValue list
 
-      [<Column(TypeName = "TEXT")>] // JSON serialized ExecutableHttpRequest (null until composed)
-      ExecutableRequest: ExecutableHttpRequest option
+    [<Column(TypeName = "TEXT")>] // JSON serialized ExecutableHttpRequest (null until composed)
+    ExecutableRequest: ExecutableHttpRequest option
 
-      [<Column(TypeName = "TEXT")>] // Final SQL string after template substitution (null until composed)
-      ExecutedSql: string option
+    [<Column(TypeName = "TEXT")>] // Final SQL string after template substitution (null until composed)
+    ExecutedSql: string option
 
-      [<Column(TypeName = "TEXT")>] // HTTP response body (null until completed successfully)
-      Response: string option
+    [<Column(TypeName = "TEXT")>] // HTTP response body (null until completed successfully)
+    Response: string option
 
-      [<Column(TypeName = "TEXT")>] // Error message (null unless failed)
-      ErrorMessage: string option
+    [<Column(TypeName = "TEXT")>] // Error message (null unless failed)
+    ErrorMessage: string option
 
-      StartedAt: DateTime option // When the run was started (null if not started)
+    StartedAt: DateTime option // When the run was started (null if not started)
 
-      CompletedAt: DateTime option // When the run was completed (null if not completed)
+    CompletedAt: DateTime option // When the run was completed (null if not completed)
 
-      [<Required>]
-      [<JsonIgnore>]
-      CreatedAt: DateTime
+    [<Required>]
+    [<JsonIgnore>]
+    CreatedAt: DateTime
 
-      [<JsonIgnore>]
-      IsDeleted: bool }
+    [<JsonIgnore>]
+    IsDeleted: bool
+}
 
 type Run = EventSourcingAggregate<RunData>
 
@@ -59,22 +60,25 @@ module RunAggregateHelpers =
 
     let implementsIEntity (run: Run) =
         { new IEntity<RunId> with
-            member _.Id = run.State.Id }
+            member _.Id = run.State.Id
+        }
 
 // Type aliases for clarity
 type UnvalidatedRun = Run // From DTOs - potentially unsafe
 type ValidatedRun = Run // Validated domain model and database data
 
 /// Represents the current user for variable substitution in templates
-type CurrentUser =
-    { Id: string
-      Email: string
-      FirstName: string
-      LastName: string }
+type CurrentUser = {
+    Id: string
+    Email: string
+    FirstName: string
+    LastName: string
+}
 
-type SqlQuery =
-    { Sql: string
-      Parameters: (string * string) list }
+type SqlQuery = {
+    Sql: string
+    Parameters: (string * string) list
+}
 
 module Run =
     type private ConditionValue =
@@ -171,9 +175,10 @@ module Run =
             else
                 isTruthy trimmedCondition
 
-    let fromData (runData: RunData) : ValidatedRun =
-        { State = runData
-          UncommittedEvents = [] }
+    let fromData (runData: RunData) : ValidatedRun = {
+        State = runData
+        UncommittedEvents = []
+    }
 
     /// Validate dynamic body key-value pairs
     let validateDynamicBody (body: (string * string) list) : Result<(string * string) list, DomainError> =
@@ -359,9 +364,10 @@ module Run =
                     && not (inputValuesMap.ContainsKey input.Title)
                     && input.DefaultValue.IsSome
                 then
-                    Some
-                        { Title = input.Title
-                          Value = input.DefaultValue.Value.ToRawString() }
+                    Some {
+                        Title = input.Title
+                        Value = input.DefaultValue.Value.ToRawString()
+                    }
                 else
                     None)
             |> List.append inputValues
@@ -510,42 +516,50 @@ module Run =
         match validateInputValues appInputs inputValues with
         | Error err -> Error err
         | Ok validatedInputValues ->
-            let runData =
-                { Id = RunId.NewId()
-                  AppId = App.getId app
-                  Status = Pending
-                  InputValues = validatedInputValues
-                  ExecutableRequest = None
-                  ExecutedSql = None
-                  Response = None
-                  ErrorMessage = None
-                  StartedAt = None
-                  CompletedAt = None
-                  CreatedAt = DateTime.UtcNow
-                  IsDeleted = false }
+            let runData = {
+                Id = RunId.NewId()
+                AppId = App.getId app
+                Status = Pending
+                InputValues = validatedInputValues
+                ExecutableRequest = None
+                ExecutedSql = None
+                Response = None
+                ErrorMessage = None
+                StartedAt = None
+                CompletedAt = None
+                CreatedAt = DateTime.UtcNow
+                IsDeleted = false
+            }
 
             let runCreatedEvent =
                 RunEvents.runCreated actorUserId runData.Id runData.AppId validatedInputValues
 
-            Ok
-                { State = runData
-                  UncommittedEvents = [ runCreatedEvent :> IDomainEvent ] }
+            Ok {
+                State = runData
+                UncommittedEvents = [ runCreatedEvent :> IDomainEvent ]
+            }
 
     let setExecutableRequest (executableRequest: ExecutableHttpRequest) (run: ValidatedRun) : ValidatedRun =
-        let updatedRunData =
-            { run.State with
-                ExecutableRequest = Some executableRequest }
+        let updatedRunData = {
+            run.State with
+                ExecutableRequest = Some executableRequest
+        }
 
-        { State = updatedRunData
-          UncommittedEvents = run.UncommittedEvents }
+        {
+            State = updatedRunData
+            UncommittedEvents = run.UncommittedEvents
+        }
 
     let setExecutedSql (sql: string) (run: ValidatedRun) : ValidatedRun =
-        let updatedRunData =
-            { run.State with
-                ExecutedSql = Some sql }
+        let updatedRunData = {
+            run.State with
+                ExecutedSql = Some sql
+        }
 
-        { State = updatedRunData
-          UncommittedEvents = run.UncommittedEvents }
+        {
+            State = updatedRunData
+            UncommittedEvents = run.UncommittedEvents
+        }
 
     let composeExecutableRequestFromAppAndResource
         (run: ValidatedRun)
@@ -599,13 +613,14 @@ module Run =
             | Ok finalBody ->
                 // Always use JSON for request bodies (modern API standard)
                 // The useDynamicJsonBody flag only controls whether body comes from user input at runtime
-                let executableRequest =
-                    { BaseUrl = substituteTemplate baseRequest.BaseUrl
-                      UrlParameters = substitutedUrlParams
-                      Headers = substitutedHeaders
-                      Body = finalBody
-                      HttpMethod = baseRequest.HttpMethod
-                      UseJsonBody = true }
+                let executableRequest = {
+                    BaseUrl = substituteTemplate baseRequest.BaseUrl
+                    UrlParameters = substitutedUrlParams
+                    Headers = substitutedHeaders
+                    Body = finalBody
+                    HttpMethod = baseRequest.HttpMethod
+                    UseJsonBody = true
+                }
 
                 Ok(setExecutableRequest executableRequest run)
 
@@ -762,60 +777,73 @@ module Run =
 
                         let sql = $"{baseSql}{whereClause}{orderByClause}{limitClause}"
 
-                        Ok
-                            { Sql = sql
-                              Parameters = parameters |> Seq.toList }
+                        Ok {
+                            Sql = sql
+                            Parameters = parameters |> Seq.toList
+                        }
 
     let markAsRunning (actorUserId: UserId) (run: ValidatedRun) : ValidatedRun =
-        let updatedRunData =
-            { run.State with
+        let updatedRunData = {
+            run.State with
                 Status = Running
-                StartedAt = Some DateTime.UtcNow }
+                StartedAt = Some DateTime.UtcNow
+        }
 
         let statusChangedEvent =
             RunEvents.runStatusChanged actorUserId run.State.Id run.State.Status Running
 
-        { State = updatedRunData
-          UncommittedEvents = run.UncommittedEvents @ [ statusChangedEvent :> IDomainEvent ] }
+        {
+            State = updatedRunData
+            UncommittedEvents = run.UncommittedEvents @ [ statusChangedEvent :> IDomainEvent ]
+        }
 
     let markAsSuccess (actorUserId: UserId) (response: string) (run: ValidatedRun) : ValidatedRun =
-        let updatedRunData =
-            { run.State with
+        let updatedRunData = {
+            run.State with
                 Status = Success
                 Response = Some response
-                CompletedAt = Some DateTime.UtcNow }
+                CompletedAt = Some DateTime.UtcNow
+        }
 
         let statusChangedEvent =
             RunEvents.runStatusChanged actorUserId run.State.Id run.State.Status Success
 
-        { State = updatedRunData
-          UncommittedEvents = run.UncommittedEvents @ [ statusChangedEvent :> IDomainEvent ] }
+        {
+            State = updatedRunData
+            UncommittedEvents = run.UncommittedEvents @ [ statusChangedEvent :> IDomainEvent ]
+        }
 
     let markAsFailure (actorUserId: UserId) (errorMessage: string) (run: ValidatedRun) : ValidatedRun =
-        let updatedRunData =
-            { run.State with
+        let updatedRunData = {
+            run.State with
                 Status = Failure
                 ErrorMessage = Some errorMessage
-                CompletedAt = Some DateTime.UtcNow }
+                CompletedAt = Some DateTime.UtcNow
+        }
 
         let statusChangedEvent =
             RunEvents.runStatusChanged actorUserId run.State.Id run.State.Status Failure
 
-        { State = updatedRunData
-          UncommittedEvents = run.UncommittedEvents @ [ statusChangedEvent :> IDomainEvent ] }
+        {
+            State = updatedRunData
+            UncommittedEvents = run.UncommittedEvents @ [ statusChangedEvent :> IDomainEvent ]
+        }
 
     let markAsInvalidConfiguration (actorUserId: UserId) (errorMessage: string) (run: ValidatedRun) : ValidatedRun =
-        let updatedRunData =
-            { run.State with
+        let updatedRunData = {
+            run.State with
                 Status = InvalidConfiguration
                 ErrorMessage = Some errorMessage
-                CompletedAt = Some DateTime.UtcNow }
+                CompletedAt = Some DateTime.UtcNow
+        }
 
         let statusChangedEvent =
             RunEvents.runStatusChanged actorUserId run.State.Id run.State.Status InvalidConfiguration
 
-        { State = updatedRunData
-          UncommittedEvents = run.UncommittedEvents @ [ statusChangedEvent :> IDomainEvent ] }
+        {
+            State = updatedRunData
+            UncommittedEvents = run.UncommittedEvents @ [ statusChangedEvent :> IDomainEvent ]
+        }
 
     let getUncommittedEvents (run: ValidatedRun) : IDomainEvent list = run.UncommittedEvents
 

@@ -210,4 +210,5 @@ module AutoTracing =
                             Tracing.addDomainErrorEvent activity error
                             Tracing.setSpanStatus activity false None
                             return result
-                    }) }
+                    })
+        }

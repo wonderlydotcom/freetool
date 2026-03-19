@@ -7,13 +7,14 @@ open Freetool.Application.DTOs
 
 module SpaceMapper =
     /// Maps SpaceData to SpaceDto for API responses
-    let toDto (spaceData: SpaceData) : SpaceDto =
-        { Id = spaceData.Id.Value.ToString()
-          Name = spaceData.Name
-          ModeratorUserId = spaceData.ModeratorUserId.Value.ToString()
-          MemberIds = spaceData.MemberIds |> List.map (fun id -> id.Value.ToString())
-          CreatedAt = spaceData.CreatedAt
-          UpdatedAt = spaceData.UpdatedAt }
+    let toDto (spaceData: SpaceData) : SpaceDto = {
+        Id = spaceData.Id.Value.ToString()
+        Name = spaceData.Name
+        ModeratorUserId = spaceData.ModeratorUserId.Value.ToString()
+        MemberIds = spaceData.MemberIds |> List.map (fun id -> id.Value.ToString())
+        CreatedAt = spaceData.CreatedAt
+        UpdatedAt = spaceData.UpdatedAt
+    }
 
     /// Maps a CreateSpaceDto to an UnvalidatedSpace
     /// Note: This creates a preliminary structure; validation and event generation
@@ -40,8 +41,9 @@ module SpaceMapper =
             Ok(moderatorUserId, dto.Name, memberIds)
 
     /// Maps a list of SpaceData to a PagedResult of SpaceDto
-    let toPagedDto (spaces: SpaceData list) (totalCount: int) (skip: int) (take: int) : PagedResult<SpaceDto> =
-        { Items = spaces |> List.map toDto
-          TotalCount = totalCount
-          Skip = skip
-          Take = take }
+    let toPagedDto (spaces: SpaceData list) (totalCount: int) (skip: int) (take: int) : PagedResult<SpaceDto> = {
+        Items = spaces |> List.map toDto
+        TotalCount = totalCount
+        Skip = skip
+        Take = take
+    }

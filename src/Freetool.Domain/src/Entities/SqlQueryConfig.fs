@@ -24,21 +24,24 @@ type SqlSortDirection =
     | Asc
     | Desc
 
-type SqlFilter =
-    { Column: string
-      Operator: SqlFilterOperator
-      Value: string option }
+type SqlFilter = {
+    Column: string
+    Operator: SqlFilterOperator
+    Value: string option
+}
 
-type SqlOrderBy =
-    { Column: string
-      Direction: SqlSortDirection }
+type SqlOrderBy = {
+    Column: string
+    Direction: SqlSortDirection
+}
 
-type SqlQueryConfig =
-    { Mode: SqlQueryMode
-      Table: string option
-      Columns: string list
-      Filters: SqlFilter list
-      Limit: int option
-      OrderBy: SqlOrderBy list
-      RawSql: string option
-      RawSqlParams: KeyValuePair list }
+type SqlQueryConfig = {
+    Mode: SqlQueryMode
+    Table: string option
+    Columns: string list
+    Filters: SqlFilter list
+    Limit: int option
+    OrderBy: SqlOrderBy list
+    RawSql: string option
+    RawSqlParams: KeyValuePair list
+}

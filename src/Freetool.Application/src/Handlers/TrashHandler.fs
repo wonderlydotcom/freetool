@@ -68,30 +68,33 @@ module TrashHandler =
                     // Convert to DTOs
                     let appItems =
                         deletedApps
-                        |> List.map (fun app ->
-                            { Id = (App.getId app).Value.ToString()
-                              Name = App.getName app
-                              ItemType = "app"
-                              SpaceId = spaceIdStr
-                              DeletedAt = app.State.UpdatedAt })
+                        |> List.map (fun app -> {
+                            Id = (App.getId app).Value.ToString()
+                            Name = App.getName app
+                            ItemType = "app"
+                            SpaceId = spaceIdStr
+                            DeletedAt = app.State.UpdatedAt
+                        })
 
                     let folderItems =
                         deletedFolders
-                        |> List.map (fun folder ->
-                            { Id = (Folder.getId folder).Value.ToString()
-                              Name = Folder.getName folder
-                              ItemType = "folder"
-                              SpaceId = spaceIdStr
-                              DeletedAt = folder.State.UpdatedAt })
+                        |> List.map (fun folder -> {
+                            Id = (Folder.getId folder).Value.ToString()
+                            Name = Folder.getName folder
+                            ItemType = "folder"
+                            SpaceId = spaceIdStr
+                            DeletedAt = folder.State.UpdatedAt
+                        })
 
                     let resourceItems =
                         deletedResources
-                        |> List.map (fun resource ->
-                            { Id = (Resource.getId resource).Value.ToString()
-                              Name = Resource.getName resource
-                              ItemType = "resource"
-                              SpaceId = spaceIdStr
-                              DeletedAt = resource.State.UpdatedAt })
+                        |> List.map (fun resource -> {
+                            Id = (Resource.getId resource).Value.ToString()
+                            Name = Resource.getName resource
+                            ItemType = "resource"
+                            SpaceId = spaceIdStr
+                            DeletedAt = resource.State.UpdatedAt
+                        })
 
                     let allItems =
                         appItems @ folderItems @ resourceItems
@@ -101,11 +104,12 @@ module TrashHandler =
 
                     let pagedItems = allItems |> List.skip skip |> List.truncate take
 
-                    let result =
-                        { Items = pagedItems
-                          TotalCount = totalCount
-                          Skip = skip
-                          Take = take }
+                    let result = {
+                        Items = pagedItems
+                        TotalCount = totalCount
+                        Skip = skip
+                        Take = take
+                    }
 
                     return Ok(TrashListResult result)
 
@@ -123,41 +127,39 @@ module TrashHandler =
                         let resourceId = App.getResourceId app
                         let! resourceOption = resourceRepository.GetByIdAsync resourceId
 
-                        let! autoRestoredResourceId =
-                            task {
-                                match resourceOption with
-                                | Some _ -> return None // Resource exists, no auto-restore needed
-                                | None ->
-                                    // Try to get the deleted resource
-                                    let! deletedResource = resourceRepository.GetDeletedByIdAsync resourceId
+                        let! autoRestoredResourceId = task {
+                            match resourceOption with
+                            | Some _ -> return None // Resource exists, no auto-restore needed
+                            | None ->
+                                // Try to get the deleted resource
+                                let! deletedResource = resourceRepository.GetDeletedByIdAsync resourceId
 
-                                    match deletedResource with
-                                    | None -> return None // Resource doesn't exist at all
-                                    | Some resource ->
-                                        // Auto-restore the resource (without name change)
-                                        let restoredResource = Resource.restore actorUserId None resource
+                                match deletedResource with
+                                | None -> return None // Resource doesn't exist at all
+                                | Some resource ->
+                                    // Auto-restore the resource (without name change)
+                                    let restoredResource = Resource.restore actorUserId None resource
 
-                                        match! resourceRepository.RestoreAsync restoredResource with
-                                        | Ok() -> return Some(resourceId.Value.ToString())
-                                        | Error _ -> return None
-                            }
+                                    match! resourceRepository.RestoreAsync restoredResource with
+                                    | Ok() -> return Some(resourceId.Value.ToString())
+                                    | Error _ -> return None
+                        }
 
                         // Check for name conflict
                         let appName = App.getName app
                         let folderId = App.getFolderId app
                         let! hasConflict = appRepository.CheckNameConflictAsync appName folderId
 
-                        let! newName =
-                            task {
-                                if hasConflict then
-                                    let! uniqueName =
-                                        generateUniqueName appName 1 (fun name ->
-                                            appRepository.CheckNameConflictAsync name folderId)
+                        let! newName = task {
+                            if hasConflict then
+                                let! uniqueName =
+                                    generateUniqueName appName 1 (fun name ->
+                                        appRepository.CheckNameConflictAsync name folderId)
 
-                                    return Some uniqueName
-                                else
-                                    return None
-                            }
+                                return Some uniqueName
+                            else
+                                return None
+                        }
 
                         // Restore the app with optional new name
                         let restoredApp = App.restore actorUserId newName app
@@ -165,10 +167,11 @@ module TrashHandler =
                         match! appRepository.RestoreAsync restoredApp with
                         | Error error -> return Error error
                         | Ok() ->
-                            let result =
-                                { RestoredId = appIdStr
-                                  NewName = newName
-                                  AutoRestoredResourceId = autoRestoredResourceId }
+                            let result = {
+                                RestoredId = appIdStr
+                                NewName = newName
+                                AutoRestoredResourceId = autoRestoredResourceId
+                            }
 
                             return Ok(RestoreAppResult result)
 
@@ -188,22 +191,19 @@ module TrashHandler =
                         let spaceId = Folder.getSpaceId folder
                         let! hasConflict = folderRepository.CheckNameConflictAsync folderName parentId spaceId
 
-                        let! newName =
-                            task {
-                                if hasConflict then
-                                    let checkConflict name =
-                                        task {
-                                            match FolderName.Create(Some name) with
-                                            | Ok fn ->
-                                                return! folderRepository.CheckNameConflictAsync fn parentId spaceId
-                                            | Error _ -> return true // Invalid name, treat as conflict
-                                        }
+                        let! newName = task {
+                            if hasConflict then
+                                let checkConflict name = task {
+                                    match FolderName.Create(Some name) with
+                                    | Ok fn -> return! folderRepository.CheckNameConflictAsync fn parentId spaceId
+                                    | Error _ -> return true // Invalid name, treat as conflict
+                                }
 
-                                    let! uniqueName = generateUniqueName (Folder.getName folder) 1 checkConflict
-                                    return Some uniqueName
-                                else
-                                    return None
-                            }
+                                let! uniqueName = generateUniqueName (Folder.getName folder) 1 checkConflict
+                                return Some uniqueName
+                            else
+                                return None
+                        }
 
                         // Create the restored folder with optional new name
                         let newFolderName =
@@ -221,10 +221,11 @@ module TrashHandler =
                         match! folderRepository.RestoreWithChildrenAsync restoredFolder with
                         | Error error -> return Error error
                         | Ok _restoredCount ->
-                            let result =
-                                { RestoredId = folderIdStr
-                                  NewName = newName
-                                  AutoRestoredResourceId = None }
+                            let result = {
+                                RestoredId = folderIdStr
+                                NewName = newName
+                                AutoRestoredResourceId = None
+                            }
 
                             return Ok(RestoreFolderResult result)
 
@@ -243,24 +244,22 @@ module TrashHandler =
                         let spaceId = Resource.getSpaceId resource
                         let! hasConflict = resourceRepository.CheckNameConflictAsync resourceName spaceId
 
-                        let! newName =
-                            task {
-                                if hasConflict then
-                                    let checkConflict name =
-                                        task {
-                                            match ResourceName.Create(Some name) with
-                                            | Ok rn -> return! resourceRepository.CheckNameConflictAsync rn spaceId
-                                            | Error _ -> return true // Invalid name, treat as conflict
-                                        }
+                        let! newName = task {
+                            if hasConflict then
+                                let checkConflict name = task {
+                                    match ResourceName.Create(Some name) with
+                                    | Ok rn -> return! resourceRepository.CheckNameConflictAsync rn spaceId
+                                    | Error _ -> return true // Invalid name, treat as conflict
+                                }
 
-                                    let! uniqueName = generateUniqueName (Resource.getName resource) 1 checkConflict
+                                let! uniqueName = generateUniqueName (Resource.getName resource) 1 checkConflict
 
-                                    match ResourceName.Create(Some uniqueName) with
-                                    | Ok _ -> return Some uniqueName
-                                    | Error _ -> return None // Fallback, shouldn't happen
-                                else
-                                    return None
-                            }
+                                match ResourceName.Create(Some uniqueName) with
+                                | Ok _ -> return Some uniqueName
+                                | Error _ -> return None // Fallback, shouldn't happen
+                            else
+                                return None
+                        }
 
                         // Create the new ResourceName value object if name changed
                         let newResourceName =
@@ -276,10 +275,11 @@ module TrashHandler =
                         match! resourceRepository.RestoreAsync restoredResource with
                         | Error error -> return Error error
                         | Ok() ->
-                            let result =
-                                { RestoredId = resourceIdStr
-                                  NewName = newName
-                                  AutoRestoredResourceId = None }
+                            let result = {
+                                RestoredId = resourceIdStr
+                                NewName = newName
+                                AutoRestoredResourceId = None
+                            }
 
                             return Ok(RestoreResourceResult result)
         }

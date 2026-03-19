@@ -13,75 +13,76 @@ open Freetool.Domain.Events
 [<Index([| "Name"; "SpaceId" |], IsUnique = true, Name = "IX_Resources_Name_SpaceId")>]
 // CLIMutable for EntityFramework
 [<CLIMutable>]
-type ResourceData =
-    { [<Key>]
-      Id: ResourceId
+type ResourceData = {
+    [<Key>]
+    Id: ResourceId
 
-      [<Required>]
-      [<MaxLength(100)>]
-      Name: ResourceName
+    [<Required>]
+    [<MaxLength(100)>]
+    Name: ResourceName
 
-      [<Required>]
-      [<MaxLength(500)>]
-      Description: ResourceDescription
+    [<Required>]
+    [<MaxLength(500)>]
+    Description: ResourceDescription
 
-      [<Required>]
-      SpaceId: SpaceId
+    [<Required>]
+    SpaceId: SpaceId
 
-      [<Required>]
-      ResourceKind: ResourceKind
+    [<Required>]
+    ResourceKind: ResourceKind
 
-      [<MaxLength(1_000)>]
-      BaseUrl: BaseUrl option
+    [<MaxLength(1_000)>]
+    BaseUrl: BaseUrl option
 
-      [<Required>]
-      [<Column(TypeName = "TEXT")>] // JSON string
-      UrlParameters: KeyValuePair list
+    [<Required>]
+    [<Column(TypeName = "TEXT")>] // JSON string
+    UrlParameters: KeyValuePair list
 
-      [<Required>]
-      [<Column(TypeName = "TEXT")>] // JSON string
-      Headers: KeyValuePair list
+    [<Required>]
+    [<Column(TypeName = "TEXT")>] // JSON string
+    Headers: KeyValuePair list
 
-      [<Required>]
-      [<Column(TypeName = "TEXT")>] // JSON string
-      Body: KeyValuePair list
+    [<Required>]
+    [<Column(TypeName = "TEXT")>] // JSON string
+    Body: KeyValuePair list
 
-      [<MaxLength(200)>]
-      DatabaseName: DatabaseName option
+    [<MaxLength(200)>]
+    DatabaseName: DatabaseName option
 
-      [<MaxLength(255)>]
-      DatabaseHost: DatabaseHost option
+    [<MaxLength(255)>]
+    DatabaseHost: DatabaseHost option
 
-      DatabasePort: DatabasePort option
+    DatabasePort: DatabasePort option
 
-      DatabaseEngine: DatabaseEngine option
+    DatabaseEngine: DatabaseEngine option
 
-      DatabaseAuthScheme: DatabaseAuthScheme option
+    DatabaseAuthScheme: DatabaseAuthScheme option
 
-      [<MaxLength(128)>]
-      DatabaseUsername: DatabaseUsername option
+    [<MaxLength(128)>]
+    DatabaseUsername: DatabaseUsername option
 
-      [<MaxLength(256)>]
-      DatabasePassword: DatabasePassword option
+    [<MaxLength(256)>]
+    DatabasePassword: DatabasePassword option
 
-      UseSsl: bool
+    UseSsl: bool
 
-      EnableSshTunnel: bool
+    EnableSshTunnel: bool
 
-      [<Required>]
-      [<Column(TypeName = "TEXT")>] // JSON string
-      ConnectionOptions: KeyValuePair list
+    [<Required>]
+    [<Column(TypeName = "TEXT")>] // JSON string
+    ConnectionOptions: KeyValuePair list
 
-      [<Required>]
-      [<JsonIgnore>]
-      CreatedAt: DateTime
+    [<Required>]
+    [<JsonIgnore>]
+    CreatedAt: DateTime
 
-      [<Required>]
-      [<JsonIgnore>]
-      UpdatedAt: DateTime
+    [<Required>]
+    [<JsonIgnore>]
+    UpdatedAt: DateTime
 
-      [<JsonIgnore>]
-      IsDeleted: bool }
+    [<JsonIgnore>]
+    IsDeleted: bool
+}
 
 type Resource = EventSourcingAggregate<ResourceData>
 
@@ -90,34 +91,38 @@ module ResourceAggregateHelpers =
 
     let implementsIEntity (resource: Resource) =
         { new IEntity<ResourceId> with
-            member _.Id = resource.State.Id }
+            member _.Id = resource.State.Id
+        }
 
 // Type aliases for clarity
 type UnvalidatedResource = Resource // From DTOs - potentially unsafe
 type ValidatedResource = Resource // Validated domain model and database data
 
-type HttpResourceConfig =
-    { BaseUrl: BaseUrl
-      UrlParameters: KeyValuePair list
-      Headers: KeyValuePair list
-      Body: KeyValuePair list }
+type HttpResourceConfig = {
+    BaseUrl: BaseUrl
+    UrlParameters: KeyValuePair list
+    Headers: KeyValuePair list
+    Body: KeyValuePair list
+}
 
-type DatabaseResourceConfig =
-    { DatabaseName: DatabaseName
-      Host: DatabaseHost
-      Port: DatabasePort
-      Engine: DatabaseEngine
-      AuthScheme: DatabaseAuthScheme
-      Username: DatabaseUsername
-      Password: DatabasePassword
-      UseSsl: bool
-      EnableSshTunnel: bool
-      ConnectionOptions: KeyValuePair list }
+type DatabaseResourceConfig = {
+    DatabaseName: DatabaseName
+    Host: DatabaseHost
+    Port: DatabasePort
+    Engine: DatabaseEngine
+    AuthScheme: DatabaseAuthScheme
+    Username: DatabaseUsername
+    Password: DatabasePassword
+    UseSsl: bool
+    EnableSshTunnel: bool
+    ConnectionOptions: KeyValuePair list
+}
 
 module Resource =
-    let fromData (resourceData: ResourceData) : ValidatedResource =
-        { State = resourceData
-          UncommittedEvents = [] }
+    let fromData (resourceData: ResourceData) : ValidatedResource = {
+        State = resourceData
+        UncommittedEvents = []
+    }
 
     let createWithKind
         (actorUserId: UserId)
@@ -177,11 +182,12 @@ module Resource =
                                     match validateKeyValuePairs body with
                                     | Error err -> Error err
                                     | Ok validBody ->
-                                        Ok
-                                            { BaseUrl = validBaseUrl
-                                              UrlParameters = validUrlParams
-                                              Headers = validHeaders
-                                              Body = validBody }
+                                        Ok {
+                                            BaseUrl = validBaseUrl
+                                            UrlParameters = validUrlParams
+                                            Headers = validHeaders
+                                            Body = validBody
+                                        }
 
                 let validateDatabaseConfig () : Result<DatabaseResourceConfig, DomainError> =
                     match databaseName with
@@ -220,17 +226,18 @@ module Resource =
                                                             match validateKeyValuePairs connectionOptions with
                                                             | Error err -> Error err
                                                             | Ok validOptions ->
-                                                                Ok
-                                                                    { DatabaseName = validDatabaseName
-                                                                      Host = validDatabaseHost
-                                                                      Port = validDatabasePort
-                                                                      Engine = validEngine
-                                                                      AuthScheme = validAuthScheme
-                                                                      Username = validUsername
-                                                                      Password = validPassword
-                                                                      UseSsl = useSsl
-                                                                      EnableSshTunnel = enableSshTunnel
-                                                                      ConnectionOptions = validOptions }
+                                                                Ok {
+                                                                    DatabaseName = validDatabaseName
+                                                                    Host = validDatabaseHost
+                                                                    Port = validDatabasePort
+                                                                    Engine = validEngine
+                                                                    AuthScheme = validAuthScheme
+                                                                    Username = validUsername
+                                                                    Password = validPassword
+                                                                    UseSsl = useSsl
+                                                                    EnableSshTunnel = enableSshTunnel
+                                                                    ConnectionOptions = validOptions
+                                                                }
 
                 let now = DateTime.UtcNow
 
@@ -253,29 +260,30 @@ module Resource =
                         then
                             Error(ValidationError "Database fields are not allowed for HTTP resources")
                         else
-                            let resourceData =
-                                { Id = ResourceId.NewId()
-                                  Name = validName
-                                  Description = validDescription
-                                  SpaceId = spaceId
-                                  ResourceKind = ResourceKind.Http
-                                  BaseUrl = Some httpConfig.BaseUrl
-                                  UrlParameters = httpConfig.UrlParameters
-                                  Headers = httpConfig.Headers
-                                  Body = httpConfig.Body
-                                  DatabaseName = None
-                                  DatabaseHost = None
-                                  DatabasePort = None
-                                  DatabaseEngine = None
-                                  DatabaseAuthScheme = None
-                                  DatabaseUsername = None
-                                  DatabasePassword = None
-                                  UseSsl = false
-                                  EnableSshTunnel = false
-                                  ConnectionOptions = []
-                                  CreatedAt = now
-                                  UpdatedAt = now
-                                  IsDeleted = false }
+                            let resourceData = {
+                                Id = ResourceId.NewId()
+                                Name = validName
+                                Description = validDescription
+                                SpaceId = spaceId
+                                ResourceKind = ResourceKind.Http
+                                BaseUrl = Some httpConfig.BaseUrl
+                                UrlParameters = httpConfig.UrlParameters
+                                Headers = httpConfig.Headers
+                                Body = httpConfig.Body
+                                DatabaseName = None
+                                DatabaseHost = None
+                                DatabasePort = None
+                                DatabaseEngine = None
+                                DatabaseAuthScheme = None
+                                DatabaseUsername = None
+                                DatabasePassword = None
+                                UseSsl = false
+                                EnableSshTunnel = false
+                                ConnectionOptions = []
+                                CreatedAt = now
+                                UpdatedAt = now
+                                IsDeleted = false
+                            }
 
                             let resourceCreatedEvent =
                                 ResourceEvents.resourceCreated
@@ -289,9 +297,10 @@ module Resource =
                                     resourceData.Headers
                                     resourceData.Body
 
-                            Ok
-                                { State = resourceData
-                                  UncommittedEvents = [ resourceCreatedEvent :> IDomainEvent ] }
+                            Ok {
+                                State = resourceData
+                                UncommittedEvents = [ resourceCreatedEvent :> IDomainEvent ]
+                            }
                 | ResourceKind.Sql ->
                     match validateDatabaseConfig () with
                     | Error err -> Error err
@@ -304,29 +313,30 @@ module Resource =
                         then
                             Error(ValidationError "HTTP fields are not allowed for SQL resources")
                         else
-                            let resourceData =
-                                { Id = ResourceId.NewId()
-                                  Name = validName
-                                  Description = validDescription
-                                  SpaceId = spaceId
-                                  ResourceKind = ResourceKind.Sql
-                                  BaseUrl = None
-                                  UrlParameters = []
-                                  Headers = []
-                                  Body = []
-                                  DatabaseName = Some databaseConfig.DatabaseName
-                                  DatabaseHost = Some databaseConfig.Host
-                                  DatabasePort = Some databaseConfig.Port
-                                  DatabaseEngine = Some databaseConfig.Engine
-                                  DatabaseAuthScheme = Some databaseConfig.AuthScheme
-                                  DatabaseUsername = Some databaseConfig.Username
-                                  DatabasePassword = Some databaseConfig.Password
-                                  UseSsl = databaseConfig.UseSsl
-                                  EnableSshTunnel = databaseConfig.EnableSshTunnel
-                                  ConnectionOptions = databaseConfig.ConnectionOptions
-                                  CreatedAt = now
-                                  UpdatedAt = now
-                                  IsDeleted = false }
+                            let resourceData = {
+                                Id = ResourceId.NewId()
+                                Name = validName
+                                Description = validDescription
+                                SpaceId = spaceId
+                                ResourceKind = ResourceKind.Sql
+                                BaseUrl = None
+                                UrlParameters = []
+                                Headers = []
+                                Body = []
+                                DatabaseName = Some databaseConfig.DatabaseName
+                                DatabaseHost = Some databaseConfig.Host
+                                DatabasePort = Some databaseConfig.Port
+                                DatabaseEngine = Some databaseConfig.Engine
+                                DatabaseAuthScheme = Some databaseConfig.AuthScheme
+                                DatabaseUsername = Some databaseConfig.Username
+                                DatabasePassword = Some databaseConfig.Password
+                                UseSsl = databaseConfig.UseSsl
+                                EnableSshTunnel = databaseConfig.EnableSshTunnel
+                                ConnectionOptions = databaseConfig.ConnectionOptions
+                                CreatedAt = now
+                                UpdatedAt = now
+                                IsDeleted = false
+                            }
 
                             let resourceCreatedEvent =
                                 ResourceEvents.resourceCreated
@@ -340,9 +350,10 @@ module Resource =
                                     resourceData.Headers
                                     resourceData.Body
 
-                            Ok
-                                { State = resourceData
-                                  UncommittedEvents = [ resourceCreatedEvent :> IDomainEvent ] }
+                            Ok {
+                                State = resourceData
+                                UncommittedEvents = [ resourceCreatedEvent :> IDomainEvent ]
+                            }
 
     let create
         (actorUserId: UserId)
@@ -385,20 +396,21 @@ module Resource =
         | Ok validName ->
             let oldName = resource.State.Name
 
-            let updatedResourceData =
-                { resource.State with
+            let updatedResourceData = {
+                resource.State with
                     Name = validName
-                    UpdatedAt = DateTime.UtcNow }
+                    UpdatedAt = DateTime.UtcNow
+            }
 
             let nameChangedEvent =
-                ResourceEvents.resourceUpdated
-                    actorUserId
-                    resource.State.Id
-                    [ ResourceChange.NameChanged(oldName, validName) ]
+                ResourceEvents.resourceUpdated actorUserId resource.State.Id [
+                    ResourceChange.NameChanged(oldName, validName)
+                ]
 
-            Ok
-                { State = updatedResourceData
-                  UncommittedEvents = resource.UncommittedEvents @ [ nameChangedEvent :> IDomainEvent ] }
+            Ok {
+                State = updatedResourceData
+                UncommittedEvents = resource.UncommittedEvents @ [ nameChangedEvent :> IDomainEvent ]
+            }
 
     let updateDescription
         (actorUserId: UserId)
@@ -410,20 +422,21 @@ module Resource =
         | Ok validDescription ->
             let oldDescription = resource.State.Description
 
-            let updatedResourceData =
-                { resource.State with
+            let updatedResourceData = {
+                resource.State with
                     Description = validDescription
-                    UpdatedAt = DateTime.UtcNow }
+                    UpdatedAt = DateTime.UtcNow
+            }
 
             let descriptionChangedEvent =
-                ResourceEvents.resourceUpdated
-                    actorUserId
-                    resource.State.Id
-                    [ ResourceChange.DescriptionChanged(oldDescription, validDescription) ]
+                ResourceEvents.resourceUpdated actorUserId resource.State.Id [
+                    ResourceChange.DescriptionChanged(oldDescription, validDescription)
+                ]
 
-            Ok
-                { State = updatedResourceData
-                  UncommittedEvents = resource.UncommittedEvents @ [ descriptionChangedEvent :> IDomainEvent ] }
+            Ok {
+                State = updatedResourceData
+                UncommittedEvents = resource.UncommittedEvents @ [ descriptionChangedEvent :> IDomainEvent ]
+            }
 
     let updateBaseUrl
         (actorUserId: UserId)
@@ -439,20 +452,21 @@ module Resource =
                 match resource.State.BaseUrl with
                 | None -> Error(InvalidOperation "HTTP resource is missing a base URL")
                 | Some oldBaseUrl ->
-                    let updatedResourceData =
-                        { resource.State with
+                    let updatedResourceData = {
+                        resource.State with
                             BaseUrl = Some validBaseUrl
-                            UpdatedAt = DateTime.UtcNow }
+                            UpdatedAt = DateTime.UtcNow
+                    }
 
                     let baseUrlChangedEvent =
-                        ResourceEvents.resourceUpdated
-                            actorUserId
-                            resource.State.Id
-                            [ ResourceChange.BaseUrlChanged(oldBaseUrl, validBaseUrl) ]
+                        ResourceEvents.resourceUpdated actorUserId resource.State.Id [
+                            ResourceChange.BaseUrlChanged(oldBaseUrl, validBaseUrl)
+                        ]
 
-                    Ok
-                        { State = updatedResourceData
-                          UncommittedEvents = resource.UncommittedEvents @ [ baseUrlChangedEvent :> IDomainEvent ] }
+                    Ok {
+                        State = updatedResourceData
+                        UncommittedEvents = resource.UncommittedEvents @ [ baseUrlChangedEvent :> IDomainEvent ]
+                    }
 
     let private checkAppConflicts
         (apps: AppResourceConflictData list)
@@ -492,20 +506,21 @@ module Resource =
                 | Ok() ->
                     let oldUrlParams = resource.State.UrlParameters
 
-                    let updatedResourceData =
-                        { resource.State with
+                    let updatedResourceData = {
+                        resource.State with
                             UrlParameters = validUrlParams
-                            UpdatedAt = DateTime.UtcNow }
+                            UpdatedAt = DateTime.UtcNow
+                    }
 
                     let urlParamsChangedEvent =
-                        ResourceEvents.resourceUpdated
-                            actorUserId
-                            resource.State.Id
-                            [ ResourceChange.UrlParametersChanged(oldUrlParams, validUrlParams) ]
+                        ResourceEvents.resourceUpdated actorUserId resource.State.Id [
+                            ResourceChange.UrlParametersChanged(oldUrlParams, validUrlParams)
+                        ]
 
-                    Ok
-                        { State = updatedResourceData
-                          UncommittedEvents = resource.UncommittedEvents @ [ urlParamsChangedEvent :> IDomainEvent ] }
+                    Ok {
+                        State = updatedResourceData
+                        UncommittedEvents = resource.UncommittedEvents @ [ urlParamsChangedEvent :> IDomainEvent ]
+                    }
 
     let updateHeaders
         (actorUserId: UserId)
@@ -537,20 +552,21 @@ module Resource =
                 | Ok() ->
                     let oldHeaders = resource.State.Headers
 
-                    let updatedResourceData =
-                        { resource.State with
+                    let updatedResourceData = {
+                        resource.State with
                             Headers = validHeaders
-                            UpdatedAt = DateTime.UtcNow }
+                            UpdatedAt = DateTime.UtcNow
+                    }
 
                     let headersChangedEvent =
-                        ResourceEvents.resourceUpdated
-                            actorUserId
-                            resource.State.Id
-                            [ ResourceChange.HeadersChanged(oldHeaders, validHeaders) ]
+                        ResourceEvents.resourceUpdated actorUserId resource.State.Id [
+                            ResourceChange.HeadersChanged(oldHeaders, validHeaders)
+                        ]
 
-                    Ok
-                        { State = updatedResourceData
-                          UncommittedEvents = resource.UncommittedEvents @ [ headersChangedEvent :> IDomainEvent ] }
+                    Ok {
+                        State = updatedResourceData
+                        UncommittedEvents = resource.UncommittedEvents @ [ headersChangedEvent :> IDomainEvent ]
+                    }
 
     let updateBody
         (actorUserId: UserId)
@@ -582,20 +598,21 @@ module Resource =
                 | Ok() ->
                     let oldBody = resource.State.Body
 
-                    let updatedResourceData =
-                        { resource.State with
+                    let updatedResourceData = {
+                        resource.State with
                             Body = validBody
-                            UpdatedAt = DateTime.UtcNow }
+                            UpdatedAt = DateTime.UtcNow
+                    }
 
                     let bodyChangedEvent =
-                        ResourceEvents.resourceUpdated
-                            actorUserId
-                            resource.State.Id
-                            [ ResourceChange.BodyChanged(oldBody, validBody) ]
+                        ResourceEvents.resourceUpdated actorUserId resource.State.Id [
+                            ResourceChange.BodyChanged(oldBody, validBody)
+                        ]
 
-                    Ok
-                        { State = updatedResourceData
-                          UncommittedEvents = resource.UncommittedEvents @ [ bodyChangedEvent :> IDomainEvent ] }
+                    Ok {
+                        State = updatedResourceData
+                        UncommittedEvents = resource.UncommittedEvents @ [ bodyChangedEvent :> IDomainEvent ]
+                    }
 
     let private toDatabaseConfigSummary (resourceData: ResourceData) : Result<DatabaseConfigSummary, DomainError> =
         match
@@ -607,17 +624,18 @@ module Resource =
             resourceData.DatabaseUsername
         with
         | Some databaseName, Some databaseHost, Some databasePort, Some databaseEngine, Some authScheme, Some username ->
-            Ok
-                { DatabaseName = databaseName
-                  Host = databaseHost
-                  Port = databasePort
-                  Engine = databaseEngine
-                  AuthScheme = authScheme
-                  Username = username
-                  UseSsl = resourceData.UseSsl
-                  EnableSshTunnel = resourceData.EnableSshTunnel
-                  ConnectionOptions = resourceData.ConnectionOptions
-                  HasPassword = resourceData.DatabasePassword.IsSome }
+            Ok {
+                DatabaseName = databaseName
+                Host = databaseHost
+                Port = databasePort
+                Engine = databaseEngine
+                AuthScheme = authScheme
+                Username = username
+                UseSsl = resourceData.UseSsl
+                EnableSshTunnel = resourceData.EnableSshTunnel
+                ConnectionOptions = resourceData.ConnectionOptions
+                HasPassword = resourceData.DatabasePassword.IsSome
+            }
         | _ -> Error(InvalidOperation "SQL resource is missing database configuration")
 
     let updateDatabaseConfig
@@ -686,20 +704,21 @@ module Resource =
                                             match toDatabaseConfigSummary resource.State with
                                             | Error err -> Error err
                                             | Ok oldSummary ->
-                                                let newSummary =
-                                                    { DatabaseName = validDatabaseName
-                                                      Host = validDatabaseHost
-                                                      Port = validDatabasePort
-                                                      Engine = validEngine
-                                                      AuthScheme = validAuthScheme
-                                                      Username = validUsername
-                                                      UseSsl = useSsl
-                                                      EnableSshTunnel = enableSshTunnel
-                                                      ConnectionOptions = validOptions
-                                                      HasPassword = validPassword.IsSome }
+                                                let newSummary = {
+                                                    DatabaseName = validDatabaseName
+                                                    Host = validDatabaseHost
+                                                    Port = validDatabasePort
+                                                    Engine = validEngine
+                                                    AuthScheme = validAuthScheme
+                                                    Username = validUsername
+                                                    UseSsl = useSsl
+                                                    EnableSshTunnel = enableSshTunnel
+                                                    ConnectionOptions = validOptions
+                                                    HasPassword = validPassword.IsSome
+                                                }
 
-                                                let updatedResourceData =
-                                                    { resource.State with
+                                                let updatedResourceData = {
+                                                    resource.State with
                                                         DatabaseName = Some validDatabaseName
                                                         DatabaseHost = Some validDatabaseHost
                                                         DatabasePort = Some validDatabasePort
@@ -710,26 +729,29 @@ module Resource =
                                                         UseSsl = useSsl
                                                         EnableSshTunnel = enableSshTunnel
                                                         ConnectionOptions = validOptions
-                                                        UpdatedAt = DateTime.UtcNow }
+                                                        UpdatedAt = DateTime.UtcNow
+                                                }
 
                                                 let configChangedEvent =
-                                                    ResourceEvents.resourceUpdated
-                                                        actorUserId
-                                                        resource.State.Id
-                                                        [ ResourceChange.DatabaseConfigChanged(oldSummary, newSummary) ]
+                                                    ResourceEvents.resourceUpdated actorUserId resource.State.Id [
+                                                        ResourceChange.DatabaseConfigChanged(oldSummary, newSummary)
+                                                    ]
 
-                                                Ok
-                                                    { State = updatedResourceData
-                                                      UncommittedEvents =
+                                                Ok {
+                                                    State = updatedResourceData
+                                                    UncommittedEvents =
                                                         resource.UncommittedEvents
-                                                        @ [ configChangedEvent :> IDomainEvent ] }
+                                                        @ [ configChangedEvent :> IDomainEvent ]
+                                                }
 
     let markForDeletion (actorUserId: UserId) (resource: ValidatedResource) : ValidatedResource =
         let resourceDeletedEvent =
             ResourceEvents.resourceDeleted actorUserId resource.State.Id resource.State.Name
 
-        { resource with
-            UncommittedEvents = resource.UncommittedEvents @ [ resourceDeletedEvent :> IDomainEvent ] }
+        {
+            resource with
+                UncommittedEvents = resource.UncommittedEvents @ [ resourceDeletedEvent :> IDomainEvent ]
+        }
 
     let restore (actorUserId: UserId) (newName: ResourceName option) (resource: ValidatedResource) : ValidatedResource =
         let finalName = newName |> Option.defaultValue resource.State.Name
@@ -737,18 +759,23 @@ module Resource =
         let resourceRestoredEvent =
             ResourceEvents.resourceRestored actorUserId resource.State.Id finalName
 
-        { resource with
-            State =
-                { resource.State with
-                    Name = finalName
-                    IsDeleted = false
-                    UpdatedAt = DateTime.UtcNow }
-            UncommittedEvents = resource.UncommittedEvents @ [ resourceRestoredEvent :> IDomainEvent ] }
+        {
+            resource with
+                State = {
+                    resource.State with
+                        Name = finalName
+                        IsDeleted = false
+                        UpdatedAt = DateTime.UtcNow
+                }
+                UncommittedEvents = resource.UncommittedEvents @ [ resourceRestoredEvent :> IDomainEvent ]
+        }
 
     let getUncommittedEvents (resource: ValidatedResource) : IDomainEvent list = resource.UncommittedEvents
 
-    let markEventsAsCommitted (resource: ValidatedResource) : ValidatedResource =
-        { resource with UncommittedEvents = [] }
+    let markEventsAsCommitted (resource: ValidatedResource) : ValidatedResource = {
+        resource with
+            UncommittedEvents = []
+    }
 
     let getId (resource: Resource) : ResourceId = resource.State.Id
 
@@ -776,7 +803,8 @@ module Resource =
 
     let getUpdatedAt (resource: Resource) : DateTime = resource.State.UpdatedAt
 
-    let toConflictData (resource: Resource) : ResourceAppConflictData =
-        { UrlParameters = getUrlParameters resource
-          Headers = getHeaders resource
-          Body = getBody resource }
+    let toConflictData (resource: Resource) : ResourceAppConflictData = {
+        UrlParameters = getUrlParameters resource
+        Headers = getHeaders resource
+        Body = getBody resource
+    }

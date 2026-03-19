@@ -16,10 +16,11 @@ let ``SpaceMapper fromCreateDto with no MemberIds should return moderator and em
     // Arrange
     let moderatorGuid = Guid.NewGuid()
 
-    let dto: CreateSpaceDto =
-        { Name = "Test Space"
-          ModeratorUserId = moderatorGuid.ToString()
-          MemberIds = None }
+    let dto: CreateSpaceDto = {
+        Name = "Test Space"
+        ModeratorUserId = moderatorGuid.ToString()
+        MemberIds = None
+    }
 
     // Act
     let result = SpaceMapper.fromCreateDto dto
@@ -37,10 +38,11 @@ let ``SpaceMapper fromCreateDto with empty MemberIds list should return empty me
     // Arrange
     let moderatorGuid = Guid.NewGuid()
 
-    let dto: CreateSpaceDto =
-        { Name = "Test Space"
-          ModeratorUserId = moderatorGuid.ToString()
-          MemberIds = Some [] }
+    let dto: CreateSpaceDto = {
+        Name = "Test Space"
+        ModeratorUserId = moderatorGuid.ToString()
+        MemberIds = Some []
+    }
 
     // Act
     let result = SpaceMapper.fromCreateDto dto
@@ -60,10 +62,11 @@ let ``SpaceMapper fromCreateDto with valid MemberIds should parse members`` () =
     let member1Guid = Guid.NewGuid()
     let member2Guid = Guid.NewGuid()
 
-    let dto: CreateSpaceDto =
-        { Name = "Test Space"
-          ModeratorUserId = moderatorGuid.ToString()
-          MemberIds = Some [ member1Guid.ToString(); member2Guid.ToString() ] }
+    let dto: CreateSpaceDto = {
+        Name = "Test Space"
+        ModeratorUserId = moderatorGuid.ToString()
+        MemberIds = Some [ member1Guid.ToString(); member2Guid.ToString() ]
+    }
 
     // Act
     let result = SpaceMapper.fromCreateDto dto
@@ -85,10 +88,11 @@ let ``SpaceMapper fromCreateDto with invalid MemberIds should filter out invalid
     let moderatorGuid = Guid.NewGuid()
     let validGuid = Guid.NewGuid()
 
-    let dto: CreateSpaceDto =
-        { Name = "Test Space"
-          ModeratorUserId = moderatorGuid.ToString()
-          MemberIds = Some [ validGuid.ToString(); "invalid-guid"; "not-a-guid"; "" ] }
+    let dto: CreateSpaceDto = {
+        Name = "Test Space"
+        ModeratorUserId = moderatorGuid.ToString()
+        MemberIds = Some [ validGuid.ToString(); "invalid-guid"; "not-a-guid"; "" ]
+    }
 
     // Act
     let result = SpaceMapper.fromCreateDto dto
@@ -107,16 +111,17 @@ let ``SpaceMapper fromCreateDto with duplicate MemberIds should remove duplicate
     let member1Guid = Guid.NewGuid()
     let member2Guid = Guid.NewGuid()
 
-    let dto: CreateSpaceDto =
-        { Name = "Test Space"
-          ModeratorUserId = moderatorGuid.ToString()
-          MemberIds =
-            Some
-                [ member1Guid.ToString()
-                  member2Guid.ToString()
-                  member1Guid.ToString() // Duplicate
-                  member2Guid.ToString() ] // Duplicate
-        }
+    let dto: CreateSpaceDto = {
+        Name = "Test Space"
+        ModeratorUserId = moderatorGuid.ToString()
+        MemberIds =
+            Some [
+                member1Guid.ToString()
+                member2Guid.ToString()
+                member1Guid.ToString() // Duplicate
+                member2Guid.ToString()
+            ] // Duplicate
+    }
 
     // Act
     let result = SpaceMapper.fromCreateDto dto
@@ -136,13 +141,15 @@ let ``SpaceMapper fromCreateDto with moderator in MemberIds should filter out mo
     let moderatorGuid = Guid.NewGuid()
     let member1Guid = Guid.NewGuid()
 
-    let dto: CreateSpaceDto =
-        { Name = "Test Space"
-          ModeratorUserId = moderatorGuid.ToString()
-          MemberIds =
-            Some
-                [ moderatorGuid.ToString() // Moderator is also in members
-                  member1Guid.ToString() ] }
+    let dto: CreateSpaceDto = {
+        Name = "Test Space"
+        ModeratorUserId = moderatorGuid.ToString()
+        MemberIds =
+            Some [
+                moderatorGuid.ToString() // Moderator is also in members
+                member1Guid.ToString()
+            ]
+    }
 
     // Act
     let result = SpaceMapper.fromCreateDto dto
@@ -158,10 +165,11 @@ let ``SpaceMapper fromCreateDto with moderator in MemberIds should filter out mo
 [<Fact>]
 let ``SpaceMapper fromCreateDto with invalid moderator ID should return error`` () =
     // Arrange
-    let dto: CreateSpaceDto =
-        { Name = "Test Space"
-          ModeratorUserId = "invalid-guid"
-          MemberIds = None }
+    let dto: CreateSpaceDto = {
+        Name = "Test Space"
+        ModeratorUserId = "invalid-guid"
+        MemberIds = None
+    }
 
     // Act
     let result = SpaceMapper.fromCreateDto dto
@@ -185,14 +193,15 @@ let ``SpaceMapper toDto should map all properties correctly`` () =
     let createdAt = DateTime.UtcNow.AddDays(-1.0)
     let updatedAt = DateTime.UtcNow
 
-    let spaceData: SpaceData =
-        { Id = spaceId
-          Name = "Engineering Space"
-          ModeratorUserId = moderatorId
-          MemberIds = [ moderatorId; member1; member2 ]
-          CreatedAt = createdAt
-          UpdatedAt = updatedAt
-          IsDeleted = false }
+    let spaceData: SpaceData = {
+        Id = spaceId
+        Name = "Engineering Space"
+        ModeratorUserId = moderatorId
+        MemberIds = [ moderatorId; member1; member2 ]
+        CreatedAt = createdAt
+        UpdatedAt = updatedAt
+        IsDeleted = false
+    }
 
     // Act
     let dto = SpaceMapper.toDto spaceData
@@ -214,14 +223,15 @@ let ``SpaceMapper toDto should handle space with only moderator`` () =
     let spaceId = SpaceId.NewId()
     let moderatorId = UserId.NewId()
 
-    let spaceData: SpaceData =
-        { Id = spaceId
-          Name = "Solo Space"
-          ModeratorUserId = moderatorId
-          MemberIds = [ moderatorId ]
-          CreatedAt = DateTime.UtcNow
-          UpdatedAt = DateTime.UtcNow
-          IsDeleted = false }
+    let spaceData: SpaceData = {
+        Id = spaceId
+        Name = "Solo Space"
+        ModeratorUserId = moderatorId
+        MemberIds = [ moderatorId ]
+        CreatedAt = DateTime.UtcNow
+        UpdatedAt = DateTime.UtcNow
+        IsDeleted = false
+    }
 
     // Act
     let dto = SpaceMapper.toDto spaceData
@@ -242,21 +252,26 @@ let ``SpaceMapper toPagedDto should map paging info correctly`` () =
     let spaceId2 = SpaceId.NewId()
     let moderatorId = UserId.NewId()
 
-    let spaces: SpaceData list =
-        [ { Id = spaceId1
+    let spaces: SpaceData list = [
+        {
+            Id = spaceId1
             Name = "Space 1"
             ModeratorUserId = moderatorId
             MemberIds = [ moderatorId ]
             CreatedAt = DateTime.UtcNow
             UpdatedAt = DateTime.UtcNow
-            IsDeleted = false }
-          { Id = spaceId2
+            IsDeleted = false
+        }
+        {
+            Id = spaceId2
             Name = "Space 2"
             ModeratorUserId = moderatorId
             MemberIds = [ moderatorId ]
             CreatedAt = DateTime.UtcNow
             UpdatedAt = DateTime.UtcNow
-            IsDeleted = false } ]
+            IsDeleted = false
+        }
+    ]
 
     // Act
     let pagedResult = SpaceMapper.toPagedDto spaces 10 5 2

@@ -30,17 +30,22 @@ let ``App creation should generate AppCreatedEvent`` () =
     let actorUserId = UserId.FromGuid(Guid.NewGuid())
     let folderId = FolderId.NewId()
 
-    let inputs =
-        [ { Title = "Email"
+    let inputs = [
+        {
+            Title = "Email"
             Description = None
             Type = InputType.Email()
             Required = true
-            DefaultValue = None }
-          { Title = "Password"
+            DefaultValue = None
+        }
+        {
+            Title = "Password"
             Description = None
             Type = InputType.Text(50) |> Result.defaultValue (InputType.Email())
             Required = true
-            DefaultValue = None } ]
+            DefaultValue = None
+        }
+    ]
 
     // Act
     let resourceId = ResourceId.NewId()
@@ -101,12 +106,15 @@ let ``App inputs update should generate correct event`` () =
     let actorUserId = UserId.FromGuid(Guid.NewGuid())
     let folderId = FolderId.NewId()
 
-    let initialInputs =
-        [ { Title = "Name"
+    let initialInputs = [
+        {
+            Title = "Name"
             Description = None
             Type = InputType.Text(100) |> Result.defaultValue (InputType.Email())
             Required = true
-            DefaultValue = None } ]
+            DefaultValue = None
+        }
+    ]
 
     let resourceId = ResourceId.NewId()
 
@@ -114,22 +122,29 @@ let ``App inputs update should generate correct event`` () =
         createAppForTesting actorUserId "Test App" folderId HttpMethod.Get initialInputs None [] [] []
         |> unwrapResult
 
-    let newInputs =
-        [ { Title = "First Name"
+    let newInputs = [
+        {
+            Title = "First Name"
             Description = None
             Type = InputType.Text(50) |> Result.defaultValue (InputType.Email())
             Required = true
-            DefaultValue = None }
-          { Title = "Last Name"
+            DefaultValue = None
+        }
+        {
+            Title = "Last Name"
             Description = None
             Type = InputType.Text(50) |> Result.defaultValue (InputType.Email())
             Required = false
-            DefaultValue = None }
-          { Title = "Age"
+            DefaultValue = None
+        }
+        {
+            Title = "Age"
             Description = None
             Type = InputType.Integer()
             Required = true
-            DefaultValue = None } ]
+            DefaultValue = None
+        }
+    ]
 
     // Act
     let result = App.updateInputs actorUserId newInputs app
@@ -218,12 +233,15 @@ let ``App validation should reject invalid input title`` () =
     let actorUserId = UserId.FromGuid(Guid.NewGuid())
     let folderId = FolderId.NewId()
 
-    let invalidInputs =
-        [ { Title = ""
+    let invalidInputs = [
+        {
+            Title = ""
             Description = None
             Type = InputType.Email()
             Required = true
-            DefaultValue = None } ] // Empty title
+            DefaultValue = None
+        }
+    ] // Empty title
 
     // Act
     let resourceId = ResourceId.NewId()
@@ -262,8 +280,7 @@ let ``App creation with headers should work correctly`` () =
     let actorUserId = UserId.FromGuid(Guid.NewGuid())
     let folderId = FolderId.NewId()
 
-    let headers =
-        [ "Authorization", "Bearer token123"; "Content-Type", "application/json" ]
+    let headers = [ "Authorization", "Bearer token123"; "Content-Type", "application/json" ]
 
     // Act
     let result =
@@ -486,9 +503,7 @@ let ``App create should reject URL parameter conflicts`` () =
             "API"
             "Test API"
             "https://api.test.com"
-            [ "version", "v1"; "format", "json" ]
-            []
-            []
+            [ "version", "v1"; "format", "json" ] [] []
 
     let resource = unwrapResult resourceResult
     let folderId = FolderId.NewId()
@@ -524,15 +539,10 @@ let ``App create should reject header conflicts`` () =
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
 
     let resourceResult =
-        Resource.create
-            actorUserId
-            spaceId
-            "API"
-            "Test API"
-            "https://api.test.com"
-            []
-            [ "Content-Type", "application/json"; "Accept", "application/json" ]
-            []
+        Resource.create actorUserId spaceId "API" "Test API" "https://api.test.com" [] [
+            "Content-Type", "application/json"
+            "Accept", "application/json"
+        ] []
 
     let resource = unwrapResult resourceResult
     let folderId = FolderId.NewId()
@@ -568,15 +578,10 @@ let ``App create should reject body parameter conflicts`` () =
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
 
     let resourceResult =
-        Resource.create
-            actorUserId
-            spaceId
-            "API"
-            "Test API"
-            "https://api.test.com"
-            []
-            []
-            [ "client_id", "12345"; "scope", "read" ]
+        Resource.create actorUserId spaceId "API" "Test API" "https://api.test.com" [] [] [
+            "client_id", "12345"
+            "scope", "read"
+        ]
 
     let resource = unwrapResult resourceResult
     let folderId = FolderId.NewId()
@@ -612,15 +617,9 @@ let ``App create should reject multiple conflicts`` () =
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
 
     let resourceResult =
-        Resource.create
-            actorUserId
-            spaceId
-            "API"
-            "Test API"
-            "https://api.test.com"
-            [ "version", "v1" ]
-            [ "Content-Type", "application/json" ]
-            [ "client_id", "12345" ]
+        Resource.create actorUserId spaceId "API" "Test API" "https://api.test.com" [ "version", "v1" ] [
+            "Content-Type", "application/json"
+        ] [ "client_id", "12345" ]
 
     let resource = unwrapResult resourceResult
     let folderId = FolderId.NewId()
@@ -658,15 +657,9 @@ let ``App create should allow extending with no conflicts`` () =
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
 
     let resourceResult =
-        Resource.create
-            actorUserId
-            spaceId
-            "API"
-            "Test API"
-            "https://api.test.com"
-            [ "version", "v1" ]
-            [ "Content-Type", "application/json" ]
-            [ "client_id", "12345" ]
+        Resource.create actorUserId spaceId "API" "Test API" "https://api.test.com" [ "version", "v1" ] [
+            "Content-Type", "application/json"
+        ] [ "client_id", "12345" ]
 
     let resource = unwrapResult resourceResult
     let folderId = FolderId.NewId()
@@ -718,15 +711,9 @@ let ``App create should allow empty app parameters`` () =
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
 
     let resourceResult =
-        Resource.create
-            actorUserId
-            spaceId
-            "API"
-            "Test API"
-            "https://api.test.com"
-            [ "version", "v1" ]
-            [ "Content-Type", "application/json" ]
-            [ "client_id", "12345" ]
+        Resource.create actorUserId spaceId "API" "Test API" "https://api.test.com" [ "version", "v1" ] [
+            "Content-Type", "application/json"
+        ] [ "client_id", "12345" ]
 
     let resource = unwrapResult resourceResult
     let folderId = FolderId.NewId()
@@ -762,9 +749,7 @@ let ``App updateUrlParameters should reject resource parameter conflicts`` () =
             "API"
             "Test API"
             "https://api.test.com"
-            [ "version", "v1"; "format", "json" ]
-            []
-            []
+            [ "version", "v1"; "format", "json" ] [] []
 
     let resource = unwrapResult resourceResult
     let folderId = FolderId.NewId()
@@ -795,15 +780,10 @@ let ``App updateHeaders should reject resource header conflicts`` () =
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
 
     let resourceResult =
-        Resource.create
-            actorUserId
-            spaceId
-            "API"
-            "Test API"
-            "https://api.test.com"
-            []
-            [ "Content-Type", "application/json"; "Accept", "application/json" ]
-            []
+        Resource.create actorUserId spaceId "API" "Test API" "https://api.test.com" [] [
+            "Content-Type", "application/json"
+            "Accept", "application/json"
+        ] []
 
     let resource = unwrapResult resourceResult
     let folderId = FolderId.NewId()
@@ -838,15 +818,10 @@ let ``App updateBody should reject resource body parameter conflicts`` () =
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
 
     let resourceResult =
-        Resource.create
-            actorUserId
-            spaceId
-            "API"
-            "Test API"
-            "https://api.test.com"
-            []
-            []
-            [ "client_id", "12345"; "scope", "read" ]
+        Resource.create actorUserId spaceId "API" "Test API" "https://api.test.com" [] [] [
+            "client_id", "12345"
+            "scope", "read"
+        ]
 
     let resource = unwrapResult resourceResult
     let folderId = FolderId.NewId()
@@ -909,15 +884,9 @@ let ``App updateHeaders should allow new headers with no conflicts`` () =
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
 
     let resourceResult =
-        Resource.create
-            actorUserId
-            spaceId
-            "API"
-            "Test API"
-            "https://api.test.com"
-            []
-            [ "Content-Type", "application/json" ]
-            []
+        Resource.create actorUserId spaceId "API" "Test API" "https://api.test.com" [] [
+            "Content-Type", "application/json"
+        ] []
 
     let resource = unwrapResult resourceResult
     let folderId = FolderId.NewId()

@@ -26,24 +26,24 @@ type AuditController(eventRepository: IEventRepository, eventEnhancementService:
     let toOptionInt (value: Nullable<int>) =
         if value.HasValue then Some value.Value else None
 
-    member private this.EnhancePagedEvents(result: PagedResult<EventData>) : Task<IActionResult> =
-        task {
-            let enhancementTasks =
-                result.Items
-                |> List.map (fun event -> eventEnhancementService.EnhanceEventAsync event)
-                |> List.toArray
+    member private this.EnhancePagedEvents(result: PagedResult<EventData>) : Task<IActionResult> = task {
+        let enhancementTasks =
+            result.Items
+            |> List.map (fun event -> eventEnhancementService.EnhanceEventAsync event)
+            |> List.toArray
 
-            let! enhancedItemsArray = Task.WhenAll(enhancementTasks)
-            let enhancedItems = enhancedItemsArray |> Array.toList
+        let! enhancedItemsArray = Task.WhenAll(enhancementTasks)
+        let enhancedItems = enhancedItemsArray |> Array.toList
 
-            let enhancedResult =
-                { Items = enhancedItems
-                  TotalCount = result.TotalCount
-                  Skip = result.Skip
-                  Take = result.Take }
-
-            return this.Ok(enhancedResult) :> IActionResult
+        let enhancedResult = {
+            Items = enhancedItems
+            TotalCount = result.TotalCount
+            Skip = result.Skip
+            Take = result.Take
         }
+
+        return this.Ok(enhancedResult) :> IActionResult
+    }
 
     [<HttpGet("events")>]
     [<ProducesResponseType(typeof<PagedResult<EnhancedEventData>>, StatusCodes.Status200OK)>]
@@ -59,14 +59,15 @@ type AuditController(eventRepository: IEventRepository, eventEnhancementService:
             [<FromQuery>] take: Nullable<int>
         ) : Task<IActionResult> =
         task {
-            let filterDto: EventFilterDTO =
-                { UserId = toOptionString userId
-                  EventType = toOptionString eventType
-                  EntityType = toOptionString entityType
-                  FromDate = toOptionDate fromDate
-                  ToDate = toOptionDate toDate
-                  Skip = toOptionInt skip
-                  Take = toOptionInt take }
+            let filterDto: EventFilterDTO = {
+                UserId = toOptionString userId
+                EventType = toOptionString eventType
+                EntityType = toOptionString entityType
+                FromDate = toOptionDate fromDate
+                ToDate = toOptionDate toDate
+                Skip = toOptionInt skip
+                Take = toOptionInt take
+            }
 
             match EventFilterValidator.validate filterDto with
             | Ok filter ->
@@ -94,13 +95,14 @@ type AuditController(eventRepository: IEventRepository, eventEnhancementService:
                 else
                     None
 
-            let filterDto: AppEventFilterDTO =
-                { AppId = appId
-                  FromDate = toOptionDate fromDate
-                  ToDate = toOptionDate toDate
-                  Skip = toOptionInt skip
-                  Take = toOptionInt take
-                  IncludeRunEvents = includeRuns }
+            let filterDto: AppEventFilterDTO = {
+                AppId = appId
+                FromDate = toOptionDate fromDate
+                ToDate = toOptionDate toDate
+                Skip = toOptionInt skip
+                Take = toOptionInt take
+                IncludeRunEvents = includeRuns
+            }
 
             match EventFilterValidator.validateAppFilter filterDto with
             | Ok filter ->
@@ -121,12 +123,13 @@ type AuditController(eventRepository: IEventRepository, eventEnhancementService:
             [<FromQuery>] take: Nullable<int>
         ) : Task<IActionResult> =
         task {
-            let filterDto: UserEventFilterDTO =
-                { UserId = userId
-                  FromDate = toOptionDate fromDate
-                  ToDate = toOptionDate toDate
-                  Skip = toOptionInt skip
-                  Take = toOptionInt take }
+            let filterDto: UserEventFilterDTO = {
+                UserId = userId
+                FromDate = toOptionDate fromDate
+                ToDate = toOptionDate toDate
+                Skip = toOptionInt skip
+                Take = toOptionInt take
+            }
 
             match EventFilterValidator.validateUserFilter filterDto with
             | Ok filter ->
@@ -147,12 +150,13 @@ type AuditController(eventRepository: IEventRepository, eventEnhancementService:
             [<FromQuery>] take: Nullable<int>
         ) : Task<IActionResult> =
         task {
-            let filterDto: DashboardEventFilterDTO =
-                { DashboardId = dashboardId
-                  FromDate = toOptionDate fromDate
-                  ToDate = toOptionDate toDate
-                  Skip = toOptionInt skip
-                  Take = toOptionInt take }
+            let filterDto: DashboardEventFilterDTO = {
+                DashboardId = dashboardId
+                FromDate = toOptionDate fromDate
+                ToDate = toOptionDate toDate
+                Skip = toOptionInt skip
+                Take = toOptionInt take
+            }
 
             match EventFilterValidator.validateDashboardFilter filterDto with
             | Ok filter ->

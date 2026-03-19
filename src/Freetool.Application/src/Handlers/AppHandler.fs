@@ -132,11 +132,12 @@ module AppHandler =
                         let! apps = appRepository.GetByFolderIdAsync folderIdObj skip take
                         let! totalCount = appRepository.GetCountByFolderIdAsync folderIdObj
 
-                        let result =
-                            { Items = apps |> List.map (fun app -> app.State)
-                              TotalCount = totalCount
-                              Skip = skip
-                              Take = take }
+                        let result = {
+                            Items = apps |> List.map (fun app -> app.State)
+                            TotalCount = totalCount
+                            Skip = skip
+                            Take = take
+                        }
 
                         return Ok(AppsResult result)
 
@@ -149,11 +150,12 @@ module AppHandler =
                     let! apps = appRepository.GetAllAsync skip take
                     let! totalCount = appRepository.GetCountAsync()
 
-                    let result =
-                        { Items = apps |> List.map (fun app -> app.State)
-                          TotalCount = totalCount
-                          Skip = skip
-                          Take = take }
+                    let result = {
+                        Items = apps |> List.map (fun app -> app.State)
+                        TotalCount = totalCount
+                        Skip = skip
+                        Take = take
+                    }
 
                     return Ok(AppsResult result)
 
@@ -163,22 +165,24 @@ module AppHandler =
                 elif take <= 0 || take > 100 then
                     return Error(ValidationError "Take must be between 1 and 100")
                 elif List.isEmpty spaceIds then
-                    let result =
-                        { Items = []
-                          TotalCount = 0
-                          Skip = skip
-                          Take = take }
+                    let result = {
+                        Items = []
+                        TotalCount = 0
+                        Skip = skip
+                        Take = take
+                    }
 
                     return Ok(AppsResult result)
                 else
                     let! apps = appRepository.GetBySpaceIdsAsync spaceIds skip take
                     let! totalCount = appRepository.GetCountBySpaceIdsAsync spaceIds
 
-                    let result =
-                        { Items = apps |> List.map (fun app -> app.State)
-                          TotalCount = totalCount
-                          Skip = skip
-                          Take = take }
+                    let result = {
+                        Items = apps |> List.map (fun app -> app.State)
+                        TotalCount = totalCount
+                        Skip = skip
+                        Take = take
+                    }
 
                     return Ok(AppsResult result)
 
@@ -389,9 +393,10 @@ module AppHandler =
                                     existingHeaders
                                     incomingHeaders
 
-                            let mergedDto =
-                                { dto with
-                                    Headers = mergedHeaders |> List.map (fun (k, v) -> { Key = k; Value = v }) }
+                            let mergedDto = {
+                                dto with
+                                    Headers = mergedHeaders |> List.map (fun (k, v) -> { Key = k; Value = v })
+                            }
 
                             let newHeaders = mergedDto.Headers |> List.map AppMapper.keyValuePairFromDto
                             let resourceConflictData = Resource.toConflictData resource

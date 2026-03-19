@@ -377,17 +377,16 @@ type EventEnhancementService
                 return $"{entityTypeStr} (Parse Error: {ex.Message} | Data: {dataPreview})"
         }
 
-    let getUserNameAsync (userId: UserId) : Task<string> =
-        task {
-            try
-                let! user = userRepository.GetByIdAsync userId
+    let getUserNameAsync (userId: UserId) : Task<string> = task {
+        try
+            let! user = userRepository.GetByIdAsync userId
 
-                match user with
-                | Some u -> return User.getName u
-                | None -> return $"User {userId.Value}"
-            with _ ->
-                return $"User {userId.Value}"
-        }
+            match user with
+            | Some u -> return User.getName u
+            | None -> return $"User {userId.Value}"
+        with _ ->
+            return $"User {userId.Value}"
+    }
 
     let generateEventSummary (eventType: EventType) (entityName: string) (userName: string) : string =
         match eventType with
@@ -439,27 +438,27 @@ type EventEnhancementService
                 $"{userName} changed default member permissions in space \"{entityName}\""
 
     interface IEventEnhancementService with
-        member this.EnhanceEventAsync(event: EventData) : Task<EnhancedEventData> =
-            task {
-                let! userName = getUserNameAsync event.UserId
+        member this.EnhanceEventAsync(event: EventData) : Task<EnhancedEventData> = task {
+            let! userName = getUserNameAsync event.UserId
 
-                let! entityName = extractEntityNameFromEventDataAsync event.EventData event.EventType event.EntityType
+            let! entityName = extractEntityNameFromEventDataAsync event.EventData event.EventType event.EntityType
 
-                let eventSummary = generateEventSummary event.EventType entityName userName
+            let eventSummary = generateEventSummary event.EventType entityName userName
 
-                let redactedEventData = redactAuthorizationHeadersInEventData event.EventData
+            let redactedEventData = redactAuthorizationHeadersInEventData event.EventData
 
-                return
-                    { Id = event.Id
-                      EventId = event.EventId
-                      EventType = event.EventType
-                      EntityType = event.EntityType
-                      EntityId = event.EntityId
-                      EntityName = entityName
-                      EventData = redactedEventData
-                      OccurredAt = event.OccurredAt
-                      CreatedAt = event.CreatedAt
-                      UserId = event.UserId
-                      UserName = userName
-                      EventSummary = eventSummary }
+            return {
+                Id = event.Id
+                EventId = event.EventId
+                EventType = event.EventType
+                EntityType = event.EntityType
+                EntityId = event.EntityId
+                EntityName = entityName
+                EventData = redactedEventData
+                OccurredAt = event.OccurredAt
+                CreatedAt = event.CreatedAt
+                UserId = event.UserId
+                UserName = userName
+                EventSummary = eventSummary
             }
+        }

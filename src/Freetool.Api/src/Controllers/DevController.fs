@@ -10,10 +10,11 @@ open Freetool.Application.Interfaces
 type DevModeResponseDto = { DevMode: bool }
 
 /// Response DTO for a dev user
-type DevUserDto =
-    { Id: string
-      Name: string
-      Email: string }
+type DevUserDto = {
+    Id: string
+    Name: string
+    Email: string
+}
 
 [<ApiController>]
 [<Route("dev")>]
@@ -42,21 +43,21 @@ type DevController(userRepository: IUserRepository) =
     [<HttpGet("users")>]
     [<ProducesResponseType(typeof<DevUserDto list>, StatusCodes.Status200OK)>]
     [<ProducesResponseType(StatusCodes.Status404NotFound)>]
-    member this.GetDevUsers() : Task<IActionResult> =
-        task {
-            if not isDevMode then
-                return this.NotFound() :> IActionResult
-            else
-                let! users = userRepository.GetAllAsync 0 100
+    member this.GetDevUsers() : Task<IActionResult> = task {
+        if not isDevMode then
+            return this.NotFound() :> IActionResult
+        else
+            let! users = userRepository.GetAllAsync 0 100
 
-                let devUsers =
-                    users
-                    |> List.map (fun user ->
-                        { Id = user.State.Id.Value.ToString()
-                          Name = user.State.Name
-                          Email = user.State.Email })
+            let devUsers =
+                users
+                |> List.map (fun user -> {
+                    Id = user.State.Id.Value.ToString()
+                    Name = user.State.Name
+                    Email = user.State.Email
+                })
 
-                // Return as ContentResult to avoid chunked encoding issues
-                let json = JsonSerializer.Serialize(devUsers, jsonOptions)
-                return this.Content(json, "application/json") :> IActionResult
-        }
+            // Return as ContentResult to avoid chunked encoding issues
+            let json = JsonSerializer.Serialize(devUsers, jsonOptions)
+            return this.Content(json, "application/json") :> IActionResult
+    }

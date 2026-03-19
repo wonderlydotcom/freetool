@@ -12,14 +12,15 @@ type SpaceChange =
     | MemberRemoved of userId: UserId
 
 /// Event raised when a new Space is created
-type SpaceCreatedEvent =
-    { SpaceId: SpaceId
-      Name: string
-      ModeratorUserId: UserId
-      InitialMemberIds: UserId list
-      OccurredAt: DateTime
-      EventId: Guid
-      ActorUserId: UserId }
+type SpaceCreatedEvent = {
+    SpaceId: SpaceId
+    Name: string
+    ModeratorUserId: UserId
+    InitialMemberIds: UserId list
+    OccurredAt: DateTime
+    EventId: Guid
+    ActorUserId: UserId
+} with
 
     interface IDomainEvent with
         member this.OccurredAt = this.OccurredAt
@@ -27,12 +28,13 @@ type SpaceCreatedEvent =
         member this.UserId = this.ActorUserId
 
 /// Event raised when a Space is updated
-type SpaceUpdatedEvent =
-    { SpaceId: SpaceId
-      Changes: SpaceChange list
-      OccurredAt: DateTime
-      EventId: Guid
-      ActorUserId: UserId }
+type SpaceUpdatedEvent = {
+    SpaceId: SpaceId
+    Changes: SpaceChange list
+    OccurredAt: DateTime
+    EventId: Guid
+    ActorUserId: UserId
+} with
 
     interface IDomainEvent with
         member this.OccurredAt = this.OccurredAt
@@ -41,12 +43,13 @@ type SpaceUpdatedEvent =
 
 /// Event raised when a Space is deleted
 /// Includes Name for audit log display (per CLAUDE.md checklist)
-type SpaceDeletedEvent =
-    { SpaceId: SpaceId
-      Name: string
-      OccurredAt: DateTime
-      EventId: Guid
-      ActorUserId: UserId }
+type SpaceDeletedEvent = {
+    SpaceId: SpaceId
+    Name: string
+    OccurredAt: DateTime
+    EventId: Guid
+    ActorUserId: UserId
+} with
 
     interface IDomainEvent with
         member this.OccurredAt = this.OccurredAt
@@ -55,16 +58,17 @@ type SpaceDeletedEvent =
 
 /// Event raised when a Space member's permissions are changed
 /// Includes names for audit log display (entities may be deleted later)
-type SpacePermissionsChangedEvent =
-    { SpaceId: SpaceId
-      SpaceName: string
-      TargetUserId: UserId
-      TargetUserName: string
-      PermissionsGranted: string list
-      PermissionsRevoked: string list
-      OccurredAt: DateTime
-      EventId: Guid
-      ActorUserId: UserId }
+type SpacePermissionsChangedEvent = {
+    SpaceId: SpaceId
+    SpaceName: string
+    TargetUserId: UserId
+    TargetUserName: string
+    PermissionsGranted: string list
+    PermissionsRevoked: string list
+    OccurredAt: DateTime
+    EventId: Guid
+    ActorUserId: UserId
+} with
 
     interface IDomainEvent with
         member this.OccurredAt = this.OccurredAt
@@ -72,14 +76,15 @@ type SpacePermissionsChangedEvent =
         member this.UserId = this.ActorUserId
 
 /// Event raised when default permissions for all space members are changed
-type SpaceDefaultMemberPermissionsChangedEvent =
-    { SpaceId: SpaceId
-      SpaceName: string
-      PermissionsGranted: string list
-      PermissionsRevoked: string list
-      OccurredAt: DateTime
-      EventId: Guid
-      ActorUserId: UserId }
+type SpaceDefaultMemberPermissionsChangedEvent = {
+    SpaceId: SpaceId
+    SpaceName: string
+    PermissionsGranted: string list
+    PermissionsRevoked: string list
+    OccurredAt: DateTime
+    EventId: Guid
+    ActorUserId: UserId
+} with
 
     interface IDomainEvent with
         member this.OccurredAt = this.OccurredAt
@@ -95,31 +100,37 @@ module SpaceEvents =
         (moderatorUserId: UserId)
         (initialMemberIds: UserId list)
         =
-        { SpaceId = spaceId
-          Name = name
-          ModeratorUserId = moderatorUserId
-          InitialMemberIds = initialMemberIds
-          OccurredAt = DateTime.UtcNow
-          EventId = Guid.NewGuid()
-          ActorUserId = actorUserId }
+        {
+            SpaceId = spaceId
+            Name = name
+            ModeratorUserId = moderatorUserId
+            InitialMemberIds = initialMemberIds
+            OccurredAt = DateTime.UtcNow
+            EventId = Guid.NewGuid()
+            ActorUserId = actorUserId
+        }
         : SpaceCreatedEvent
 
     /// Creates a SpaceUpdatedEvent
     let spaceUpdated (actorUserId: UserId) (spaceId: SpaceId) (changes: SpaceChange list) =
-        { SpaceId = spaceId
-          Changes = changes
-          OccurredAt = DateTime.UtcNow
-          EventId = Guid.NewGuid()
-          ActorUserId = actorUserId }
+        {
+            SpaceId = spaceId
+            Changes = changes
+            OccurredAt = DateTime.UtcNow
+            EventId = Guid.NewGuid()
+            ActorUserId = actorUserId
+        }
         : SpaceUpdatedEvent
 
     /// Creates a SpaceDeletedEvent with name for audit log display
     let spaceDeleted (actorUserId: UserId) (spaceId: SpaceId) (name: string) =
-        { SpaceId = spaceId
-          Name = name
-          OccurredAt = DateTime.UtcNow
-          EventId = Guid.NewGuid()
-          ActorUserId = actorUserId }
+        {
+            SpaceId = spaceId
+            Name = name
+            OccurredAt = DateTime.UtcNow
+            EventId = Guid.NewGuid()
+            ActorUserId = actorUserId
+        }
         : SpaceDeletedEvent
 
     /// Creates a SpacePermissionsChangedEvent
@@ -132,15 +143,17 @@ module SpaceEvents =
         (permissionsGranted: string list)
         (permissionsRevoked: string list)
         =
-        { SpaceId = spaceId
-          SpaceName = spaceName
-          TargetUserId = targetUserId
-          TargetUserName = targetUserName
-          PermissionsGranted = permissionsGranted
-          PermissionsRevoked = permissionsRevoked
-          OccurredAt = DateTime.UtcNow
-          EventId = Guid.NewGuid()
-          ActorUserId = actorUserId }
+        {
+            SpaceId = spaceId
+            SpaceName = spaceName
+            TargetUserId = targetUserId
+            TargetUserName = targetUserName
+            PermissionsGranted = permissionsGranted
+            PermissionsRevoked = permissionsRevoked
+            OccurredAt = DateTime.UtcNow
+            EventId = Guid.NewGuid()
+            ActorUserId = actorUserId
+        }
         : SpacePermissionsChangedEvent
 
     /// Creates a SpaceDefaultMemberPermissionsChangedEvent
@@ -151,11 +164,13 @@ module SpaceEvents =
         (permissionsGranted: string list)
         (permissionsRevoked: string list)
         =
-        { SpaceId = spaceId
-          SpaceName = spaceName
-          PermissionsGranted = permissionsGranted
-          PermissionsRevoked = permissionsRevoked
-          OccurredAt = DateTime.UtcNow
-          EventId = Guid.NewGuid()
-          ActorUserId = actorUserId }
+        {
+            SpaceId = spaceId
+            SpaceName = spaceName
+            PermissionsGranted = permissionsGranted
+            PermissionsRevoked = permissionsRevoked
+            OccurredAt = DateTime.UtcNow
+            EventId = Guid.NewGuid()
+            ActorUserId = actorUserId
+        }
         : SpaceDefaultMemberPermissionsChangedEvent

@@ -1,15 +1,17 @@
 namespace Freetool.Domain
 
-type AppResourceConflictData =
-    { AppId: string
-      UrlParameters: (string * string) list
-      Headers: (string * string) list
-      Body: (string * string) list }
+type AppResourceConflictData = {
+    AppId: string
+    UrlParameters: (string * string) list
+    Headers: (string * string) list
+    Body: (string * string) list
+}
 
-type ResourceAppConflictData =
-    { UrlParameters: (string * string) list
-      Headers: (string * string) list
-      Body: (string * string) list }
+type ResourceAppConflictData = {
+    UrlParameters: (string * string) list
+    Headers: (string * string) list
+    Body: (string * string) list
+}
 
 module BusinessRules =
     let checkAppToResourceConflicts
@@ -22,12 +24,14 @@ module BusinessRules =
         let allConflicts =
             apps
             |> List.collect (fun app ->
-                [ DomainValidation.checkKeyValueConflicts
-                      newUrlParameters
-                      (Some app.UrlParameters)
-                      $"App {app.AppId} URL parameters"
-                  DomainValidation.checkKeyValueConflicts newHeaders (Some app.Headers) $"App {app.AppId} Headers"
-                  DomainValidation.checkKeyValueConflicts newBody (Some app.Body) $"App {app.AppId} Body parameters" ]
+                [
+                    DomainValidation.checkKeyValueConflicts
+                        newUrlParameters
+                        (Some app.UrlParameters)
+                        $"App {app.AppId} URL parameters"
+                    DomainValidation.checkKeyValueConflicts newHeaders (Some app.Headers) $"App {app.AppId} Headers"
+                    DomainValidation.checkKeyValueConflicts newBody (Some app.Body) $"App {app.AppId} Body parameters"
+                ]
                 |> List.choose id)
 
         if not allConflicts.IsEmpty then
@@ -44,9 +48,11 @@ module BusinessRules =
         : Result<unit, DomainError> =
 
         let allConflicts =
-            [ DomainValidation.checkKeyValueConflicts (Some resource.UrlParameters) newUrlParameters "URL parameters"
-              DomainValidation.checkKeyValueConflicts (Some resource.Headers) newHeaders "Headers"
-              DomainValidation.checkKeyValueConflicts (Some resource.Body) newBody "Body parameters" ]
+            [
+                DomainValidation.checkKeyValueConflicts (Some resource.UrlParameters) newUrlParameters "URL parameters"
+                DomainValidation.checkKeyValueConflicts (Some resource.Headers) newHeaders "Headers"
+                DomainValidation.checkKeyValueConflicts (Some resource.Body) newBody "Body parameters"
+            ]
             |> List.choose id
 
         if not allConflicts.IsEmpty then

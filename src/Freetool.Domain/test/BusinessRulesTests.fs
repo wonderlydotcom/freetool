@@ -25,11 +25,14 @@ let ``checkAppToResourceConflicts should return Ok when no apps provided`` () =
 [<Fact>]
 let ``checkAppToResourceConflicts should return Ok when no conflicts`` () =
     // Arrange
-    let apps =
-        [ { AppId = "app1"
+    let apps = [
+        {
+            AppId = "app1"
             UrlParameters = [ ("existing", "value") ]
             Headers = [ ("X-Custom", "header") ]
-            Body = [ ("field", "data") ] } ]
+            Body = [ ("field", "data") ]
+        }
+    ]
 
     let newUrlParams = Some [ ("new_param", "value1") ]
     let newHeaders = Some [ ("New-Header", "value1") ]
@@ -47,11 +50,14 @@ let ``checkAppToResourceConflicts should return Ok when no conflicts`` () =
 [<Fact>]
 let ``checkAppToResourceConflicts should return Error when URL parameter conflicts`` () =
     // Arrange
-    let apps =
-        [ { AppId = "app1"
+    let apps = [
+        {
+            AppId = "app1"
             UrlParameters = [ ("conflicting_param", "app_value") ]
             Headers = []
-            Body = [] } ]
+            Body = []
+        }
+    ]
 
     let newUrlParams = Some [ ("conflicting_param", "resource_value") ]
     let newHeaders = None
@@ -72,11 +78,14 @@ let ``checkAppToResourceConflicts should return Error when URL parameter conflic
 [<Fact>]
 let ``checkAppToResourceConflicts should return Error when header conflicts`` () =
     // Arrange
-    let apps =
-        [ { AppId = "app1"
+    let apps = [
+        {
+            AppId = "app1"
             UrlParameters = []
             Headers = [ ("Content-Type", "application/json") ]
-            Body = [] } ]
+            Body = []
+        }
+    ]
 
     let newUrlParams = None
     let newHeaders = Some [ ("Content-Type", "application/xml") ]
@@ -97,11 +106,14 @@ let ``checkAppToResourceConflicts should return Error when header conflicts`` ()
 [<Fact>]
 let ``checkAppToResourceConflicts should return Error when body parameter conflicts`` () =
     // Arrange
-    let apps =
-        [ { AppId = "app1"
+    let apps = [
+        {
+            AppId = "app1"
             UrlParameters = []
             Headers = []
-            Body = [ ("client_id", "12345") ] } ]
+            Body = [ ("client_id", "12345") ]
+        }
+    ]
 
     let newUrlParams = None
     let newHeaders = None
@@ -122,15 +134,20 @@ let ``checkAppToResourceConflicts should return Error when body parameter confli
 [<Fact>]
 let ``checkAppToResourceConflicts should combine conflicts from multiple apps`` () =
     // Arrange
-    let apps =
-        [ { AppId = "app1"
+    let apps = [
+        {
+            AppId = "app1"
             UrlParameters = [ ("param1", "value1") ]
             Headers = []
-            Body = [] }
-          { AppId = "app2"
+            Body = []
+        }
+        {
+            AppId = "app2"
             UrlParameters = [ ("param2", "value2") ]
             Headers = [ ("X-Custom", "header") ]
-            Body = [] } ]
+            Body = []
+        }
+    ]
 
     let newUrlParams = Some [ ("param1", "new_value1"); ("param2", "new_value2") ]
     let newHeaders = Some [ ("X-Custom", "new_header") ]
@@ -153,10 +170,11 @@ let ``checkAppToResourceConflicts should combine conflicts from multiple apps`` 
 [<Fact>]
 let ``checkResourceToAppConflicts should return Ok when no conflicts`` () =
     // Arrange
-    let resource =
-        { UrlParameters = [ ("existing", "value") ]
-          Headers = [ ("X-Custom", "header") ]
-          Body = [ ("field", "data") ] }
+    let resource = {
+        UrlParameters = [ ("existing", "value") ]
+        Headers = [ ("X-Custom", "header") ]
+        Body = [ ("field", "data") ]
+    }
 
     let newUrlParams = Some [ ("new_param", "value1") ]
     let newHeaders = Some [ ("New-Header", "value1") ]
@@ -174,10 +192,11 @@ let ``checkResourceToAppConflicts should return Ok when no conflicts`` () =
 [<Fact>]
 let ``checkResourceToAppConflicts should return Error when URL parameter conflicts`` () =
     // Arrange
-    let resource =
-        { UrlParameters = [ ("conflicting_param", "resource_value") ]
-          Headers = []
-          Body = [] }
+    let resource = {
+        UrlParameters = [ ("conflicting_param", "resource_value") ]
+        Headers = []
+        Body = []
+    }
 
     let newUrlParams = Some [ ("conflicting_param", "app_value") ]
     let newHeaders = None
@@ -198,10 +217,11 @@ let ``checkResourceToAppConflicts should return Error when URL parameter conflic
 [<Fact>]
 let ``checkResourceToAppConflicts should return Error when header conflicts`` () =
     // Arrange
-    let resource =
-        { UrlParameters = []
-          Headers = [ ("Authorization", "Bearer token") ]
-          Body = [] }
+    let resource = {
+        UrlParameters = []
+        Headers = [ ("Authorization", "Bearer token") ]
+        Body = []
+    }
 
     let newUrlParams = None
     let newHeaders = Some [ ("Authorization", "Basic auth") ]
@@ -222,10 +242,11 @@ let ``checkResourceToAppConflicts should return Error when header conflicts`` ()
 [<Fact>]
 let ``checkResourceToAppConflicts should return Error when body parameter conflicts`` () =
     // Arrange
-    let resource =
-        { UrlParameters = []
-          Headers = []
-          Body = [ ("api_key", "secret123") ] }
+    let resource = {
+        UrlParameters = []
+        Headers = []
+        Body = [ ("api_key", "secret123") ]
+    }
 
     let newUrlParams = None
     let newHeaders = None
@@ -246,10 +267,11 @@ let ``checkResourceToAppConflicts should return Error when body parameter confli
 [<Fact>]
 let ``checkResourceToAppConflicts should combine multiple conflict types`` () =
     // Arrange
-    let resource =
-        { UrlParameters = [ ("param1", "value1") ]
-          Headers = [ ("X-Custom", "header") ]
-          Body = [ ("field1", "data1") ] }
+    let resource = {
+        UrlParameters = [ ("param1", "value1") ]
+        Headers = [ ("X-Custom", "header") ]
+        Body = [ ("field1", "data1") ]
+    }
 
     let newUrlParams = Some [ ("param1", "new_value1") ]
     let newHeaders = Some [ ("X-Custom", "new_header") ]
@@ -272,10 +294,11 @@ let ``checkResourceToAppConflicts should combine multiple conflict types`` () =
 [<Fact>]
 let ``checkResourceToAppConflicts should return Ok when new parameters are None`` () =
     // Arrange
-    let resource =
-        { UrlParameters = [ ("param1", "value1") ]
-          Headers = [ ("X-Custom", "header") ]
-          Body = [ ("field1", "data1") ] }
+    let resource = {
+        UrlParameters = [ ("param1", "value1") ]
+        Headers = [ ("X-Custom", "header") ]
+        Body = [ ("field1", "data1") ]
+    }
 
     let newUrlParams = None
     let newHeaders = None
@@ -293,11 +316,14 @@ let ``checkResourceToAppConflicts should return Ok when new parameters are None`
 [<Fact>]
 let ``checkAppToResourceConflicts should return Ok when new parameters are None`` () =
     // Arrange
-    let apps =
-        [ { AppId = "app1"
+    let apps = [
+        {
+            AppId = "app1"
             UrlParameters = [ ("param1", "value1") ]
             Headers = [ ("X-Custom", "header") ]
-            Body = [ ("field1", "data1") ] } ]
+            Body = [ ("field1", "data1") ]
+        }
+    ]
 
     let newUrlParams = None
     let newHeaders = None
@@ -315,10 +341,11 @@ let ``checkAppToResourceConflicts should return Ok when new parameters are None`
 [<Fact>]
 let ``checkResourceToAppConflicts should return Ok when resource has empty parameters`` () =
     // Arrange
-    let resource =
-        { UrlParameters = []
-          Headers = []
-          Body = [] }
+    let resource = {
+        UrlParameters = []
+        Headers = []
+        Body = []
+    }
 
     let newUrlParams = Some [ ("param1", "value1") ]
     let newHeaders = Some [ ("X-Custom", "header") ]

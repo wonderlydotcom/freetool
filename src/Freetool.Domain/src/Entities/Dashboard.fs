@@ -12,31 +12,32 @@ open Freetool.Domain.Events
 [<Table("Dashboards")>]
 [<Index([| "Name"; "FolderId" |], IsUnique = true, Name = "IX_Dashboards_Name_FolderId")>]
 [<CLIMutable>]
-type DashboardData =
-    { [<Key>]
-      Id: DashboardId
+type DashboardData = {
+    [<Key>]
+    Id: DashboardId
 
-      [<Required>]
-      [<MaxLength(100)>]
-      Name: DashboardName
+    [<Required>]
+    [<MaxLength(100)>]
+    Name: DashboardName
 
-      [<Required>]
-      FolderId: FolderId
+    [<Required>]
+    FolderId: FolderId
 
-      PrepareAppId: AppId option
+    PrepareAppId: AppId option
 
-      [<Required>]
-      [<Column(TypeName = "TEXT")>]
-      Configuration: string
+    [<Required>]
+    [<Column(TypeName = "TEXT")>]
+    Configuration: string
 
-      [<Required>]
-      CreatedAt: DateTime
+    [<Required>]
+    CreatedAt: DateTime
 
-      [<Required>]
-      UpdatedAt: DateTime
+    [<Required>]
+    UpdatedAt: DateTime
 
-      [<JsonIgnore>]
-      IsDeleted: bool }
+    [<JsonIgnore>]
+    IsDeleted: bool
+}
 
 type Dashboard = EventSourcingAggregate<DashboardData>
 
@@ -50,9 +51,10 @@ module Dashboard =
         else
             configuration.Trim()
 
-    let fromData (dashboardData: DashboardData) : ValidatedDashboard =
-        { State = dashboardData
-          UncommittedEvents = [] }
+    let fromData (dashboardData: DashboardData) : ValidatedDashboard = {
+        State = dashboardData
+        UncommittedEvents = []
+    }
 
     let create
         (actorUserId: UserId)
@@ -66,15 +68,16 @@ module Dashboard =
         | Ok validName ->
             let normalizedConfiguration = normalizeConfiguration configuration
 
-            let dashboardData =
-                { Id = DashboardId.NewId()
-                  Name = validName
-                  FolderId = folderId
-                  PrepareAppId = prepareAppId
-                  Configuration = normalizedConfiguration
-                  CreatedAt = DateTime.UtcNow
-                  UpdatedAt = DateTime.UtcNow
-                  IsDeleted = false }
+            let dashboardData = {
+                Id = DashboardId.NewId()
+                Name = validName
+                FolderId = folderId
+                PrepareAppId = prepareAppId
+                Configuration = normalizedConfiguration
+                CreatedAt = DateTime.UtcNow
+                UpdatedAt = DateTime.UtcNow
+                IsDeleted = false
+            }
 
             let dashboardCreatedEvent =
                 DashboardEvents.dashboardCreated
@@ -85,9 +88,10 @@ module Dashboard =
                     prepareAppId
                     normalizedConfiguration
 
-            Ok
-                { State = dashboardData
-                  UncommittedEvents = [ dashboardCreatedEvent :> IDomainEvent ] }
+            Ok {
+                State = dashboardData
+                UncommittedEvents = [ dashboardCreatedEvent :> IDomainEvent ]
+            }
 
     let updateName
         (actorUserId: UserId)
@@ -99,20 +103,21 @@ module Dashboard =
         | Ok validName ->
             let oldName = dashboard.State.Name
 
-            let updatedDashboardData =
-                { dashboard.State with
+            let updatedDashboardData = {
+                dashboard.State with
                     Name = validName
-                    UpdatedAt = DateTime.UtcNow }
+                    UpdatedAt = DateTime.UtcNow
+            }
 
             let event =
-                DashboardEvents.dashboardUpdated
-                    actorUserId
-                    dashboard.State.Id
-                    [ DashboardChange.NameChanged(oldName, validName) ]
+                DashboardEvents.dashboardUpdated actorUserId dashboard.State.Id [
+                    DashboardChange.NameChanged(oldName, validName)
+                ]
 
-            Ok
-                { State = updatedDashboardData
-                  UncommittedEvents = dashboard.UncommittedEvents @ [ event :> IDomainEvent ] }
+            Ok {
+                State = updatedDashboardData
+                UncommittedEvents = dashboard.UncommittedEvents @ [ event :> IDomainEvent ]
+            }
 
     let updateConfiguration
         (actorUserId: UserId)
@@ -122,19 +127,21 @@ module Dashboard =
         let normalizedConfiguration = normalizeConfiguration configuration
         let oldConfiguration = dashboard.State.Configuration
 
-        let updatedDashboardData =
-            { dashboard.State with
+        let updatedDashboardData = {
+            dashboard.State with
                 Configuration = normalizedConfiguration
-                UpdatedAt = DateTime.UtcNow }
+                UpdatedAt = DateTime.UtcNow
+        }
 
         let event =
-            DashboardEvents.dashboardUpdated
-                actorUserId
-                dashboard.State.Id
-                [ DashboardChange.ConfigurationChanged(oldConfiguration, normalizedConfiguration) ]
+            DashboardEvents.dashboardUpdated actorUserId dashboard.State.Id [
+                DashboardChange.ConfigurationChanged(oldConfiguration, normalizedConfiguration)
+            ]
 
-        { State = updatedDashboardData
-          UncommittedEvents = dashboard.UncommittedEvents @ [ event :> IDomainEvent ] }
+        {
+            State = updatedDashboardData
+            UncommittedEvents = dashboard.UncommittedEvents @ [ event :> IDomainEvent ]
+        }
 
     let updatePrepareApp
         (actorUserId: UserId)
@@ -143,26 +150,30 @@ module Dashboard =
         : ValidatedDashboard =
         let oldValue = dashboard.State.PrepareAppId
 
-        let updatedDashboardData =
-            { dashboard.State with
+        let updatedDashboardData = {
+            dashboard.State with
                 PrepareAppId = prepareAppId
-                UpdatedAt = DateTime.UtcNow }
+                UpdatedAt = DateTime.UtcNow
+        }
 
         let event =
-            DashboardEvents.dashboardUpdated
-                actorUserId
-                dashboard.State.Id
-                [ DashboardChange.PrepareAppChanged(oldValue, prepareAppId) ]
+            DashboardEvents.dashboardUpdated actorUserId dashboard.State.Id [
+                DashboardChange.PrepareAppChanged(oldValue, prepareAppId)
+            ]
 
-        { State = updatedDashboardData
-          UncommittedEvents = dashboard.UncommittedEvents @ [ event :> IDomainEvent ] }
+        {
+            State = updatedDashboardData
+            UncommittedEvents = dashboard.UncommittedEvents @ [ event :> IDomainEvent ]
+        }
 
     let markForDeletion (actorUserId: UserId) (dashboard: ValidatedDashboard) : ValidatedDashboard =
         let event =
             DashboardEvents.dashboardDeleted actorUserId dashboard.State.Id dashboard.State.Name
 
-        { dashboard with
-            UncommittedEvents = dashboard.UncommittedEvents @ [ event :> IDomainEvent ] }
+        {
+            dashboard with
+                UncommittedEvents = dashboard.UncommittedEvents @ [ event :> IDomainEvent ]
+        }
 
     let getUncommittedEvents (dashboard: ValidatedDashboard) : IDomainEvent list = dashboard.UncommittedEvents
 

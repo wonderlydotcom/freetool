@@ -163,11 +163,12 @@ module UserHandler =
                     let! users = userRepository.GetAllAsync skip take
                     let! totalCount = userRepository.GetCountAsync()
 
-                    let result =
-                        { Items = users |> List.map (fun user -> user.State)
-                          TotalCount = totalCount
-                          Skip = skip
-                          Take = take }
+                    let result = {
+                        Items = users |> List.map (fun user -> user.State)
+                        TotalCount = totalCount
+                        Skip = skip
+                        Take = take
+                    }
 
                     return Ok(UserCommandResult.UsersResult result)
 

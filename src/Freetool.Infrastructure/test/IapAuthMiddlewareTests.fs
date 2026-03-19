@@ -76,14 +76,13 @@ type MockAuthorizationService(initOrgResult: Result<unit, exn>) =
         member _.WriteAuthorizationModelAsync() =
             Task.FromResult({ AuthorizationModelId = "model-1" })
 
-        member _.InitializeOrganizationAsync orgId userId =
-            task {
-                initOrgCalls <- initOrgCalls @ [ (orgId, userId) ]
+        member _.InitializeOrganizationAsync orgId userId = task {
+            initOrgCalls <- initOrgCalls @ [ (orgId, userId) ]
 
-                match initOrgResult with
-                | Ok() -> return ()
-                | Error ex -> return raise ex
-            }
+            match initOrgResult with
+            | Ok() -> return ()
+            | Error ex -> return raise ex
+        }
 
         member _.CreateRelationshipsAsync _ = Task.FromResult(())
         member _.UpdateRelationshipsAsync _ = Task.FromResult(())
@@ -154,11 +153,13 @@ let setupServicesWithDirectory
     services.AddSingleton<IAuthorizationService>(authService) |> ignore
 
     let configValues =
-        [ "Auth:IAP:ValidateJwt", "false"
-          match orgAdminEmail with
-          | Some email -> "OpenFGA:OrgAdminEmail", email
-          | None -> ()
-          yield! additionalConfig ]
+        [
+            "Auth:IAP:ValidateJwt", "false"
+            match orgAdminEmail with
+            | Some email -> "OpenFGA:OrgAdminEmail", email
+            | None -> ()
+            yield! additionalConfig
+        ]
         |> dict
 
     let config = ConfigurationBuilder().AddInMemoryCollection(configValues).Build()
@@ -249,404 +250,386 @@ let createInvitedPlaceholderUser (email: string) : ValidatedUser =
 // ============================================================================
 
 [<Fact>]
-let ``Allows health checks without IAP headers`` () : Task =
-    task {
-        let context = createTestHttpContext ()
-        context.Request.Path <- PathString("/healthy")
-        let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
-        let authService = MockAuthorizationService(Ok())
-        setupServices context userRepo authService None [] |> ignore
+let ``Allows health checks without IAP headers`` () : Task = task {
+    let context = createTestHttpContext ()
+    context.Request.Path <- PathString("/healthy")
+    let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
+    let authService = MockAuthorizationService(Ok())
+    setupServices context userRepo authService None [] |> ignore
 
-        let middleware, wasNextCalled = createMiddleware ()
+    let middleware, wasNextCalled = createMiddleware ()
 
-        do! middleware.InvokeAsync(context)
+    do! middleware.InvokeAsync(context)
 
-        Assert.True(wasNextCalled())
-        Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode)
-    }
-
-[<Fact>]
-let ``Returns 401 when IAP email header missing`` () : Task =
-    task {
-        let context = createTestHttpContext ()
-        let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
-        let authService = MockAuthorizationService(Ok())
-        setupServices context userRepo authService None [] |> ignore
-
-        let middleware, wasNextCalled = createMiddleware ()
-
-        do! middleware.InvokeAsync(context)
-
-        Assert.Equal(401, context.Response.StatusCode)
-        Assert.False(wasNextCalled ())
-
-        let body = getResponseBody context
-        Assert.Contains("X-Goog-Authenticated-User-Email", body)
-    }
+    Assert.True(wasNextCalled ())
+    Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode)
+}
 
 [<Fact>]
-let ``Returns 401 when JWT validation enabled and JWT assertion header missing`` () : Task =
-    task {
-        let context =
-            createTestHttpContext ()
-            |> fun c -> addHeader c "X-Goog-Authenticated-User-Email" "user@example.com"
+let ``Returns 401 when IAP email header missing`` () : Task = task {
+    let context = createTestHttpContext ()
+    let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
+    let authService = MockAuthorizationService(Ok())
+    setupServices context userRepo authService None [] |> ignore
 
-        let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
-        let authService = MockAuthorizationService(Ok())
+    let middleware, wasNextCalled = createMiddleware ()
 
-        setupServices
-            context
-            userRepo
-            authService
-            None
-            [ "Auth:IAP:ValidateJwt", "true"
-              "Auth:IAP:JwtAudience", "/projects/123/global/backendServices/456" ]
-        |> ignore
+    do! middleware.InvokeAsync(context)
 
-        let middleware, wasNextCalled = createMiddleware ()
+    Assert.Equal(401, context.Response.StatusCode)
+    Assert.False(wasNextCalled ())
 
-        do! middleware.InvokeAsync(context)
-
-        Assert.Equal(401, context.Response.StatusCode)
-        Assert.False(wasNextCalled ())
-
-        let body = getResponseBody context
-        Assert.Contains("X-Goog-Iap-Jwt-Assertion", body)
-    }
+    let body = getResponseBody context
+    Assert.Contains("X-Goog-Authenticated-User-Email", body)
+}
 
 [<Fact>]
-let ``Returns 401 when IAP email header empty`` () : Task =
-    task {
-        let context =
-            createTestHttpContext ()
-            |> fun c -> addHeader c "X-Goog-Authenticated-User-Email" ""
+let ``Returns 401 when JWT validation enabled and JWT assertion header missing`` () : Task = task {
+    let context =
+        createTestHttpContext ()
+        |> fun c -> addHeader c "X-Goog-Authenticated-User-Email" "user@example.com"
 
-        let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
-        let authService = MockAuthorizationService(Ok())
-        setupServices context userRepo authService None [] |> ignore
+    let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
+    let authService = MockAuthorizationService(Ok())
 
-        let middleware, wasNextCalled = createMiddleware ()
+    setupServices context userRepo authService None [
+        "Auth:IAP:ValidateJwt", "true"
+        "Auth:IAP:JwtAudience", "/projects/123/global/backendServices/456"
+    ]
+    |> ignore
 
-        do! middleware.InvokeAsync(context)
+    let middleware, wasNextCalled = createMiddleware ()
 
-        Assert.Equal(401, context.Response.StatusCode)
-        Assert.False(wasNextCalled ())
-    }
+    do! middleware.InvokeAsync(context)
 
-[<Fact>]
-let ``Returns 401 when email format invalid`` () : Task =
-    task {
-        let context =
-            createTestHttpContext ()
-            |> fun c -> addHeader c "X-Goog-Authenticated-User-Email" "accounts.google.com:not-a-valid-email"
+    Assert.Equal(401, context.Response.StatusCode)
+    Assert.False(wasNextCalled ())
 
-        let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
-        let authService = MockAuthorizationService(Ok())
-        setupServices context userRepo authService None [] |> ignore
-
-        let middleware, wasNextCalled = createMiddleware ()
-
-        do! middleware.InvokeAsync(context)
-
-        Assert.Equal(401, context.Response.StatusCode)
-        Assert.False(wasNextCalled ())
-
-        let body = getResponseBody context
-        Assert.Contains("Invalid", body)
-    }
+    let body = getResponseBody context
+    Assert.Contains("X-Goog-Iap-Jwt-Assertion", body)
+}
 
 [<Fact>]
-let ``Creates new user with IAP display name when email not in database`` () : Task =
-    task {
-        let email = "newuser@example.com"
-        let displayName = "New User"
+let ``Returns 401 when IAP email header empty`` () : Task = task {
+    let context =
+        createTestHttpContext ()
+        |> fun c -> addHeader c "X-Goog-Authenticated-User-Email" ""
 
-        let context =
-            createTestHttpContext ()
-            |> fun c -> addHeader c "X-Goog-Authenticated-User-Email" $"accounts.google.com:{email}"
-            |> fun c -> addHeader c "X-Goog-Authenticated-User-Name" displayName
+    let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
+    let authService = MockAuthorizationService(Ok())
+    setupServices context userRepo authService None [] |> ignore
 
-        let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
-        let authService = MockAuthorizationService(Ok())
-        setupServices context userRepo authService None [] |> ignore
+    let middleware, wasNextCalled = createMiddleware ()
 
-        let middleware, wasNextCalled = createMiddleware ()
+    do! middleware.InvokeAsync(context)
 
-        do! middleware.InvokeAsync(context)
-
-        Assert.Equal(200, context.Response.StatusCode)
-        Assert.True(wasNextCalled ())
-
-        let addedUsers = userRepo.GetAddedUsers()
-        Assert.Single(addedUsers) |> ignore
-        Assert.Equal(email, addedUsers.[0].State.Email)
-        Assert.Equal(displayName, addedUsers.[0].State.Name)
-
-        Assert.True(context.Items.ContainsKey("UserId"))
-    }
+    Assert.Equal(401, context.Response.StatusCode)
+    Assert.False(wasNextCalled ())
+}
 
 [<Fact>]
-let ``Sets UserId in HttpContext Items for existing user`` () : Task =
-    task {
-        let email = "existing@example.com"
-        let existingUser = createValidUser email "Existing User"
+let ``Returns 401 when email format invalid`` () : Task = task {
+    let context =
+        createTestHttpContext ()
+        |> fun c -> addHeader c "X-Goog-Authenticated-User-Email" "accounts.google.com:not-a-valid-email"
 
-        let context =
-            createTestHttpContext ()
-            |> fun c -> addHeader c "X-Goog-Authenticated-User-Email" email
+    let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
+    let authService = MockAuthorizationService(Ok())
+    setupServices context userRepo authService None [] |> ignore
 
-        let userRepo = MockUserRepository(Map.ofList [ (email, existingUser) ], Ok(), Ok())
-        let authService = MockAuthorizationService(Ok())
-        setupServices context userRepo authService None [] |> ignore
+    let middleware, wasNextCalled = createMiddleware ()
 
-        let middleware, wasNextCalled = createMiddleware ()
+    do! middleware.InvokeAsync(context)
 
-        do! middleware.InvokeAsync(context)
+    Assert.Equal(401, context.Response.StatusCode)
+    Assert.False(wasNextCalled ())
 
-        Assert.Equal(200, context.Response.StatusCode)
-        Assert.True(wasNextCalled ())
-        Assert.Empty(userRepo.GetAddedUsers())
-
-        Assert.True(context.Items.ContainsKey("UserId"))
-        let userId = context.Items.["UserId"] :?> UserId
-        Assert.Equal(existingUser.State.Id, userId)
-    }
+    let body = getResponseBody context
+    Assert.Contains("Invalid", body)
+}
 
 [<Fact>]
-let ``Activates invited placeholder user on first login`` () : Task =
-    task {
-        let email = "invited@example.com"
-        let invitedUser = createInvitedPlaceholderUser email
-        let userName = "Invited User Name"
+let ``Creates new user with IAP display name when email not in database`` () : Task = task {
+    let email = "newuser@example.com"
+    let displayName = "New User"
 
-        let context =
-            createTestHttpContext ()
-            |> fun c -> addHeader c "X-Goog-Authenticated-User-Email" email
-            |> fun c -> addHeader c "X-Goog-Authenticated-User-Name" userName
+    let context =
+        createTestHttpContext ()
+        |> fun c -> addHeader c "X-Goog-Authenticated-User-Email" $"accounts.google.com:{email}"
+        |> fun c -> addHeader c "X-Goog-Authenticated-User-Name" displayName
 
-        let userRepo = MockUserRepository(Map.ofList [ (email, invitedUser) ], Ok(), Ok())
-        let authService = MockAuthorizationService(Ok())
-        setupServices context userRepo authService None [] |> ignore
+    let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
+    let authService = MockAuthorizationService(Ok())
+    setupServices context userRepo authService None [] |> ignore
 
-        let middleware, wasNextCalled = createMiddleware ()
+    let middleware, wasNextCalled = createMiddleware ()
 
-        do! middleware.InvokeAsync(context)
+    do! middleware.InvokeAsync(context)
 
-        Assert.Equal(200, context.Response.StatusCode)
-        Assert.True(wasNextCalled ())
+    Assert.Equal(200, context.Response.StatusCode)
+    Assert.True(wasNextCalled ())
 
-        Assert.Empty(userRepo.GetAddedUsers())
-        let updatedUsers = userRepo.GetUpdatedUsers()
-        Assert.Single(updatedUsers) |> ignore
+    let addedUsers = userRepo.GetAddedUsers()
+    Assert.Single(addedUsers) |> ignore
+    Assert.Equal(email, addedUsers.[0].State.Email)
+    Assert.Equal(displayName, addedUsers.[0].State.Name)
 
-        let activatedUser = updatedUsers.[0]
-        Assert.Equal(userName, activatedUser.State.Name)
-        Assert.True(activatedUser.State.InvitedAt.IsNone)
-
-        Assert.True(context.Items.ContainsKey("UserId"))
-    }
+    Assert.True(context.Items.ContainsKey("UserId"))
+}
 
 [<Fact>]
-let ``Initializes org admin when email matches config`` () : Task =
-    task {
-        let email = "admin@example.com"
+let ``Sets UserId in HttpContext Items for existing user`` () : Task = task {
+    let email = "existing@example.com"
+    let existingUser = createValidUser email "Existing User"
 
-        let context =
-            createTestHttpContext ()
-            |> fun c -> addHeader c "X-Goog-Authenticated-User-Email" email
+    let context =
+        createTestHttpContext ()
+        |> fun c -> addHeader c "X-Goog-Authenticated-User-Email" email
 
-        let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
-        let authService = MockAuthorizationService(Ok())
-        setupServices context userRepo authService (Some email) [] |> ignore
+    let userRepo = MockUserRepository(Map.ofList [ (email, existingUser) ], Ok(), Ok())
+    let authService = MockAuthorizationService(Ok())
+    setupServices context userRepo authService None [] |> ignore
 
-        let middleware, wasNextCalled = createMiddleware ()
+    let middleware, wasNextCalled = createMiddleware ()
 
-        do! middleware.InvokeAsync(context)
+    do! middleware.InvokeAsync(context)
 
-        Assert.Equal(200, context.Response.StatusCode)
-        Assert.True(wasNextCalled ())
+    Assert.Equal(200, context.Response.StatusCode)
+    Assert.True(wasNextCalled ())
+    Assert.Empty(userRepo.GetAddedUsers())
 
-        let initOrgCalls = authService.GetInitOrgCalls()
-        Assert.Single(initOrgCalls) |> ignore
-        Assert.Equal("default", fst initOrgCalls.[0])
-    }
-
-[<Fact>]
-let ``Calls next middleware on success`` () : Task =
-    task {
-        let email = "test@example.com"
-
-        let context =
-            createTestHttpContext ()
-            |> fun c -> addHeader c "X-Goog-Authenticated-User-Email" email
-
-        let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
-        let authService = MockAuthorizationService(Ok())
-        setupServices context userRepo authService None [] |> ignore
-
-        let middleware, wasNextCalled = createMiddleware ()
-
-        do! middleware.InvokeAsync(context)
-
-        Assert.True(wasNextCalled ())
-    }
+    Assert.True(context.Items.ContainsKey("UserId"))
+    let userId = context.Items.["UserId"] :?> UserId
+    Assert.Equal(existingUser.State.Id, userId)
+}
 
 [<Fact>]
-let ``Returns 500 when user creation fails`` () : Task =
-    task {
-        let email = "newuser@example.com"
+let ``Activates invited placeholder user on first login`` () : Task = task {
+    let email = "invited@example.com"
+    let invitedUser = createInvitedPlaceholderUser email
+    let userName = "Invited User Name"
 
-        let context =
-            createTestHttpContext ()
-            |> fun c -> addHeader c "X-Goog-Authenticated-User-Email" email
+    let context =
+        createTestHttpContext ()
+        |> fun c -> addHeader c "X-Goog-Authenticated-User-Email" email
+        |> fun c -> addHeader c "X-Goog-Authenticated-User-Name" userName
 
-        let userRepo =
-            MockUserRepository(Map.empty, Error(ValidationError "Database error"), Ok())
+    let userRepo = MockUserRepository(Map.ofList [ (email, invitedUser) ], Ok(), Ok())
+    let authService = MockAuthorizationService(Ok())
+    setupServices context userRepo authService None [] |> ignore
 
-        let authService = MockAuthorizationService(Ok())
-        setupServices context userRepo authService None [] |> ignore
+    let middleware, wasNextCalled = createMiddleware ()
 
-        let middleware, wasNextCalled = createMiddleware ()
+    do! middleware.InvokeAsync(context)
 
-        do! middleware.InvokeAsync(context)
+    Assert.Equal(200, context.Response.StatusCode)
+    Assert.True(wasNextCalled ())
 
-        Assert.Equal(500, context.Response.StatusCode)
-        Assert.False(wasNextCalled ())
+    Assert.Empty(userRepo.GetAddedUsers())
+    let updatedUsers = userRepo.GetUpdatedUsers()
+    Assert.Single(updatedUsers) |> ignore
 
-        let body = getResponseBody context
-        Assert.Contains("Failed to provision user", body)
-    }
+    let activatedUser = updatedUsers.[0]
+    Assert.Equal(userName, activatedUser.State.Name)
+    Assert.True(activatedUser.State.InvitedAt.IsNone)
 
-[<Fact>]
-let ``Returns 500 when user activation fails`` () : Task =
-    task {
-        let email = "invited@example.com"
-        let invitedUser = createInvitedPlaceholderUser email
-
-        let context =
-            createTestHttpContext ()
-            |> fun c -> addHeader c "X-Goog-Authenticated-User-Email" email
-            |> fun c -> addHeader c "X-Goog-Authenticated-User-Name" "User Name"
-
-        let userRepo =
-            MockUserRepository(Map.ofList [ (email, invitedUser) ], Ok(), Error(ValidationError "Update failed"))
-
-        let authService = MockAuthorizationService(Ok())
-        setupServices context userRepo authService None [] |> ignore
-
-        let middleware, wasNextCalled = createMiddleware ()
-
-        do! middleware.InvokeAsync(context)
-
-        Assert.Equal(500, context.Response.StatusCode)
-        Assert.False(wasNextCalled ())
-
-        let body = getResponseBody context
-        Assert.Contains("Failed to provision user", body)
-    }
+    Assert.True(context.Items.ContainsKey("UserId"))
+}
 
 [<Fact>]
-let ``Uses configured name header for display name`` () : Task =
-    task {
-        let email = "newuser@example.com"
-        let displayName = "John Doe"
+let ``Initializes org admin when email matches config`` () : Task = task {
+    let email = "admin@example.com"
 
-        let context =
-            createTestHttpContext ()
-            |> fun c -> addHeader c "X-Goog-Authenticated-User-Email" email
-            |> fun c -> addHeader c "X-Display-Name" displayName
+    let context =
+        createTestHttpContext ()
+        |> fun c -> addHeader c "X-Goog-Authenticated-User-Email" email
 
-        let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
-        let authService = MockAuthorizationService(Ok())
+    let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
+    let authService = MockAuthorizationService(Ok())
+    setupServices context userRepo authService (Some email) [] |> ignore
 
-        setupServices context userRepo authService None [ "Auth:IAP:NameHeader", "X-Display-Name" ]
-        |> ignore
+    let middleware, wasNextCalled = createMiddleware ()
 
-        let middleware, _ = createMiddleware ()
+    do! middleware.InvokeAsync(context)
 
-        do! middleware.InvokeAsync(context)
+    Assert.Equal(200, context.Response.StatusCode)
+    Assert.True(wasNextCalled ())
 
-        let addedUsers = userRepo.GetAddedUsers()
-        Assert.Single(addedUsers) |> ignore
-        Assert.Equal(displayName, addedUsers.[0].State.Name)
-    }
+    let initOrgCalls = authService.GetInitOrgCalls()
+    Assert.Single(initOrgCalls) |> ignore
+    Assert.Equal("default", fst initOrgCalls.[0])
+}
 
 [<Fact>]
-let ``Uses configured picture header for avatar`` () : Task =
-    task {
-        let email = "newuser@example.com"
-        let profilePicUrl = "https://example.com/avatar.jpg"
+let ``Calls next middleware on success`` () : Task = task {
+    let email = "test@example.com"
 
-        let context =
-            createTestHttpContext ()
-            |> fun c -> addHeader c "X-Goog-Authenticated-User-Email" email
-            |> fun c -> addHeader c "X-Avatar" profilePicUrl
+    let context =
+        createTestHttpContext ()
+        |> fun c -> addHeader c "X-Goog-Authenticated-User-Email" email
 
-        let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
-        let authService = MockAuthorizationService(Ok())
+    let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
+    let authService = MockAuthorizationService(Ok())
+    setupServices context userRepo authService None [] |> ignore
 
-        setupServices context userRepo authService None [ "Auth:IAP:PictureHeader", "X-Avatar" ]
-        |> ignore
+    let middleware, wasNextCalled = createMiddleware ()
 
-        let middleware, _ = createMiddleware ()
+    do! middleware.InvokeAsync(context)
 
-        do! middleware.InvokeAsync(context)
-
-        let addedUsers = userRepo.GetAddedUsers()
-        Assert.Single(addedUsers) |> ignore
-        Assert.Equal(Some profilePicUrl, addedUsers.[0].State.ProfilePicUrl)
-    }
+    Assert.True(wasNextCalled ())
+}
 
 [<Fact>]
-let ``Uses directory profile picture for avatar when available`` () : Task =
-    task {
-        let email = "newuser@example.com"
-        let directoryProfilePicUrl = "https://lh3.googleusercontent.com/a-/directory-avatar"
+let ``Returns 500 when user creation fails`` () : Task = task {
+    let email = "newuser@example.com"
 
-        let context =
-            createTestHttpContext ()
-            |> fun c -> addHeader c "X-Goog-Authenticated-User-Email" email
+    let context =
+        createTestHttpContext ()
+        |> fun c -> addHeader c "X-Goog-Authenticated-User-Email" email
 
-        let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
-        let authService = MockAuthorizationService(Ok())
+    let userRepo =
+        MockUserRepository(Map.empty, Error(ValidationError "Database error"), Ok())
 
-        let directoryIdentityData: GoogleDirectoryIdentityData =
-            { GroupKeys = []
-              ProfilePicUrl = Some directoryProfilePicUrl }
+    let authService = MockAuthorizationService(Ok())
+    setupServices context userRepo authService None [] |> ignore
 
-        setupServicesWithDirectory context userRepo authService None [] (Some directoryIdentityData)
-        |> ignore
+    let middleware, wasNextCalled = createMiddleware ()
 
-        let middleware, _ = createMiddleware ()
+    do! middleware.InvokeAsync(context)
 
-        do! middleware.InvokeAsync(context)
+    Assert.Equal(500, context.Response.StatusCode)
+    Assert.False(wasNextCalled ())
 
-        let addedUsers = userRepo.GetAddedUsers()
-        Assert.Single(addedUsers) |> ignore
-        Assert.Equal(Some directoryProfilePicUrl, addedUsers.[0].State.ProfilePicUrl)
-    }
+    let body = getResponseBody context
+    Assert.Contains("Failed to provision user", body)
+}
 
 [<Fact>]
-let ``Uses configured email header`` () : Task =
-    task {
-        let email = "newuser@example.com"
+let ``Returns 500 when user activation fails`` () : Task = task {
+    let email = "invited@example.com"
+    let invitedUser = createInvitedPlaceholderUser email
 
-        let context = createTestHttpContext () |> fun c -> addHeader c "X-User-Email" email
+    let context =
+        createTestHttpContext ()
+        |> fun c -> addHeader c "X-Goog-Authenticated-User-Email" email
+        |> fun c -> addHeader c "X-Goog-Authenticated-User-Name" "User Name"
 
-        let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
-        let authService = MockAuthorizationService(Ok())
+    let userRepo =
+        MockUserRepository(Map.ofList [ (email, invitedUser) ], Ok(), Error(ValidationError "Update failed"))
 
-        setupServices context userRepo authService None [ "Auth:IAP:EmailHeader", "X-User-Email" ]
-        |> ignore
+    let authService = MockAuthorizationService(Ok())
+    setupServices context userRepo authService None [] |> ignore
 
-        let middleware, wasNextCalled = createMiddleware ()
+    let middleware, wasNextCalled = createMiddleware ()
 
-        do! middleware.InvokeAsync(context)
+    do! middleware.InvokeAsync(context)
 
-        Assert.Equal(200, context.Response.StatusCode)
-        Assert.True(wasNextCalled ())
+    Assert.Equal(500, context.Response.StatusCode)
+    Assert.False(wasNextCalled ())
 
-        let addedUsers = userRepo.GetAddedUsers()
-        Assert.Single(addedUsers) |> ignore
-        Assert.Equal(email, addedUsers.[0].State.Email)
+    let body = getResponseBody context
+    Assert.Contains("Failed to provision user", body)
+}
+
+[<Fact>]
+let ``Uses configured name header for display name`` () : Task = task {
+    let email = "newuser@example.com"
+    let displayName = "John Doe"
+
+    let context =
+        createTestHttpContext ()
+        |> fun c -> addHeader c "X-Goog-Authenticated-User-Email" email
+        |> fun c -> addHeader c "X-Display-Name" displayName
+
+    let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
+    let authService = MockAuthorizationService(Ok())
+
+    setupServices context userRepo authService None [ "Auth:IAP:NameHeader", "X-Display-Name" ]
+    |> ignore
+
+    let middleware, _ = createMiddleware ()
+
+    do! middleware.InvokeAsync(context)
+
+    let addedUsers = userRepo.GetAddedUsers()
+    Assert.Single(addedUsers) |> ignore
+    Assert.Equal(displayName, addedUsers.[0].State.Name)
+}
+
+[<Fact>]
+let ``Uses configured picture header for avatar`` () : Task = task {
+    let email = "newuser@example.com"
+    let profilePicUrl = "https://example.com/avatar.jpg"
+
+    let context =
+        createTestHttpContext ()
+        |> fun c -> addHeader c "X-Goog-Authenticated-User-Email" email
+        |> fun c -> addHeader c "X-Avatar" profilePicUrl
+
+    let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
+    let authService = MockAuthorizationService(Ok())
+
+    setupServices context userRepo authService None [ "Auth:IAP:PictureHeader", "X-Avatar" ]
+    |> ignore
+
+    let middleware, _ = createMiddleware ()
+
+    do! middleware.InvokeAsync(context)
+
+    let addedUsers = userRepo.GetAddedUsers()
+    Assert.Single(addedUsers) |> ignore
+    Assert.Equal(Some profilePicUrl, addedUsers.[0].State.ProfilePicUrl)
+}
+
+[<Fact>]
+let ``Uses directory profile picture for avatar when available`` () : Task = task {
+    let email = "newuser@example.com"
+    let directoryProfilePicUrl = "https://lh3.googleusercontent.com/a-/directory-avatar"
+
+    let context =
+        createTestHttpContext ()
+        |> fun c -> addHeader c "X-Goog-Authenticated-User-Email" email
+
+    let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
+    let authService = MockAuthorizationService(Ok())
+
+    let directoryIdentityData: GoogleDirectoryIdentityData = {
+        GroupKeys = []
+        ProfilePicUrl = Some directoryProfilePicUrl
     }
+
+    setupServicesWithDirectory context userRepo authService None [] (Some directoryIdentityData)
+    |> ignore
+
+    let middleware, _ = createMiddleware ()
+
+    do! middleware.InvokeAsync(context)
+
+    let addedUsers = userRepo.GetAddedUsers()
+    Assert.Single(addedUsers) |> ignore
+    Assert.Equal(Some directoryProfilePicUrl, addedUsers.[0].State.ProfilePicUrl)
+}
+
+[<Fact>]
+let ``Uses configured email header`` () : Task = task {
+    let email = "newuser@example.com"
+
+    let context = createTestHttpContext () |> fun c -> addHeader c "X-User-Email" email
+
+    let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
+    let authService = MockAuthorizationService(Ok())
+
+    setupServices context userRepo authService None [ "Auth:IAP:EmailHeader", "X-User-Email" ]
+    |> ignore
+
+    let middleware, wasNextCalled = createMiddleware ()
+
+    do! middleware.InvokeAsync(context)
+
+    Assert.Equal(200, context.Response.StatusCode)
+    Assert.True(wasNextCalled ())
+
+    let addedUsers = userRepo.GetAddedUsers()
+    Assert.Single(addedUsers) |> ignore
+    Assert.Equal(email, addedUsers.[0].State.Email)
+}

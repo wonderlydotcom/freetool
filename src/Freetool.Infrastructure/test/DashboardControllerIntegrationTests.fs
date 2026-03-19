@@ -111,16 +111,19 @@ let private createTestFolder (spaceId: SpaceId) (folderId: FolderId) : Validated
     let folderName =
         FolderName.Create(Some "Operations") |> Result.toOption |> Option.get
 
-    { State =
-        { Id = folderId
-          Name = folderName
-          ParentId = None
-          SpaceId = spaceId
-          CreatedAt = DateTime.UtcNow
-          UpdatedAt = DateTime.UtcNow
-          IsDeleted = false
-          Children = [] }
-      UncommittedEvents = [] }
+    {
+        State = {
+            Id = folderId
+            Name = folderName
+            ParentId = None
+            SpaceId = spaceId
+            CreatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow
+            IsDeleted = false
+            Children = []
+        }
+        UncommittedEvents = []
+    }
 
 let private createTestDashboard (actorUserId: UserId) (folderId: FolderId) : ValidatedDashboard =
     match
@@ -164,175 +167,177 @@ let private createController
     controller
 
 [<Fact>]
-let ``PrepareDashboard returns forbidden when user lacks run_app`` () : Task =
-    task {
-        let actorUserId = UserId.NewId()
-        let spaceId = SpaceId.NewId()
-        let folderId = FolderId.NewId()
-        let folder = createTestFolder spaceId folderId
-        let dashboard = createTestDashboard actorUserId folderId
-        let mutable commandInvoked = false
+let ``PrepareDashboard returns forbidden when user lacks run_app`` () : Task = task {
+    let actorUserId = UserId.NewId()
+    let spaceId = SpaceId.NewId()
+    let folderId = FolderId.NewId()
+    let folder = createTestFolder spaceId folderId
+    let dashboard = createTestDashboard actorUserId folderId
+    let mutable commandInvoked = false
 
-        let controller =
-            createController
-                dashboard
-                folder
-                (fun _ relation _ ->
-                    match relation with
-                    | DashboardRun -> true
-                    | AppRun -> false
-                    | _ -> false)
-                (Some(createTestUser ()))
-                (fun _ ->
-                    commandInvoked <- true
-                    task { return Ok(DashboardUnitResult()) })
-                actorUserId
+    let controller =
+        createController
+            dashboard
+            folder
+            (fun _ relation _ ->
+                match relation with
+                | DashboardRun -> true
+                | AppRun -> false
+                | _ -> false)
+            (Some(createTestUser ()))
+            (fun _ ->
+                commandInvoked <- true
+                task { return Ok(DashboardUnitResult()) })
+            actorUserId
 
-        let! result = controller.PrepareDashboard(dashboard.State.Id.Value.ToString(), { LoadInputs = [] })
+    let! result = controller.PrepareDashboard(dashboard.State.Id.Value.ToString(), { LoadInputs = [] })
 
-        let forbidden = Assert.IsType<ObjectResult>(result)
-        Assert.True(forbidden.StatusCode.HasValue)
-        Assert.Equal(403, forbidden.StatusCode.Value)
-        Assert.False(commandInvoked)
-    }
-
-[<Fact>]
-let ``PrepareDashboard returns success when runtime permissions are granted`` () : Task =
-    task {
-        let actorUserId = UserId.NewId()
-        let spaceId = SpaceId.NewId()
-        let folderId = FolderId.NewId()
-        let folder = createTestFolder spaceId folderId
-        let dashboard = createTestDashboard actorUserId folderId
-        let mutable capturedCommand: DashboardCommand option = None
-
-        let controller =
-            createController
-                dashboard
-                folder
-                (fun _ relation _ ->
-                    match relation with
-                    | DashboardRun
-                    | AppRun -> true
-                    | _ -> false)
-                (Some(createTestUser ()))
-                (fun command ->
-                    capturedCommand <- Some command
-
-                    task {
-                        return
-                            Ok(
-                                DashboardPrepareResult
-                                    { PrepareRunId = Guid.NewGuid().ToString()
-                                      Status = "Success"
-                                      Response = Some "{}"
-                                      ErrorMessage = None }
-                            )
-                    })
-                actorUserId
-
-        let! result = controller.PrepareDashboard(dashboard.State.Id.Value.ToString(), { LoadInputs = [] })
-
-        let okResult = Assert.IsType<OkObjectResult>(result)
-        let payload = Assert.IsType<DashboardPrepareResponseDto>(okResult.Value)
-        Assert.Equal("Success", payload.Status)
-        Assert.True(capturedCommand.IsSome)
-
-        match capturedCommand.Value with
-        | PrepareDashboard(_, dashboardId, _, _) -> Assert.Equal(dashboard.State.Id.Value.ToString(), dashboardId)
-        | _ -> Assert.Fail("Expected PrepareDashboard command")
-    }
+    let forbidden = Assert.IsType<ObjectResult>(result)
+    Assert.True(forbidden.StatusCode.HasValue)
+    Assert.Equal(403, forbidden.StatusCode.Value)
+    Assert.False(commandInvoked)
+}
 
 [<Fact>]
-let ``RunDashboardAction returns bad request when actionId is invalid`` () : Task =
-    task {
-        let actorUserId = UserId.NewId()
-        let spaceId = SpaceId.NewId()
-        let folderId = FolderId.NewId()
-        let folder = createTestFolder spaceId folderId
-        let dashboard = createTestDashboard actorUserId folderId
-        let mutable commandInvoked = false
+let ``PrepareDashboard returns success when runtime permissions are granted`` () : Task = task {
+    let actorUserId = UserId.NewId()
+    let spaceId = SpaceId.NewId()
+    let folderId = FolderId.NewId()
+    let folder = createTestFolder spaceId folderId
+    let dashboard = createTestDashboard actorUserId folderId
+    let mutable capturedCommand: DashboardCommand option = None
 
-        let controller =
-            createController
-                dashboard
-                folder
-                (fun _ _ _ -> true)
-                (Some(createTestUser ()))
-                (fun _ ->
-                    commandInvoked <- true
-                    task { return Ok(DashboardUnitResult()) })
-                actorUserId
+    let controller =
+        createController
+            dashboard
+            folder
+            (fun _ relation _ ->
+                match relation with
+                | DashboardRun
+                | AppRun -> true
+                | _ -> false)
+            (Some(createTestUser ()))
+            (fun command ->
+                capturedCommand <- Some command
 
-        let! result =
-            controller.RunDashboardAction(
-                dashboard.State.Id.Value.ToString(),
-                "",
-                { PrepareRunId = None
-                  LoadInputs = []
-                  ActionInputs = []
-                  PriorActionRunIds = None }
-            )
+                task {
+                    return
+                        Ok(
+                            DashboardPrepareResult {
+                                PrepareRunId = Guid.NewGuid().ToString()
+                                Status = "Success"
+                                Response = Some "{}"
+                                ErrorMessage = None
+                            }
+                        )
+                })
+            actorUserId
 
-        Assert.IsType<BadRequestObjectResult>(result) |> ignore
-        Assert.False(commandInvoked)
-    }
+    let! result = controller.PrepareDashboard(dashboard.State.Id.Value.ToString(), { LoadInputs = [] })
+
+    let okResult = Assert.IsType<OkObjectResult>(result)
+    let payload = Assert.IsType<DashboardPrepareResponseDto>(okResult.Value)
+    Assert.Equal("Success", payload.Status)
+    Assert.True(capturedCommand.IsSome)
+
+    match capturedCommand.Value with
+    | PrepareDashboard(_, dashboardId, _, _) -> Assert.Equal(dashboard.State.Id.Value.ToString(), dashboardId)
+    | _ -> Assert.Fail("Expected PrepareDashboard command")
+}
 
 [<Fact>]
-let ``RunDashboardAction returns success when runtime permissions are granted`` () : Task =
-    task {
-        let actorUserId = UserId.NewId()
-        let spaceId = SpaceId.NewId()
-        let folderId = FolderId.NewId()
-        let folder = createTestFolder spaceId folderId
-        let dashboard = createTestDashboard actorUserId folderId
-        let mutable capturedCommand: DashboardCommand option = None
+let ``RunDashboardAction returns bad request when actionId is invalid`` () : Task = task {
+    let actorUserId = UserId.NewId()
+    let spaceId = SpaceId.NewId()
+    let folderId = FolderId.NewId()
+    let folder = createTestFolder spaceId folderId
+    let dashboard = createTestDashboard actorUserId folderId
+    let mutable commandInvoked = false
 
-        let controller =
-            createController
-                dashboard
-                folder
-                (fun _ relation _ ->
-                    match relation with
-                    | DashboardRun
-                    | AppRun -> true
-                    | _ -> false)
-                (Some(createTestUser ()))
-                (fun command ->
-                    capturedCommand <- Some command
+    let controller =
+        createController
+            dashboard
+            folder
+            (fun _ _ _ -> true)
+            (Some(createTestUser ()))
+            (fun _ ->
+                commandInvoked <- true
+                task { return Ok(DashboardUnitResult()) })
+            actorUserId
 
-                    task {
-                        return
-                            Ok(
-                                DashboardActionResult
-                                    { ActionRunId = Guid.NewGuid().ToString()
-                                      Status = "Success"
-                                      Response = Some """{"ok":true}"""
-                                      ErrorMessage = None }
-                            )
-                    })
-                actorUserId
+    let! result =
+        controller.RunDashboardAction(
+            dashboard.State.Id.Value.ToString(),
+            "",
+            {
+                PrepareRunId = None
+                LoadInputs = []
+                ActionInputs = []
+                PriorActionRunIds = None
+            }
+        )
 
-        let actionId = Guid.NewGuid().ToString()
+    Assert.IsType<BadRequestObjectResult>(result) |> ignore
+    Assert.False(commandInvoked)
+}
 
-        let! result =
-            controller.RunDashboardAction(
-                dashboard.State.Id.Value.ToString(),
-                actionId,
-                { PrepareRunId = None
-                  LoadInputs = []
-                  ActionInputs = []
-                  PriorActionRunIds = None }
-            )
+[<Fact>]
+let ``RunDashboardAction returns success when runtime permissions are granted`` () : Task = task {
+    let actorUserId = UserId.NewId()
+    let spaceId = SpaceId.NewId()
+    let folderId = FolderId.NewId()
+    let folder = createTestFolder spaceId folderId
+    let dashboard = createTestDashboard actorUserId folderId
+    let mutable capturedCommand: DashboardCommand option = None
 
-        let okResult = Assert.IsType<OkObjectResult>(result)
-        let payload = Assert.IsType<DashboardActionResponseDto>(okResult.Value)
-        Assert.Equal("Success", payload.Status)
-        Assert.True(capturedCommand.IsSome)
+    let controller =
+        createController
+            dashboard
+            folder
+            (fun _ relation _ ->
+                match relation with
+                | DashboardRun
+                | AppRun -> true
+                | _ -> false)
+            (Some(createTestUser ()))
+            (fun command ->
+                capturedCommand <- Some command
 
-        match capturedCommand.Value with
-        | RunDashboardAction(_, dashboardId, parsedActionId, _, _) ->
-            Assert.Equal(dashboard.State.Id.Value.ToString(), dashboardId)
-            Assert.Equal(actionId, parsedActionId.Value)
-        | _ -> Assert.Fail("Expected RunDashboardAction command")
-    }
+                task {
+                    return
+                        Ok(
+                            DashboardActionResult {
+                                ActionRunId = Guid.NewGuid().ToString()
+                                Status = "Success"
+                                Response = Some """{"ok":true}"""
+                                ErrorMessage = None
+                            }
+                        )
+                })
+            actorUserId
+
+    let actionId = Guid.NewGuid().ToString()
+
+    let! result =
+        controller.RunDashboardAction(
+            dashboard.State.Id.Value.ToString(),
+            actionId,
+            {
+                PrepareRunId = None
+                LoadInputs = []
+                ActionInputs = []
+                PriorActionRunIds = None
+            }
+        )
+
+    let okResult = Assert.IsType<OkObjectResult>(result)
+    let payload = Assert.IsType<DashboardActionResponseDto>(okResult.Value)
+    Assert.Equal("Success", payload.Status)
+    Assert.True(capturedCommand.IsSome)
+
+    match capturedCommand.Value with
+    | RunDashboardAction(_, dashboardId, parsedActionId, _, _) ->
+        Assert.Equal(dashboard.State.Id.Value.ToString(), dashboardId)
+        Assert.Equal(actionId, parsedActionId.Value)
+    | _ -> Assert.Fail("Expected RunDashboardAction command")
+}

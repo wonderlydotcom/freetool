@@ -21,33 +21,34 @@ open Freetool.Domain.Events
 [<Index([| "Name"; "ParentId" |], IsUnique = true, Name = "IX_Folders_Name_ParentId")>]
 // CLIMutable for EntityFramework
 [<CLIMutable>]
-type FolderData =
-    { [<Key>]
-      Id: FolderId
+type FolderData = {
+    [<Key>]
+    Id: FolderId
 
-      [<Required>]
-      [<MaxLength(100)>]
-      Name: FolderName
+    [<Required>]
+    [<MaxLength(100)>]
+    Name: FolderName
 
-      ParentId: FolderId option
+    ParentId: FolderId option
 
-      [<Required>]
-      SpaceId: SpaceId
+    [<Required>]
+    SpaceId: SpaceId
 
-      [<Required>]
-      [<JsonIgnore>]
-      CreatedAt: DateTime
+    [<Required>]
+    [<JsonIgnore>]
+    CreatedAt: DateTime
 
-      [<Required>]
-      [<JsonIgnore>]
-      UpdatedAt: DateTime
+    [<Required>]
+    [<JsonIgnore>]
+    UpdatedAt: DateTime
 
-      [<JsonIgnore>]
-      IsDeleted: bool
+    [<JsonIgnore>]
+    IsDeleted: bool
 
-      [<NotMapped>]
-      [<JsonPropertyName("children")>]
-      mutable Children: FolderData list }
+    [<NotMapped>]
+    [<JsonPropertyName("children")>]
+    mutable Children: FolderData list
+}
 
 type Folder = EventSourcingAggregate<FolderData>
 
@@ -56,15 +57,17 @@ module FolderAggregateHelpers =
 
     let implementsIEntity (folder: Folder) =
         { new IEntity<FolderId> with
-            member _.Id = folder.State.Id }
+            member _.Id = folder.State.Id
+        }
 
 type UnvalidatedFolder = Folder // From DTOs - potentially unsafe
 type ValidatedFolder = Folder // Validated domain model and database data
 
 module Folder =
-    let fromData (folderData: FolderData) : ValidatedFolder =
-        { State = folderData
-          UncommittedEvents = [] }
+    let fromData (folderData: FolderData) : ValidatedFolder = {
+        State = folderData
+        UncommittedEvents = []
+    }
 
     let create
         (actorUserId: UserId)
@@ -75,22 +78,24 @@ module Folder =
         match FolderName.Create(Some name) with
         | Error err -> Error err
         | Ok validName ->
-            let folderData =
-                { Id = FolderId.NewId()
-                  Name = validName
-                  ParentId = parentId
-                  SpaceId = spaceId
-                  CreatedAt = DateTime.UtcNow
-                  UpdatedAt = DateTime.UtcNow
-                  IsDeleted = false
-                  Children = [] }
+            let folderData = {
+                Id = FolderId.NewId()
+                Name = validName
+                ParentId = parentId
+                SpaceId = spaceId
+                CreatedAt = DateTime.UtcNow
+                UpdatedAt = DateTime.UtcNow
+                IsDeleted = false
+                Children = []
+            }
 
             let folderCreatedEvent =
                 FolderEvents.folderCreated actorUserId folderData.Id validName parentId spaceId
 
-            Ok
-                { State = folderData
-                  UncommittedEvents = [ folderCreatedEvent :> IDomainEvent ] }
+            Ok {
+                State = folderData
+                UncommittedEvents = [ folderCreatedEvent :> IDomainEvent ]
+            }
 
     let updateName
         (actorUserId: UserId)
@@ -102,41 +107,47 @@ module Folder =
         | Ok validName ->
             let oldName = folder.State.Name
 
-            let updatedFolderData =
-                { folder.State with
+            let updatedFolderData = {
+                folder.State with
                     Name = validName
-                    UpdatedAt = DateTime.UtcNow }
+                    UpdatedAt = DateTime.UtcNow
+            }
 
             let nameChangedEvent =
                 FolderEvents.folderUpdated actorUserId folder.State.Id [ FolderChange.NameChanged(oldName, validName) ]
 
-            Ok
-                { State = updatedFolderData
-                  UncommittedEvents = folder.UncommittedEvents @ [ nameChangedEvent :> IDomainEvent ] }
+            Ok {
+                State = updatedFolderData
+                UncommittedEvents = folder.UncommittedEvents @ [ nameChangedEvent :> IDomainEvent ]
+            }
 
     let moveToParent (actorUserId: UserId) (newParentId: FolderId option) (folder: ValidatedFolder) : ValidatedFolder =
         let oldParentId = folder.State.ParentId
 
-        let updatedFolderData =
-            { folder.State with
+        let updatedFolderData = {
+            folder.State with
                 ParentId = newParentId
-                UpdatedAt = DateTime.UtcNow }
+                UpdatedAt = DateTime.UtcNow
+        }
 
         let parentChangedEvent =
-            FolderEvents.folderUpdated
-                actorUserId
-                folder.State.Id
-                [ FolderChange.ParentChanged(oldParentId, newParentId) ]
+            FolderEvents.folderUpdated actorUserId folder.State.Id [
+                FolderChange.ParentChanged(oldParentId, newParentId)
+            ]
 
-        { State = updatedFolderData
-          UncommittedEvents = folder.UncommittedEvents @ [ parentChangedEvent :> IDomainEvent ] }
+        {
+            State = updatedFolderData
+            UncommittedEvents = folder.UncommittedEvents @ [ parentChangedEvent :> IDomainEvent ]
+        }
 
     let markForDeletion (actorUserId: UserId) (folder: ValidatedFolder) : ValidatedFolder =
         let folderDeletedEvent =
             FolderEvents.folderDeleted actorUserId folder.State.Id folder.State.Name
 
-        { folder with
-            UncommittedEvents = folder.UncommittedEvents @ [ folderDeletedEvent :> IDomainEvent ] }
+        {
+            folder with
+                UncommittedEvents = folder.UncommittedEvents @ [ folderDeletedEvent :> IDomainEvent ]
+        }
 
     let restore (actorUserId: UserId) (newName: FolderName option) (folder: ValidatedFolder) : ValidatedFolder =
         let finalName = newName |> Option.defaultValue folder.State.Name
@@ -144,13 +155,16 @@ module Folder =
         let folderRestoredEvent =
             FolderEvents.folderRestored actorUserId folder.State.Id finalName
 
-        { folder with
-            State =
-                { folder.State with
-                    Name = finalName
-                    IsDeleted = false
-                    UpdatedAt = DateTime.UtcNow }
-            UncommittedEvents = folder.UncommittedEvents @ [ folderRestoredEvent :> IDomainEvent ] }
+        {
+            folder with
+                State = {
+                    folder.State with
+                        Name = finalName
+                        IsDeleted = false
+                        UpdatedAt = DateTime.UtcNow
+                }
+                UncommittedEvents = folder.UncommittedEvents @ [ folderRestoredEvent :> IDomainEvent ]
+        }
 
     let getUncommittedEvents (folder: ValidatedFolder) : IDomainEvent list = folder.UncommittedEvents
 

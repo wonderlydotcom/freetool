@@ -20,17 +20,22 @@ let createTestAppWithResource () =
     let actorUserId = UserId.FromGuid(Guid.NewGuid())
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
 
-    let inputs =
-        [ { Title = "userId"
+    let inputs = [
+        {
+            Title = "userId"
             Description = None
             Type = InputType.Text(50) |> Result.defaultValue (InputType.Email())
             Required = true
-            DefaultValue = None }
-          { Title = "email"
+            DefaultValue = None
+        }
+        {
+            Title = "email"
             Description = None
             Type = InputType.Email()
             Required = true
-            DefaultValue = None } ]
+            DefaultValue = None
+        }
+    ]
 
     // Create a test resource
     let resource =
@@ -40,9 +45,7 @@ let createTestAppWithResource () =
             "Test API"
             "Test endpoint"
             "https://api.test.com/users/@userId"
-            [ "limit", "10" ]
-            [ "Authorization", "Bearer @token" ]
-            [ "email", "@email" ]
+            [ "limit", "10" ] [ "Authorization", "Bearer @token" ] [ "email", "@email" ]
 
         |> unwrapResult
 
@@ -73,10 +76,10 @@ let ``Run creation should validate required inputs`` () =
     let app = createTestApp ()
     let actorUserId = UserId.FromGuid(Guid.NewGuid())
 
-    let inputValues =
-        [ { Title = "userId"; Value = "123" }
-          // Missing required email input intentionally
-          ]
+    let inputValues = [
+        { Title = "userId"; Value = "123" }
+    // Missing required email input intentionally
+    ]
 
     // Act
     let result = Run.createWithValidation actorUserId app inputValues
@@ -92,12 +95,17 @@ let ``Run creation should reject invalid input names`` () =
     let actorUserId = UserId.FromGuid(Guid.NewGuid())
     let app = createTestApp ()
 
-    let inputValues =
-        [ { Title = "userId"; Value = "123" }
-          { Title = "email"
-            Value = "test@example.com" }
-          { Title = "invalidInput"
-            Value = "test" } ] // This input doesn't exist in app schema
+    let inputValues = [
+        { Title = "userId"; Value = "123" }
+        {
+            Title = "email"
+            Value = "test@example.com"
+        }
+        {
+            Title = "invalidInput"
+            Value = "test"
+        }
+    ] // This input doesn't exist in app schema
 
     // Act
     let result = Run.createWithValidation actorUserId app inputValues
@@ -115,10 +123,13 @@ let ``Run creation with valid inputs should succeed and generate events`` () =
     let actorUserId = UserId.FromGuid(Guid.NewGuid())
     let app = createTestApp ()
 
-    let inputValues =
-        [ { Title = "userId"; Value = "123" }
-          { Title = "email"
-            Value = "test@example.com" } ]
+    let inputValues = [
+        { Title = "userId"; Value = "123" }
+        {
+            Title = "email"
+            Value = "test@example.com"
+        }
+    ]
 
     // Act
     let result = Run.createWithValidation actorUserId app inputValues
@@ -147,10 +158,13 @@ let ``Run status transitions should generate correct events`` () =
     let actorUserId = UserId.FromGuid(Guid.NewGuid())
     let app = createTestApp ()
 
-    let inputValues =
-        [ { Title = "userId"; Value = "123" }
-          { Title = "email"
-            Value = "test@example.com" } ]
+    let inputValues = [
+        { Title = "userId"; Value = "123" }
+        {
+            Title = "email"
+            Value = "test@example.com"
+        }
+    ]
 
     let run = Run.createWithValidation actorUserId app inputValues |> unwrapResult
 
@@ -181,10 +195,13 @@ let ``Run completion with success should update status and response`` () =
     let actorUserId = UserId.FromGuid(Guid.NewGuid())
     let app = createTestApp ()
 
-    let inputValues =
-        [ { Title = "userId"; Value = "123" }
-          { Title = "email"
-            Value = "test@example.com" } ]
+    let inputValues = [
+        { Title = "userId"; Value = "123" }
+        {
+            Title = "email"
+            Value = "test@example.com"
+        }
+    ]
 
     let run = Run.createWithValidation actorUserId app inputValues |> unwrapResult
     let runningRun = Run.markAsRunning actorUserId run
@@ -205,10 +222,13 @@ let ``Run completion with failure should update status and error message`` () =
     let actorUserId = UserId.FromGuid(Guid.NewGuid())
     let app = createTestApp ()
 
-    let inputValues =
-        [ { Title = "userId"; Value = "123" }
-          { Title = "email"
-            Value = "test@example.com" } ]
+    let inputValues = [
+        { Title = "userId"; Value = "123" }
+        {
+            Title = "email"
+            Value = "test@example.com"
+        }
+    ]
 
     let run = Run.createWithValidation actorUserId app inputValues |> unwrapResult
     let runningRun = Run.markAsRunning actorUserId run
@@ -229,10 +249,13 @@ let ``Run with invalid configuration should update status correctly`` () =
     let actorUserId = UserId.FromGuid(Guid.NewGuid())
     let app = createTestApp ()
 
-    let inputValues =
-        [ { Title = "userId"; Value = "123" }
-          { Title = "email"
-            Value = "test@example.com" } ]
+    let inputValues = [
+        { Title = "userId"; Value = "123" }
+        {
+            Title = "email"
+            Value = "test@example.com"
+        }
+    ]
 
     let run = Run.createWithValidation actorUserId app inputValues |> unwrapResult
     let configError = "Resource not found"
@@ -251,19 +274,23 @@ let ``Run executable request composition should substitute input values`` () =
     let actorUserId = UserId.FromGuid(Guid.NewGuid())
     let app, resource = createTestAppWithResource ()
 
-    let inputValues =
-        [ { Title = "userId"; Value = "123" }
-          { Title = "email"
-            Value = "john@example.com" } ]
+    let inputValues = [
+        { Title = "userId"; Value = "123" }
+        {
+            Title = "email"
+            Value = "john@example.com"
+        }
+    ]
 
     let run = Run.createWithValidation actorUserId app inputValues |> unwrapResult
 
     // Create a test current user for substitution
-    let testCurrentUser: CurrentUser =
-        { Id = "test-user-id"
-          Email = "test@example.com"
-          FirstName = "Test"
-          LastName = "User" }
+    let testCurrentUser: CurrentUser = {
+        Id = "test-user-id"
+        Email = "test@example.com"
+        FirstName = "Test"
+        LastName = "User"
+    }
 
     // Act
     let result =
@@ -300,23 +327,20 @@ let ``Run creation should validate Email input type with valid email`` () =
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
     let folderId = FolderId.NewId()
 
-    let inputs =
-        [ { Title = "userEmail"
+    let inputs = [
+        {
+            Title = "userEmail"
             Description = None
             Type = InputType.Email()
             Required = true
-            DefaultValue = None } ]
+            DefaultValue = None
+        }
+    ]
 
     let resource =
-        Resource.create
-            actorUserId
-            spaceId
-            "Test API"
-            "Test endpoint"
-            "https://api.test.com/users"
-            []
-            []
-            [ "email", "{userEmail}" ]
+        Resource.create actorUserId spaceId "Test API" "Test endpoint" "https://api.test.com/users" [] [] [
+            "email", "{userEmail}"
+        ]
 
         |> unwrapResult
 
@@ -324,9 +348,12 @@ let ``Run creation should validate Email input type with valid email`` () =
         App.create actorUserId "Test App" folderId resource HttpMethod.Get inputs (Some "/test") [] [] [] false None
         |> unwrapResult
 
-    let inputValues =
-        [ { Title = "userEmail"
-            Value = "test@example.com" } ]
+    let inputValues = [
+        {
+            Title = "userEmail"
+            Value = "test@example.com"
+        }
+    ]
 
     // Act
     let result = Run.createWithValidation actorUserId app inputValues
@@ -343,23 +370,20 @@ let ``Run creation should reject Email input type with invalid email`` () =
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
     let folderId = FolderId.NewId()
 
-    let inputs =
-        [ { Title = "userEmail"
+    let inputs = [
+        {
+            Title = "userEmail"
             Description = None
             Type = InputType.Email()
             Required = true
-            DefaultValue = None } ]
+            DefaultValue = None
+        }
+    ]
 
     let resource =
-        Resource.create
-            actorUserId
-            spaceId
-            "Test API"
-            "Test endpoint"
-            "https://api.test.com/users"
-            []
-            []
-            [ "email", "{userEmail}" ]
+        Resource.create actorUserId spaceId "Test API" "Test endpoint" "https://api.test.com/users" [] [] [
+            "email", "{userEmail}"
+        ]
 
         |> unwrapResult
 
@@ -367,9 +391,12 @@ let ``Run creation should reject Email input type with invalid email`` () =
         App.create actorUserId "Test App" folderId resource HttpMethod.Get inputs (Some "/test") [] [] [] false None
         |> unwrapResult
 
-    let inputValues =
-        [ { Title = "userEmail"
-            Value = "invalid-email" } ]
+    let inputValues = [
+        {
+            Title = "userEmail"
+            Value = "invalid-email"
+        }
+    ]
 
     // Act
     let result = Run.createWithValidation actorUserId app inputValues
@@ -386,23 +413,20 @@ let ``Run creation should validate Integer input type with valid integer`` () =
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
     let folderId = FolderId.NewId()
 
-    let inputs =
-        [ { Title = "age"
+    let inputs = [
+        {
+            Title = "age"
             Description = None
             Type = InputType.Integer()
             Required = true
-            DefaultValue = None } ]
+            DefaultValue = None
+        }
+    ]
 
     let resource =
-        Resource.create
-            actorUserId
-            spaceId
-            "Test API"
-            "Test endpoint"
-            "https://api.test.com/users"
-            []
-            []
-            [ "age", "{age}" ]
+        Resource.create actorUserId spaceId "Test API" "Test endpoint" "https://api.test.com/users" [] [] [
+            "age", "{age}"
+        ]
 
         |> unwrapResult
 
@@ -427,23 +451,20 @@ let ``Run creation should reject Integer input type with invalid integer`` () =
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
     let folderId = FolderId.NewId()
 
-    let inputs =
-        [ { Title = "age"
+    let inputs = [
+        {
+            Title = "age"
             Description = None
             Type = InputType.Integer()
             Required = true
-            DefaultValue = None } ]
+            DefaultValue = None
+        }
+    ]
 
     let resource =
-        Resource.create
-            actorUserId
-            spaceId
-            "Test API"
-            "Test endpoint"
-            "https://api.test.com/users"
-            []
-            []
-            [ "age", "{age}" ]
+        Resource.create actorUserId spaceId "Test API" "Test endpoint" "https://api.test.com/users" [] [] [
+            "age", "{age}"
+        ]
 
         |> unwrapResult
 
@@ -451,9 +472,12 @@ let ``Run creation should reject Integer input type with invalid integer`` () =
         App.create actorUserId "Test App" folderId resource HttpMethod.Get inputs (Some "/test") [] [] [] false None
         |> unwrapResult
 
-    let inputValues =
-        [ { Title = "age"
-            Value = "not-a-number" } ]
+    let inputValues = [
+        {
+            Title = "age"
+            Value = "not-a-number"
+        }
+    ]
 
     // Act
     let result = Run.createWithValidation actorUserId app inputValues
@@ -472,23 +496,20 @@ let ``Run creation should validate Currency input type with 2 decimal places`` (
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
     let folderId = FolderId.NewId()
 
-    let inputs =
-        [ { Title = "amount"
+    let inputs = [
+        {
+            Title = "amount"
             Description = None
             Type = InputType.Currency(SupportedCurrency.USD)
             Required = true
-            DefaultValue = None } ]
+            DefaultValue = None
+        }
+    ]
 
     let resource =
-        Resource.create
-            actorUserId
-            spaceId
-            "Test API"
-            "Test endpoint"
-            "https://api.test.com/payments"
-            []
-            []
-            [ "amount", "{amount}" ]
+        Resource.create actorUserId spaceId "Test API" "Test endpoint" "https://api.test.com/payments" [] [] [
+            "amount", "{amount}"
+        ]
 
         |> unwrapResult
 
@@ -513,23 +534,20 @@ let ``Run creation should reject Currency input type with more than 2 decimal pl
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
     let folderId = FolderId.NewId()
 
-    let inputs =
-        [ { Title = "amount"
+    let inputs = [
+        {
+            Title = "amount"
             Description = None
             Type = InputType.Currency(SupportedCurrency.USD)
             Required = true
-            DefaultValue = None } ]
+            DefaultValue = None
+        }
+    ]
 
     let resource =
-        Resource.create
-            actorUserId
-            spaceId
-            "Test API"
-            "Test endpoint"
-            "https://api.test.com/payments"
-            []
-            []
-            [ "amount", "{amount}" ]
+        Resource.create actorUserId spaceId "Test API" "Test endpoint" "https://api.test.com/payments" [] [] [
+            "amount", "{amount}"
+        ]
 
         |> unwrapResult
 
@@ -556,23 +574,20 @@ let ``Run creation should validate Boolean input type with valid boolean`` () =
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
     let folderId = FolderId.NewId()
 
-    let inputs =
-        [ { Title = "isActive"
+    let inputs = [
+        {
+            Title = "isActive"
             Description = None
             Type = InputType.Boolean()
             Required = true
-            DefaultValue = None } ]
+            DefaultValue = None
+        }
+    ]
 
     let resource =
-        Resource.create
-            actorUserId
-            spaceId
-            "Test API"
-            "Test endpoint"
-            "https://api.test.com/users"
-            []
-            []
-            [ "active", "{isActive}" ]
+        Resource.create actorUserId spaceId "Test API" "Test endpoint" "https://api.test.com/users" [] [] [
+            "active", "{isActive}"
+        ]
 
         |> unwrapResult
 
@@ -597,23 +612,20 @@ let ``Run creation should reject Boolean input type with invalid boolean`` () =
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
     let folderId = FolderId.NewId()
 
-    let inputs =
-        [ { Title = "isActive"
+    let inputs = [
+        {
+            Title = "isActive"
             Description = None
             Type = InputType.Boolean()
             Required = true
-            DefaultValue = None } ]
+            DefaultValue = None
+        }
+    ]
 
     let resource =
-        Resource.create
-            actorUserId
-            spaceId
-            "Test API"
-            "Test endpoint"
-            "https://api.test.com/users"
-            []
-            []
-            [ "active", "{isActive}" ]
+        Resource.create actorUserId spaceId "Test API" "Test endpoint" "https://api.test.com/users" [] [] [
+            "active", "{isActive}"
+        ]
 
         |> unwrapResult
 
@@ -640,23 +652,20 @@ let ``Run creation should validate Date input type with valid date`` () =
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
     let folderId = FolderId.NewId()
 
-    let inputs =
-        [ { Title = "birthDate"
+    let inputs = [
+        {
+            Title = "birthDate"
             Description = None
             Type = InputType.Date()
             Required = true
-            DefaultValue = None } ]
+            DefaultValue = None
+        }
+    ]
 
     let resource =
-        Resource.create
-            actorUserId
-            spaceId
-            "Test API"
-            "Test endpoint"
-            "https://api.test.com/users"
-            []
-            []
-            [ "birth_date", "{birthDate}" ]
+        Resource.create actorUserId spaceId "Test API" "Test endpoint" "https://api.test.com/users" [] [] [
+            "birth_date", "{birthDate}"
+        ]
 
         |> unwrapResult
 
@@ -664,9 +673,12 @@ let ``Run creation should validate Date input type with valid date`` () =
         App.create actorUserId "Test App" folderId resource HttpMethod.Get inputs (Some "/test") [] [] [] false None
         |> unwrapResult
 
-    let inputValues =
-        [ { Title = "birthDate"
-            Value = "2023-01-15" } ]
+    let inputValues = [
+        {
+            Title = "birthDate"
+            Value = "2023-01-15"
+        }
+    ]
 
     // Act
     let result = Run.createWithValidation actorUserId app inputValues
@@ -683,23 +695,20 @@ let ``Run creation should reject Date input type with invalid date`` () =
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
     let folderId = FolderId.NewId()
 
-    let inputs =
-        [ { Title = "birthDate"
+    let inputs = [
+        {
+            Title = "birthDate"
             Description = None
             Type = InputType.Date()
             Required = true
-            DefaultValue = None } ]
+            DefaultValue = None
+        }
+    ]
 
     let resource =
-        Resource.create
-            actorUserId
-            spaceId
-            "Test API"
-            "Test endpoint"
-            "https://api.test.com/users"
-            []
-            []
-            [ "birth_date", "{birthDate}" ]
+        Resource.create actorUserId spaceId "Test API" "Test endpoint" "https://api.test.com/users" [] [] [
+            "birth_date", "{birthDate}"
+        ]
 
         |> unwrapResult
 
@@ -707,9 +716,12 @@ let ``Run creation should reject Date input type with invalid date`` () =
         App.create actorUserId "Test App" folderId resource HttpMethod.Get inputs (Some "/test") [] [] [] false None
         |> unwrapResult
 
-    let inputValues =
-        [ { Title = "birthDate"
-            Value = "not-a-date" } ]
+    let inputValues = [
+        {
+            Title = "birthDate"
+            Value = "not-a-date"
+        }
+    ]
 
     // Act
     let result = Run.createWithValidation actorUserId app inputValues
@@ -728,23 +740,20 @@ let ``Run creation should validate Text input type within length limit`` () =
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
     let folderId = FolderId.NewId()
 
-    let inputs =
-        [ { Title = "description"
+    let inputs = [
+        {
+            Title = "description"
             Description = None
             Type = InputType.Text(50) |> unwrapResult
             Required = true
-            DefaultValue = None } ]
+            DefaultValue = None
+        }
+    ]
 
     let resource =
-        Resource.create
-            actorUserId
-            spaceId
-            "Test API"
-            "Test endpoint"
-            "https://api.test.com/users"
-            []
-            []
-            [ "desc", "{description}" ]
+        Resource.create actorUserId spaceId "Test API" "Test endpoint" "https://api.test.com/users" [] [] [
+            "desc", "{description}"
+        ]
 
         |> unwrapResult
 
@@ -752,9 +761,12 @@ let ``Run creation should validate Text input type within length limit`` () =
         App.create actorUserId "Test App" folderId resource HttpMethod.Get inputs (Some "/test") [] [] [] false None
         |> unwrapResult
 
-    let inputValues =
-        [ { Title = "description"
-            Value = "Short description" } ]
+    let inputValues = [
+        {
+            Title = "description"
+            Value = "Short description"
+        }
+    ]
 
     // Act
     let result = Run.createWithValidation actorUserId app inputValues
@@ -771,23 +783,20 @@ let ``Run creation should reject Text input type exceeding length limit`` () =
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
     let folderId = FolderId.NewId()
 
-    let inputs =
-        [ { Title = "description"
+    let inputs = [
+        {
+            Title = "description"
             Description = None
             Type = InputType.Text(10) |> unwrapResult
             Required = true
-            DefaultValue = None } ]
+            DefaultValue = None
+        }
+    ]
 
     let resource =
-        Resource.create
-            actorUserId
-            spaceId
-            "Test API"
-            "Test endpoint"
-            "https://api.test.com/users"
-            []
-            []
-            [ "desc", "{description}" ]
+        Resource.create actorUserId spaceId "Test API" "Test endpoint" "https://api.test.com/users" [] [] [
+            "desc", "{description}"
+        ]
 
         |> unwrapResult
 
@@ -795,9 +804,12 @@ let ``Run creation should reject Text input type exceeding length limit`` () =
         App.create actorUserId "Test App" folderId resource HttpMethod.Get inputs (Some "/test") [] [] [] false None
         |> unwrapResult
 
-    let inputValues =
-        [ { Title = "description"
-            Value = "This description is way too long for the limit" } ]
+    let inputValues = [
+        {
+            Title = "description"
+            Value = "This description is way too long for the limit"
+        }
+    ]
 
     // Act
     let result = Run.createWithValidation actorUserId app inputValues
@@ -817,23 +829,20 @@ let ``Run creation should validate MultiText input type with valid choice`` () =
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
     let folderId = FolderId.NewId()
 
-    let inputs =
-        [ { Title = "priority"
+    let inputs = [
+        {
+            Title = "priority"
             Description = None
             Type = InputType.MultiText(20, [ "high"; "medium"; "low" ]) |> unwrapResult
             Required = true
-            DefaultValue = None } ]
+            DefaultValue = None
+        }
+    ]
 
     let resource =
-        Resource.create
-            actorUserId
-            spaceId
-            "Test API"
-            "Test endpoint"
-            "https://api.test.com/users"
-            []
-            []
-            [ "priority", "{priority}" ]
+        Resource.create actorUserId spaceId "Test API" "Test endpoint" "https://api.test.com/users" [] [] [
+            "priority", "{priority}"
+        ]
 
         |> unwrapResult
 
@@ -858,23 +867,20 @@ let ``Run creation should reject MultiText input type with invalid choice`` () =
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
     let folderId = FolderId.NewId()
 
-    let inputs =
-        [ { Title = "priority"
+    let inputs = [
+        {
+            Title = "priority"
             Description = None
             Type = InputType.MultiText(20, [ "high"; "medium"; "low" ]) |> unwrapResult
             Required = true
-            DefaultValue = None } ]
+            DefaultValue = None
+        }
+    ]
 
     let resource =
-        Resource.create
-            actorUserId
-            spaceId
-            "Test API"
-            "Test endpoint"
-            "https://api.test.com/users"
-            []
-            []
-            [ "priority", "{priority}" ]
+        Resource.create actorUserId spaceId "Test API" "Test endpoint" "https://api.test.com/users" [] [] [
+            "priority", "{priority}"
+        ]
 
         |> unwrapResult
 
@@ -882,9 +888,12 @@ let ``Run creation should reject MultiText input type with invalid choice`` () =
         App.create actorUserId "Test App" folderId resource HttpMethod.Get inputs (Some "/test") [] [] [] false None
         |> unwrapResult
 
-    let inputValues =
-        [ { Title = "priority"
-            Value = "invalid-choice" } ]
+    let inputValues = [
+        {
+            Title = "priority"
+            Value = "invalid-choice"
+        }
+    ]
 
     // Act
     let result = Run.createWithValidation actorUserId app inputValues
@@ -904,22 +913,29 @@ let createTestAppWithQuotedVariables () =
     let actorUserId = UserId.FromGuid(Guid.NewGuid())
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
 
-    let inputs =
-        [ { Title = "Customer ID"
+    let inputs = [
+        {
+            Title = "Customer ID"
             Description = None
             Type = InputType.Text(50) |> Result.defaultValue (InputType.Email())
             Required = true
-            DefaultValue = None }
-          { Title = "Amount"
+            DefaultValue = None
+        }
+        {
+            Title = "Amount"
             Description = None
             Type = InputType.Integer()
             Required = true
-            DefaultValue = None }
-          { Title = "Debit"
+            DefaultValue = None
+        }
+        {
+            Title = "Debit"
             Description = None
             Type = InputType.Boolean()
             Required = true
-            DefaultValue = None } ]
+            DefaultValue = None
+        }
+    ]
 
     // Create a test resource with quoted variable syntax in URL params and body
     // (URL path can't have spaces, so we use URL params for variables with spaces)
@@ -930,9 +946,7 @@ let createTestAppWithQuotedVariables () =
             "Test API"
             "Test endpoint"
             "https://api.test.com/customers"
-            [ "customer_id", "@\"Customer ID\""; "amount", "@\"Amount\"" ]
-            []
-            []
+            [ "customer_id", "@\"Customer ID\""; "amount", "@\"Amount\"" ] [] []
 
         |> unwrapResult
 
@@ -948,19 +962,23 @@ let ``Run executable request should substitute quoted variable names with spaces
     let actorUserId = UserId.FromGuid(Guid.NewGuid())
     let app, resource = createTestAppWithQuotedVariables ()
 
-    let inputValues =
-        [ { Title = "Customer ID"
-            Value = "CUST-12345" }
-          { Title = "Amount"; Value = "10000" }
-          { Title = "Debit"; Value = "true" } ]
+    let inputValues = [
+        {
+            Title = "Customer ID"
+            Value = "CUST-12345"
+        }
+        { Title = "Amount"; Value = "10000" }
+        { Title = "Debit"; Value = "true" }
+    ]
 
     let run = Run.createWithValidation actorUserId app inputValues |> unwrapResult
 
-    let testCurrentUser: CurrentUser =
-        { Id = "test-user-id"
-          Email = "test@example.com"
-          FirstName = "Test"
-          LastName = "User" }
+    let testCurrentUser: CurrentUser = {
+        Id = "test-user-id"
+        Email = "test@example.com"
+        FirstName = "Test"
+        LastName = "User"
+    }
 
     // Act
     let result =
@@ -993,29 +1011,28 @@ let createTestAppWithExpressions () =
     let actorUserId = UserId.FromGuid(Guid.NewGuid())
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
 
-    let inputs =
-        [ { Title = "Amount"
+    let inputs = [
+        {
+            Title = "Amount"
             Description = None
             Type = InputType.Integer()
             Required = true
-            DefaultValue = None }
-          { Title = "Debit"
+            DefaultValue = None
+        }
+        {
+            Title = "Debit"
             Description = None
             Type = InputType.Boolean()
             Required = true
-            DefaultValue = None } ]
+            DefaultValue = None
+        }
+    ]
 
     // Create a test resource with expression template
     let resource =
-        Resource.create
-            actorUserId
-            spaceId
-            "Test API"
-            "Test endpoint"
-            "https://api.test.com/transactions"
-            []
-            []
-            [ "amount", "{{ @Debit ? -1 * @Amount : @Amount }}" ]
+        Resource.create actorUserId spaceId "Test API" "Test endpoint" "https://api.test.com/transactions" [] [] [
+            "amount", "{{ @Debit ? -1 * @Amount : @Amount }}"
+        ]
 
         |> unwrapResult
 
@@ -1031,23 +1048,20 @@ let createTestAppWithStringComparisonExpression () =
     let actorUserId = UserId.FromGuid(Guid.NewGuid())
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
 
-    let inputs =
-        [ { Title = "Cancel"
+    let inputs = [
+        {
+            Title = "Cancel"
             Description = None
             Type = InputType.Text(100) |> unwrapResult
             Required = true
-            DefaultValue = None } ]
+            DefaultValue = None
+        }
+    ]
 
     let resource =
-        Resource.create
-            actorUserId
-            spaceId
-            "Test API"
-            "Test endpoint"
-            "https://api.test.com/transactions"
-            []
-            []
-            [ "shouldCancel", "{{ @Cancel == 'Immediately' ? true : false }}" ]
+        Resource.create actorUserId spaceId "Test API" "Test endpoint" "https://api.test.com/transactions" [] [] [
+            "shouldCancel", "{{ @Cancel == 'Immediately' ? true : false }}"
+        ]
         |> unwrapResult
 
     let app =
@@ -1062,16 +1076,16 @@ let ``Run executable request should evaluate expression template with ternary an
     let actorUserId = UserId.FromGuid(Guid.NewGuid())
     let app, resource = createTestAppWithExpressions ()
 
-    let inputValues =
-        [ { Title = "Amount"; Value = "10000" }; { Title = "Debit"; Value = "true" } ] // Debit is true, so amount should be negative
+    let inputValues = [ { Title = "Amount"; Value = "10000" }; { Title = "Debit"; Value = "true" } ] // Debit is true, so amount should be negative
 
     let run = Run.createWithValidation actorUserId app inputValues |> unwrapResult
 
-    let testCurrentUser: CurrentUser =
-        { Id = "test-user-id"
-          Email = "test@example.com"
-          FirstName = "Test"
-          LastName = "User" }
+    let testCurrentUser: CurrentUser = {
+        Id = "test-user-id"
+        Email = "test@example.com"
+        FirstName = "Test"
+        LastName = "User"
+    }
 
     // Act
     let result =
@@ -1095,16 +1109,16 @@ let ``Run executable request should evaluate expression template with ternary an
     let actorUserId = UserId.FromGuid(Guid.NewGuid())
     let app, resource = createTestAppWithExpressions ()
 
-    let inputValues =
-        [ { Title = "Amount"; Value = "5000" }; { Title = "Debit"; Value = "false" } ] // Debit is false, so amount should be positive
+    let inputValues = [ { Title = "Amount"; Value = "5000" }; { Title = "Debit"; Value = "false" } ] // Debit is false, so amount should be positive
 
     let run = Run.createWithValidation actorUserId app inputValues |> unwrapResult
 
-    let testCurrentUser: CurrentUser =
-        { Id = "test-user-id"
-          Email = "test@example.com"
-          FirstName = "Test"
-          LastName = "User" }
+    let testCurrentUser: CurrentUser = {
+        Id = "test-user-id"
+        Email = "test@example.com"
+        FirstName = "Test"
+        LastName = "User"
+    }
 
     // Act
     let result =
@@ -1128,17 +1142,21 @@ let ``Run executable request should evaluate string comparison ternary to true``
     let actorUserId = UserId.FromGuid(Guid.NewGuid())
     let app, resource = createTestAppWithStringComparisonExpression ()
 
-    let inputValues =
-        [ { Title = "Cancel"
-            Value = "Immediately" } ]
+    let inputValues = [
+        {
+            Title = "Cancel"
+            Value = "Immediately"
+        }
+    ]
 
     let run = Run.createWithValidation actorUserId app inputValues |> unwrapResult
 
-    let testCurrentUser: CurrentUser =
-        { Id = "test-user-id"
-          Email = "test@example.com"
-          FirstName = "Test"
-          LastName = "User" }
+    let testCurrentUser: CurrentUser = {
+        Id = "test-user-id"
+        Email = "test@example.com"
+        FirstName = "Test"
+        LastName = "User"
+    }
 
     // Act
     let result =
@@ -1164,11 +1182,12 @@ let ``Run executable request should evaluate string comparison ternary to false`
 
     let run = Run.createWithValidation actorUserId app inputValues |> unwrapResult
 
-    let testCurrentUser: CurrentUser =
-        { Id = "test-user-id"
-          Email = "test@example.com"
-          FirstName = "Test"
-          LastName = "User" }
+    let testCurrentUser: CurrentUser = {
+        Id = "test-user-id"
+        Email = "test@example.com"
+        FirstName = "Test"
+        LastName = "User"
+    }
 
     // Act
     let result =
@@ -1200,9 +1219,7 @@ let ``Run executable request should substitute current_user variables`` () =
             "Test API"
             "Test endpoint"
             "https://api.test.com/users/@current_user.id"
-            [ "email", "@current_user.email" ]
-            [ "X-User-Name", "@current_user.firstName @current_user.lastName" ]
-            []
+            [ "email", "@current_user.email" ] [ "X-User-Name", "@current_user.firstName @current_user.lastName" ] []
         |> unwrapResult
 
     let app =
@@ -1211,11 +1228,12 @@ let ``Run executable request should substitute current_user variables`` () =
 
     let run = Run.createWithValidation actorUserId app [] |> unwrapResult
 
-    let testCurrentUser: CurrentUser =
-        { Id = "user-123"
-          Email = "john@example.com"
-          FirstName = "John"
-          LastName = "Doe" }
+    let testCurrentUser: CurrentUser = {
+        Id = "user-123"
+        Email = "john@example.com"
+        FirstName = "John"
+        LastName = "Doe"
+    }
 
     // Act
     let result =
@@ -1254,15 +1272,9 @@ let ``Run executable request should substitute quoted current_user variables`` (
 
     // Use quoted syntax for current_user variables (as the frontend serializes them)
     let resource =
-        Resource.create
-            actorUserId
-            spaceId
-            "Test API"
-            "Test endpoint"
-            "https://api.test.com"
-            []
-            [ "initiator-email", "@\"current_user.email\"" ]
-            []
+        Resource.create actorUserId spaceId "Test API" "Test endpoint" "https://api.test.com" [] [
+            "initiator-email", "@\"current_user.email\""
+        ] []
         |> unwrapResult
 
     let app =
@@ -1271,11 +1283,12 @@ let ``Run executable request should substitute quoted current_user variables`` (
 
     let run = Run.createWithValidation actorUserId app [] |> unwrapResult
 
-    let testCurrentUser: CurrentUser =
-        { Id = "user-123"
-          Email = "john@example.com"
-          FirstName = "John"
-          LastName = "Doe" }
+    let testCurrentUser: CurrentUser = {
+        Id = "user-123"
+        Email = "john@example.com"
+        FirstName = "John"
+        LastName = "Doe"
+    }
 
     // Act
     let result =

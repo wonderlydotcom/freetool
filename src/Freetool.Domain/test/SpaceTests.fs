@@ -503,16 +503,18 @@ let ``Space.validate should trim name and succeed`` () =
     // Arrange
     let moderator = UserId.FromGuid(Guid.NewGuid())
 
-    let space =
-        { State =
-            { Id = SpaceId.NewId()
-              Name = "  Engineering Team  "
-              ModeratorUserId = moderator
-              MemberIds = [ moderator ]
-              CreatedAt = DateTime.UtcNow
-              UpdatedAt = DateTime.UtcNow
-              IsDeleted = false }
-          UncommittedEvents = [] }
+    let space = {
+        State = {
+            Id = SpaceId.NewId()
+            Name = "  Engineering Team  "
+            ModeratorUserId = moderator
+            MemberIds = [ moderator ]
+            CreatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow
+            IsDeleted = false
+        }
+        UncommittedEvents = []
+    }
 
     // Act
     let result = Space.validate space
@@ -528,16 +530,18 @@ let ``Space.validate should succeed when moderator is NOT in members (separate r
     let moderator = UserId.FromGuid(Guid.NewGuid())
     let otherMember = UserId.NewId()
 
-    let space =
-        { State =
-            { Id = SpaceId.NewId()
-              Name = "Engineering Team"
-              ModeratorUserId = moderator
-              MemberIds = [ otherMember ] // Moderator not in members - this is correct
-              CreatedAt = DateTime.UtcNow
-              UpdatedAt = DateTime.UtcNow
-              IsDeleted = false }
-          UncommittedEvents = [] }
+    let space = {
+        State = {
+            Id = SpaceId.NewId()
+            Name = "Engineering Team"
+            ModeratorUserId = moderator
+            MemberIds = [ otherMember ] // Moderator not in members - this is correct
+            CreatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow
+            IsDeleted = false
+        }
+        UncommittedEvents = []
+    }
 
     // Act
     let result = Space.validate space
@@ -556,16 +560,18 @@ let ``Space.validate should remove duplicate members`` () =
     let moderator = UserId.FromGuid(Guid.NewGuid())
     let member1 = UserId.NewId()
 
-    let space =
-        { State =
-            { Id = SpaceId.NewId()
-              Name = "Engineering Team"
-              ModeratorUserId = moderator
-              MemberIds = [ moderator; member1; member1; member1 ] // Duplicates
-              CreatedAt = DateTime.UtcNow
-              UpdatedAt = DateTime.UtcNow
-              IsDeleted = false }
-          UncommittedEvents = [] }
+    let space = {
+        State = {
+            Id = SpaceId.NewId()
+            Name = "Engineering Team"
+            ModeratorUserId = moderator
+            MemberIds = [ moderator; member1; member1; member1 ] // Duplicates
+            CreatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow
+            IsDeleted = false
+        }
+        UncommittedEvents = []
+    }
 
     // Act
     let result = Space.validate space
@@ -591,14 +597,15 @@ let ``Space.fromData should have no uncommitted events`` () =
     // Arrange
     let moderator = UserId.FromGuid(Guid.NewGuid())
 
-    let spaceData =
-        { Id = SpaceId.NewId()
-          Name = "Test Space"
-          ModeratorUserId = moderator
-          MemberIds = [ moderator ]
-          CreatedAt = DateTime.UtcNow
-          UpdatedAt = DateTime.UtcNow
-          IsDeleted = false }
+    let spaceData = {
+        Id = SpaceId.NewId()
+        Name = "Test Space"
+        ModeratorUserId = moderator
+        MemberIds = [ moderator ]
+        CreatedAt = DateTime.UtcNow
+        UpdatedAt = DateTime.UtcNow
+        IsDeleted = false
+    }
 
     // Act
     let space = Space.fromData spaceData

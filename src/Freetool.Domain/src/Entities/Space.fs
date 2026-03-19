@@ -15,54 +15,54 @@ open Freetool.Domain.Events
 [<Index([| "Name" |], IsUnique = true, Name = "IX_Spaces_Name")>]
 // CLIMutable for EntityFramework
 [<CLIMutable>]
-type SpaceData =
-    {
-        [<Key>]
-        Id: SpaceId
+type SpaceData = {
+    [<Key>]
+    Id: SpaceId
 
-        [<Required>]
-        [<MaxLength(100)>]
-        Name: string
+    [<Required>]
+    [<MaxLength(100)>]
+    Name: string
 
-        /// The moderator user ID - exactly one moderator per Space, required
-        [<Required>]
-        ModeratorUserId: UserId
+    /// The moderator user ID - exactly one moderator per Space, required
+    [<Required>]
+    ModeratorUserId: UserId
 
-        [<Required>]
-        [<JsonIgnore>]
-        CreatedAt: DateTime
+    [<Required>]
+    [<JsonIgnore>]
+    CreatedAt: DateTime
 
-        [<Required>]
-        [<JsonIgnore>]
-        UpdatedAt: DateTime
+    [<Required>]
+    [<JsonIgnore>]
+    UpdatedAt: DateTime
 
-        [<JsonIgnore>]
-        IsDeleted: bool
+    [<JsonIgnore>]
+    IsDeleted: bool
 
-        /// Member user IDs - populated via junction table, not stored directly
-        [<NotMapped>]
-        [<JsonPropertyName("memberIds")>]
-        mutable MemberIds: UserId list
-    }
+    /// Member user IDs - populated via junction table, not stored directly
+    [<NotMapped>]
+    [<JsonPropertyName("memberIds")>]
+    mutable MemberIds: UserId list
+}
 
 /// Junction entity for many-to-many relationship between Users and Spaces
 [<Table("SpaceMembers")>]
 [<Index([| "UserId"; "SpaceId" |], IsUnique = true, Name = "IX_SpaceMembers_UserId_SpaceId")>]
 // CLIMutable for EntityFramework
 [<CLIMutable>]
-type SpaceMemberData =
-    { [<Key>]
-      Id: Guid
+type SpaceMemberData = {
+    [<Key>]
+    Id: Guid
 
-      [<Required>]
-      UserId: UserId
+    [<Required>]
+    UserId: UserId
 
-      [<Required>]
-      SpaceId: SpaceId
+    [<Required>]
+    SpaceId: SpaceId
 
-      [<Required>]
-      [<JsonIgnore>]
-      CreatedAt: DateTime }
+    [<Required>]
+    [<JsonIgnore>]
+    CreatedAt: DateTime
+}
 
 type Space = EventSourcingAggregate<SpaceData>
 
@@ -71,7 +71,8 @@ module SpaceAggregateHelpers =
 
     let implementsIEntity (space: Space) =
         { new IEntity<SpaceId> with
-            member _.Id = space.State.Id }
+            member _.Id = space.State.Id
+        }
 
 // Type aliases for clarity
 type UnvalidatedSpace = Space // From DTOs - potentially unsafe
@@ -99,26 +100,29 @@ module Space =
                 |> List.distinct
                 |> List.filter (fun id -> id <> moderatorUserId)
 
-            let spaceData =
-                { Id = SpaceId.NewId()
-                  Name = nameValue
-                  ModeratorUserId = moderatorUserId
-                  CreatedAt = DateTime.UtcNow
-                  UpdatedAt = DateTime.UtcNow
-                  IsDeleted = false
-                  MemberIds = validatedMemberIds }
+            let spaceData = {
+                Id = SpaceId.NewId()
+                Name = nameValue
+                ModeratorUserId = moderatorUserId
+                CreatedAt = DateTime.UtcNow
+                UpdatedAt = DateTime.UtcNow
+                IsDeleted = false
+                MemberIds = validatedMemberIds
+            }
 
             let spaceCreatedEvent =
                 SpaceEvents.spaceCreated actorUserId spaceData.Id spaceData.Name moderatorUserId validatedMemberIds
 
-            Ok
-                { State = spaceData
-                  UncommittedEvents = [ spaceCreatedEvent :> IDomainEvent ] }
+            Ok {
+                State = spaceData
+                UncommittedEvents = [ spaceCreatedEvent :> IDomainEvent ]
+            }
 
     /// Reconstructs a Space from persisted data
-    let fromData (spaceData: SpaceData) : ValidatedSpace =
-        { State = spaceData
-          UncommittedEvents = [] }
+    let fromData (spaceData: SpaceData) : ValidatedSpace = {
+        State = spaceData
+        UncommittedEvents = []
+    }
 
     /// Validates an unvalidated Space
     let validate (space: UnvalidatedSpace) : Result<ValidatedSpace, DomainError> =
@@ -134,14 +138,16 @@ module Space =
                 |> List.distinct
                 |> List.filter (fun id -> id <> spaceData.ModeratorUserId)
 
-            let updatedSpaceData =
-                { spaceData with
+            let updatedSpaceData = {
+                spaceData with
                     Name = nameValue.Trim()
-                    MemberIds = distinctMemberIds }
+                    MemberIds = distinctMemberIds
+            }
 
-            Ok
-                { State = updatedSpaceData
-                  UncommittedEvents = space.UncommittedEvents }
+            Ok {
+                State = updatedSpaceData
+                UncommittedEvents = space.UncommittedEvents
+            }
 
     /// Updates the name of a Space
     let updateName
@@ -159,20 +165,21 @@ module Space =
             if oldName = trimmedName then
                 Ok space // No change needed
             else
-                let updatedSpaceData =
-                    { space.State with
+                let updatedSpaceData = {
+                    space.State with
                         Name = trimmedName
-                        UpdatedAt = DateTime.UtcNow }
+                        UpdatedAt = DateTime.UtcNow
+                }
 
                 let nameChangedEvent =
-                    SpaceEvents.spaceUpdated
-                        actorUserId
-                        space.State.Id
-                        [ SpaceChange.NameChanged(oldName, trimmedName) ]
+                    SpaceEvents.spaceUpdated actorUserId space.State.Id [
+                        SpaceChange.NameChanged(oldName, trimmedName)
+                    ]
 
-                Ok
-                    { State = updatedSpaceData
-                      UncommittedEvents = space.UncommittedEvents @ [ nameChangedEvent :> IDomainEvent ] }
+                Ok {
+                    State = updatedSpaceData
+                    UncommittedEvents = space.UncommittedEvents @ [ nameChangedEvent :> IDomainEvent ]
+                }
 
     /// Changes the moderator of a Space
     /// The old moderator becomes a regular member if they were in the member list
@@ -190,21 +197,22 @@ module Space =
             let updatedMemberIds =
                 space.State.MemberIds |> List.filter (fun id -> id <> newModeratorUserId)
 
-            let updatedSpaceData =
-                { space.State with
+            let updatedSpaceData = {
+                space.State with
                     ModeratorUserId = newModeratorUserId
                     MemberIds = updatedMemberIds
-                    UpdatedAt = DateTime.UtcNow }
+                    UpdatedAt = DateTime.UtcNow
+            }
 
             let moderatorChangedEvent =
-                SpaceEvents.spaceUpdated
-                    actorUserId
-                    space.State.Id
-                    [ SpaceChange.ModeratorChanged(oldModeratorUserId, newModeratorUserId) ]
+                SpaceEvents.spaceUpdated actorUserId space.State.Id [
+                    SpaceChange.ModeratorChanged(oldModeratorUserId, newModeratorUserId)
+                ]
 
-            Ok
-                { State = updatedSpaceData
-                  UncommittedEvents = space.UncommittedEvents @ [ moderatorChangedEvent :> IDomainEvent ] }
+            Ok {
+                State = updatedSpaceData
+                UncommittedEvents = space.UncommittedEvents @ [ moderatorChangedEvent :> IDomainEvent ]
+            }
 
     /// Adds a member to the Space
     let addMember (actorUserId: UserId) (userId: UserId) (space: ValidatedSpace) : Result<ValidatedSpace, DomainError> =
@@ -213,17 +221,19 @@ module Space =
         elif List.contains userId space.State.MemberIds then
             Error(Conflict "User is already a member of this space")
         else
-            let updatedSpaceData =
-                { space.State with
+            let updatedSpaceData = {
+                space.State with
                     UpdatedAt = DateTime.UtcNow
-                    MemberIds = userId :: space.State.MemberIds }
+                    MemberIds = userId :: space.State.MemberIds
+            }
 
             let memberAddedEvent =
                 SpaceEvents.spaceUpdated actorUserId space.State.Id [ SpaceChange.MemberAdded(userId) ]
 
-            Ok
-                { State = updatedSpaceData
-                  UncommittedEvents = space.UncommittedEvents @ [ memberAddedEvent :> IDomainEvent ] }
+            Ok {
+                State = updatedSpaceData
+                UncommittedEvents = space.UncommittedEvents @ [ memberAddedEvent :> IDomainEvent ]
+            }
 
     /// Removes a member from the Space
     /// Cannot remove the moderator - use changeModerator instead
@@ -240,25 +250,29 @@ module Space =
         elif not (List.contains userId space.State.MemberIds) then
             Error(NotFound "User is not a member of this space")
         else
-            let updatedSpaceData =
-                { space.State with
+            let updatedSpaceData = {
+                space.State with
                     UpdatedAt = DateTime.UtcNow
-                    MemberIds = List.filter (fun id -> id <> userId) space.State.MemberIds }
+                    MemberIds = List.filter (fun id -> id <> userId) space.State.MemberIds
+            }
 
             let memberRemovedEvent =
                 SpaceEvents.spaceUpdated actorUserId space.State.Id [ SpaceChange.MemberRemoved(userId) ]
 
-            Ok
-                { State = updatedSpaceData
-                  UncommittedEvents = space.UncommittedEvents @ [ memberRemovedEvent :> IDomainEvent ] }
+            Ok {
+                State = updatedSpaceData
+                UncommittedEvents = space.UncommittedEvents @ [ memberRemovedEvent :> IDomainEvent ]
+            }
 
     /// Marks a Space for deletion, generating the delete event with name for audit
     let markForDeletion (actorUserId: UserId) (space: ValidatedSpace) : ValidatedSpace =
         let spaceDeletedEvent =
             SpaceEvents.spaceDeleted actorUserId space.State.Id space.State.Name
 
-        { space with
-            UncommittedEvents = space.UncommittedEvents @ [ spaceDeletedEvent :> IDomainEvent ] }
+        {
+            space with
+                UncommittedEvents = space.UncommittedEvents @ [ spaceDeletedEvent :> IDomainEvent ]
+        }
 
     // Getters and utility functions
 

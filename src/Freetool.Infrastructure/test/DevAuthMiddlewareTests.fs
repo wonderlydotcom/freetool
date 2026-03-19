@@ -81,187 +81,182 @@ let createValidUser (userId: UserId) (email: string) (name: string) : ValidatedU
     let user = User.create name emailObj None
 
     // Return a user with the specified ID
-    { user with
-        State = { user.State with Id = userId } }
+    {
+        user with
+            State = { user.State with Id = userId }
+    }
 
 // ============================================================================
 // Test Cases
 // ============================================================================
 
 [<Fact>]
-let ``Allows dev endpoints without authentication`` () : Task =
-    task {
-        // Arrange
-        let context = createTestHttpContext () |> fun c -> setPath c "/dev/users"
+let ``Allows dev endpoints without authentication`` () : Task = task {
+    // Arrange
+    let context = createTestHttpContext () |> fun c -> setPath c "/dev/users"
 
-        let userRepo = MockUserRepository(Map.empty)
-        setupServices context userRepo |> ignore
+    let userRepo = MockUserRepository(Map.empty)
+    setupServices context userRepo |> ignore
 
-        let middleware, wasNextCalled = createMiddleware ()
+    let middleware, wasNextCalled = createMiddleware ()
 
-        // Act
-        do! middleware.InvokeAsync(context)
+    // Act
+    do! middleware.InvokeAsync(context)
 
-        // Assert
-        Assert.True(wasNextCalled ())
-        // Should not return 401
-        Assert.NotEqual(401, context.Response.StatusCode)
-    }
-
-[<Fact>]
-let ``Returns 401 when X-Dev-User-Id header missing`` () : Task =
-    task {
-        // Arrange
-        let context = createTestHttpContext () |> fun c -> setPath c "/api/some-endpoint"
-
-        let userRepo = MockUserRepository(Map.empty)
-        setupServices context userRepo |> ignore
-
-        let middleware, wasNextCalled = createMiddleware ()
-
-        // Act
-        do! middleware.InvokeAsync(context)
-
-        // Assert
-        Assert.Equal(401, context.Response.StatusCode)
-        Assert.False(wasNextCalled ())
-
-        let body = getResponseBody context
-        Assert.Contains("X-Dev-User-Id", body)
-    }
+    // Assert
+    Assert.True(wasNextCalled ())
+    // Should not return 401
+    Assert.NotEqual(401, context.Response.StatusCode)
+}
 
 [<Fact>]
-let ``Returns 401 when X-Dev-User-Id is invalid GUID`` () : Task =
-    task {
-        // Arrange
-        let context =
-            createTestHttpContext ()
-            |> fun c -> setPath c "/api/some-endpoint"
-            |> fun c -> addHeader c "X-Dev-User-Id" "not-a-valid-guid"
+let ``Returns 401 when X-Dev-User-Id header missing`` () : Task = task {
+    // Arrange
+    let context = createTestHttpContext () |> fun c -> setPath c "/api/some-endpoint"
 
-        let userRepo = MockUserRepository(Map.empty)
-        setupServices context userRepo |> ignore
+    let userRepo = MockUserRepository(Map.empty)
+    setupServices context userRepo |> ignore
 
-        let middleware, wasNextCalled = createMiddleware ()
+    let middleware, wasNextCalled = createMiddleware ()
 
-        // Act
-        do! middleware.InvokeAsync(context)
+    // Act
+    do! middleware.InvokeAsync(context)
 
-        // Assert
-        Assert.Equal(401, context.Response.StatusCode)
-        Assert.False(wasNextCalled ())
+    // Assert
+    Assert.Equal(401, context.Response.StatusCode)
+    Assert.False(wasNextCalled ())
 
-        let body = getResponseBody context
-        Assert.Contains("Invalid user ID format", body)
-    }
+    let body = getResponseBody context
+    Assert.Contains("X-Dev-User-Id", body)
+}
 
 [<Fact>]
-let ``Returns 401 when user not found in database`` () : Task =
-    task {
-        // Arrange
-        let nonExistentUserId = Guid.NewGuid()
+let ``Returns 401 when X-Dev-User-Id is invalid GUID`` () : Task = task {
+    // Arrange
+    let context =
+        createTestHttpContext ()
+        |> fun c -> setPath c "/api/some-endpoint"
+        |> fun c -> addHeader c "X-Dev-User-Id" "not-a-valid-guid"
 
-        let context =
-            createTestHttpContext ()
-            |> fun c -> setPath c "/api/some-endpoint"
-            |> fun c -> addHeader c "X-Dev-User-Id" (nonExistentUserId.ToString())
+    let userRepo = MockUserRepository(Map.empty)
+    setupServices context userRepo |> ignore
 
-        let userRepo = MockUserRepository(Map.empty)
-        setupServices context userRepo |> ignore
+    let middleware, wasNextCalled = createMiddleware ()
 
-        let middleware, wasNextCalled = createMiddleware ()
+    // Act
+    do! middleware.InvokeAsync(context)
 
-        // Act
-        do! middleware.InvokeAsync(context)
+    // Assert
+    Assert.Equal(401, context.Response.StatusCode)
+    Assert.False(wasNextCalled ())
 
-        // Assert
-        Assert.Equal(401, context.Response.StatusCode)
-        Assert.False(wasNextCalled ())
-
-        let body = getResponseBody context
-        Assert.Contains("User not found", body)
-    }
+    let body = getResponseBody context
+    Assert.Contains("Invalid user ID format", body)
+}
 
 [<Fact>]
-let ``Sets UserId in HttpContext Items for valid user`` () : Task =
-    task {
-        // Arrange
-        let userId = UserId.NewId()
-        let user = createValidUser userId "test@example.com" "Test User"
+let ``Returns 401 when user not found in database`` () : Task = task {
+    // Arrange
+    let nonExistentUserId = Guid.NewGuid()
 
-        let context =
-            createTestHttpContext ()
-            |> fun c -> setPath c "/api/some-endpoint"
-            |> fun c -> addHeader c "X-Dev-User-Id" (userId.Value.ToString())
+    let context =
+        createTestHttpContext ()
+        |> fun c -> setPath c "/api/some-endpoint"
+        |> fun c -> addHeader c "X-Dev-User-Id" (nonExistentUserId.ToString())
 
-        let userRepo = MockUserRepository(Map.ofList [ (userId, user) ])
-        setupServices context userRepo |> ignore
+    let userRepo = MockUserRepository(Map.empty)
+    setupServices context userRepo |> ignore
 
-        let middleware, wasNextCalled = createMiddleware ()
+    let middleware, wasNextCalled = createMiddleware ()
 
-        // Act
-        do! middleware.InvokeAsync(context)
+    // Act
+    do! middleware.InvokeAsync(context)
 
-        // Assert
-        Assert.Equal(200, context.Response.StatusCode)
-        Assert.True(wasNextCalled ())
+    // Assert
+    Assert.Equal(401, context.Response.StatusCode)
+    Assert.False(wasNextCalled ())
 
-        // Verify UserId is set correctly
-        Assert.True(context.Items.ContainsKey("UserId"))
-        let contextUserId = context.Items.["UserId"] :?> UserId
-        Assert.Equal(userId, contextUserId)
-    }
+    let body = getResponseBody context
+    Assert.Contains("User not found", body)
+}
 
 [<Fact>]
-let ``Calls next middleware on success`` () : Task =
-    task {
-        // Arrange
-        let userId = UserId.NewId()
-        let user = createValidUser userId "test@example.com" "Test User"
+let ``Sets UserId in HttpContext Items for valid user`` () : Task = task {
+    // Arrange
+    let userId = UserId.NewId()
+    let user = createValidUser userId "test@example.com" "Test User"
 
-        let context =
-            createTestHttpContext ()
-            |> fun c -> setPath c "/api/some-endpoint"
-            |> fun c -> addHeader c "X-Dev-User-Id" (userId.Value.ToString())
+    let context =
+        createTestHttpContext ()
+        |> fun c -> setPath c "/api/some-endpoint"
+        |> fun c -> addHeader c "X-Dev-User-Id" (userId.Value.ToString())
 
-        let userRepo = MockUserRepository(Map.ofList [ (userId, user) ])
-        setupServices context userRepo |> ignore
+    let userRepo = MockUserRepository(Map.ofList [ (userId, user) ])
+    setupServices context userRepo |> ignore
 
-        let middleware, wasNextCalled = createMiddleware ()
+    let middleware, wasNextCalled = createMiddleware ()
 
-        // Act
-        do! middleware.InvokeAsync(context)
+    // Act
+    do! middleware.InvokeAsync(context)
 
-        // Assert
-        Assert.True(wasNextCalled ())
-    }
+    // Assert
+    Assert.Equal(200, context.Response.StatusCode)
+    Assert.True(wasNextCalled ())
+
+    // Verify UserId is set correctly
+    Assert.True(context.Items.ContainsKey("UserId"))
+    let contextUserId = context.Items.["UserId"] :?> UserId
+    Assert.Equal(userId, contextUserId)
+}
 
 [<Fact>]
-let ``Adds tracing attributes on authentication`` () : Task =
-    task {
-        // Note: This test verifies the code path runs successfully.
-        // Actual tracing attribute verification would require mocking Activity.Current
-        // which is complex in a unit test context. The middleware's tracing code
-        // handles null Activity gracefully via Option.ofObj.
+let ``Calls next middleware on success`` () : Task = task {
+    // Arrange
+    let userId = UserId.NewId()
+    let user = createValidUser userId "test@example.com" "Test User"
 
-        // Arrange
-        let userId = UserId.NewId()
-        let user = createValidUser userId "test@example.com" "Test User"
+    let context =
+        createTestHttpContext ()
+        |> fun c -> setPath c "/api/some-endpoint"
+        |> fun c -> addHeader c "X-Dev-User-Id" (userId.Value.ToString())
 
-        let context =
-            createTestHttpContext ()
-            |> fun c -> setPath c "/api/some-endpoint"
-            |> fun c -> addHeader c "X-Dev-User-Id" (userId.Value.ToString())
+    let userRepo = MockUserRepository(Map.ofList [ (userId, user) ])
+    setupServices context userRepo |> ignore
 
-        let userRepo = MockUserRepository(Map.ofList [ (userId, user) ])
-        setupServices context userRepo |> ignore
+    let middleware, wasNextCalled = createMiddleware ()
 
-        let middleware, wasNextCalled = createMiddleware ()
+    // Act
+    do! middleware.InvokeAsync(context)
 
-        // Act - should not throw even without an active span
-        do! middleware.InvokeAsync(context)
+    // Assert
+    Assert.True(wasNextCalled ())
+}
 
-        // Assert
-        Assert.True(wasNextCalled ())
-        Assert.True(context.Items.ContainsKey("UserId"))
-    }
+[<Fact>]
+let ``Adds tracing attributes on authentication`` () : Task = task {
+    // Note: This test verifies the code path runs successfully.
+    // Actual tracing attribute verification would require mocking Activity.Current
+    // which is complex in a unit test context. The middleware's tracing code
+    // handles null Activity gracefully via Option.ofObj.
+
+    // Arrange
+    let userId = UserId.NewId()
+    let user = createValidUser userId "test@example.com" "Test User"
+
+    let context =
+        createTestHttpContext ()
+        |> fun c -> setPath c "/api/some-endpoint"
+        |> fun c -> addHeader c "X-Dev-User-Id" (userId.Value.ToString())
+
+    let userRepo = MockUserRepository(Map.ofList [ (userId, user) ])
+    setupServices context userRepo |> ignore
+
+    let middleware, wasNextCalled = createMiddleware ()
+
+    // Act - should not throw even without an active span
+    do! middleware.InvokeAsync(context)
+
+    // Assert
+    Assert.True(wasNextCalled ())
+    Assert.True(context.Items.ContainsKey("UserId"))
+}

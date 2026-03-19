@@ -145,8 +145,7 @@ module HttpExecutionService =
 
     /// Execute an ExecutableHttpRequest and return the response or error
     /// This version creates its own HttpClient for simple usage scenarios
-    let executeRequest (request: ExecutableHttpRequest) : Task<Result<string, DomainError>> =
-        task {
-            use httpClient = new HttpClient()
-            return! executeRequestWithClient httpClient request
-        }
+    let executeRequest (request: ExecutableHttpRequest) : Task<Result<string, DomainError>> = task {
+        use httpClient = new HttpClient()
+        return! executeRequestWithClient httpClient request
+    }

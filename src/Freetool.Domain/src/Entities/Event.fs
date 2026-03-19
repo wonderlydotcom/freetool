@@ -183,39 +183,40 @@ module EntityTypeConverter =
 [<Index([| "OccurredAt" |], Name = "IX_Events_OccurredAt")>]
 // CLIMutable for EntityFramework
 [<CLIMutable>]
-type EventData =
-    { [<Key>]
-      [<Column("Id")>]
-      Id: Guid
+type EventData = {
+    [<Key>]
+    [<Column("Id")>]
+    Id: Guid
 
-      [<Required>]
-      [<Column("EventId")>]
-      EventId: string
+    [<Required>]
+    [<Column("EventId")>]
+    EventId: string
 
-      [<Required>]
-      [<Column("EventType")>]
-      EventType: EventType
+    [<Required>]
+    [<Column("EventType")>]
+    EventType: EventType
 
-      [<Required>]
-      [<Column("EntityType")>]
-      EntityType: EntityType
+    [<Required>]
+    [<Column("EntityType")>]
+    EntityType: EntityType
 
-      [<Required>]
-      [<Column("EntityId")>]
-      EntityId: string
+    [<Required>]
+    [<Column("EntityId")>]
+    EntityId: string
 
-      [<Required>]
-      [<Column("EventData")>]
-      EventData: string
+    [<Required>]
+    [<Column("EventData")>]
+    EventData: string
 
-      [<Required>]
-      [<Column("OccurredAt")>]
-      OccurredAt: DateTime
+    [<Required>]
+    [<Column("OccurredAt")>]
+    OccurredAt: DateTime
 
-      [<Required>]
-      [<Column("CreatedAt")>]
-      CreatedAt: DateTime
+    [<Required>]
+    [<Column("CreatedAt")>]
+    CreatedAt: DateTime
 
-      [<Required>]
-      [<Column("UserId")>]
-      UserId: UserId }
+    [<Required>]
+    [<Column("UserId")>]
+    UserId: UserId
+}

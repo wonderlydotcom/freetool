@@ -46,9 +46,10 @@ module AppMapper =
         | InputTypeValue.Radio options ->
             let optionDtos =
                 options
-                |> List.map (fun o ->
-                    { RadioOptionDto.Value = o.Value
-                      Label = o.Label })
+                |> List.map (fun o -> {
+                    RadioOptionDto.Value = o.Value
+                    Label = o.Label
+                })
 
             Radio(Options = optionDtos)
 
@@ -96,20 +97,23 @@ module AppMapper =
         | Radio optionDtos ->
             let options =
                 optionDtos
-                |> List.map (fun dto ->
-                    { RadioOption.Value = dto.Value
-                      Label = dto.Label })
+                |> List.map (fun dto -> {
+                    RadioOption.Value = dto.Value
+                    Label = dto.Label
+                })
 
             InputType.Radio(options)
             |> Result.mapError (fun _ -> ValidationError "Invalid Radio configuration")
 
-    let inputToDto (input: Input) : AppInputDto =
-        { Input =
-            { Title = input.Title
-              Description = input.Description
-              Type = inputTypeToDtoType input.Type }
-          Required = input.Required
-          DefaultValue = input.DefaultValue |> Option.map (fun dv -> dv.ToRawString()) }
+    let inputToDto (input: Input) : AppInputDto = {
+        Input = {
+            Title = input.Title
+            Description = input.Description
+            Type = inputTypeToDtoType input.Type
+        }
+        Required = input.Required
+        DefaultValue = input.DefaultValue |> Option.map (fun dv -> dv.ToRawString())
+    }
 
     let inputFromDto (inputDto: AppInputDto) : Result<Input, DomainError> =
         inputTypeFromDtoType inputDto.Input.Type
@@ -126,12 +130,13 @@ module AppMapper =
                         DefaultValue.Create(inputType, rawValue) |> Result.map Some
 
             defaultValueResult
-            |> Result.map (fun defaultValue ->
-                { Title = inputDto.Input.Title
-                  Description = inputDto.Input.Description
-                  Type = inputType
-                  Required = inputDto.Required
-                  DefaultValue = defaultValue }))
+            |> Result.map (fun defaultValue -> {
+                Title = inputDto.Input.Title
+                Description = inputDto.Input.Description
+                Type = inputType
+                Required = inputDto.Required
+                DefaultValue = defaultValue
+            }))
 
     let keyValuePairToDto (kvp: KeyValuePair) : KeyValuePairDto = { Key = kvp.Key; Value = kvp.Value }
 
@@ -171,16 +176,18 @@ module AppMapper =
 
     let private sqlFilterFromDto (dto: SqlFilterDto) : Result<SqlFilter, DomainError> =
         sqlFilterOperatorFromDto dto.Operator
-        |> Result.map (fun op ->
-            { Column = dto.Column
-              Operator = op
-              Value = dto.Value })
+        |> Result.map (fun op -> {
+            Column = dto.Column
+            Operator = op
+            Value = dto.Value
+        })
 
     let private sqlOrderByFromDto (dto: SqlOrderByDto) : Result<SqlOrderBy, DomainError> =
         sqlSortDirectionFromDto dto.Direction
-        |> Result.map (fun direction ->
-            { Column = dto.Column
-              Direction = direction })
+        |> Result.map (fun direction -> {
+            Column = dto.Column
+            Direction = direction
+        })
 
     let private sqlQueryConfigFromDto (dto: SqlQueryConfigDto option) : Result<SqlQueryConfig option, DomainError> =
         match dto with
@@ -201,30 +208,32 @@ module AppMapper =
                 | _, _, Error err -> Error err
                 | Ok filters, Ok orderBy, Ok rawParams ->
                     Ok(
-                        Some
-                            { Mode = mode
-                              Table = config.Table
-                              Columns = config.Columns
-                              Filters = filters
-                              Limit = config.Limit
-                              OrderBy = orderBy
-                              RawSql = config.RawSql
-                              RawSqlParams = rawParams }
+                        Some {
+                            Mode = mode
+                            Table = config.Table
+                            Columns = config.Columns
+                            Filters = filters
+                            Limit = config.Limit
+                            OrderBy = orderBy
+                            RawSql = config.RawSql
+                            RawSqlParams = rawParams
+                        }
                     )
 
-    type CreateAppRequest =
-        { Name: string
-          FolderId: string
-          ResourceId: string
-          HttpMethod: string
-          Inputs: Input list
-          UrlPath: string option
-          UrlParameters: (string * string) list
-          Headers: (string * string) list
-          Body: (string * string) list
-          UseDynamicJsonBody: bool
-          SqlConfig: SqlQueryConfig option
-          Description: string option }
+    type CreateAppRequest = {
+        Name: string
+        FolderId: string
+        ResourceId: string
+        HttpMethod: string
+        Inputs: Input list
+        UrlPath: string option
+        UrlParameters: (string * string) list
+        Headers: (string * string) list
+        Body: (string * string) list
+        UseDynamicJsonBody: bool
+        SqlConfig: SqlQueryConfig option
+        Description: string option
+    }
 
     let fromCreateDto (dto: CreateAppDto) : Result<CreateAppRequest, DomainError> =
         dto.Inputs
@@ -238,26 +247,29 @@ module AppMapper =
                 let headers = dto.Headers |> List.map keyValuePairFromDto
                 let body = dto.Body |> List.map keyValuePairFromDto
 
-                Ok
-                    { Name = dto.Name
-                      FolderId = dto.FolderId
-                      ResourceId = dto.ResourceId
-                      HttpMethod = dto.HttpMethod
-                      Inputs = inputs
-                      UrlPath = dto.UrlPath
-                      UrlParameters = urlParameters
-                      Headers = headers
-                      Body = body
-                      UseDynamicJsonBody = dto.UseDynamicJsonBody
-                      SqlConfig = sqlConfig
-                      Description = dto.Description })
+                Ok {
+                    Name = dto.Name
+                    FolderId = dto.FolderId
+                    ResourceId = dto.ResourceId
+                    HttpMethod = dto.HttpMethod
+                    Inputs = inputs
+                    UrlPath = dto.UrlPath
+                    UrlParameters = urlParameters
+                    Headers = headers
+                    Body = body
+                    UseDynamicJsonBody = dto.UseDynamicJsonBody
+                    SqlConfig = sqlConfig
+                    Description = dto.Description
+                })
 
-    let fromUpdateNameDto (dto: UpdateAppNameDto) (app: ValidatedApp) : UnvalidatedApp =
-        { State =
-            { app.State with
+    let fromUpdateNameDto (dto: UpdateAppNameDto) (app: ValidatedApp) : UnvalidatedApp = {
+        State = {
+            app.State with
                 Name = dto.Name
-                UpdatedAt = DateTime.UtcNow }
-          UncommittedEvents = app.UncommittedEvents }
+                UpdatedAt = DateTime.UtcNow
+        }
+        UncommittedEvents = app.UncommittedEvents
+    }
 
     let fromUpdateSqlConfigDto (dto: UpdateAppSqlConfigDto) : Result<SqlQueryConfig option, DomainError> =
         sqlQueryConfigFromDto dto.SqlConfig
@@ -266,9 +278,11 @@ module AppMapper =
         dto.Inputs
         |> List.map inputFromDto
         |> sequenceResults
-        |> Result.map (fun inputs ->
-            { State =
-                { app.State with
+        |> Result.map (fun inputs -> {
+            State = {
+                app.State with
                     Inputs = inputs
-                    UpdatedAt = DateTime.UtcNow }
-              UncommittedEvents = app.UncommittedEvents })
+                    UpdatedAt = DateTime.UtcNow
+            }
+            UncommittedEvents = app.UncommittedEvents
+        })

@@ -6,14 +6,15 @@ open Freetool.Application.DTOs
 
 [<Fact>]
 let ``validate keeps large skip values`` () =
-    let filterDto: EventFilterDTO =
-        { UserId = None
-          EventType = None
-          EntityType = None
-          FromDate = None
-          ToDate = None
-          Skip = Some 2000
-          Take = Some 50 }
+    let filterDto: EventFilterDTO = {
+        UserId = None
+        EventType = None
+        EntityType = None
+        FromDate = None
+        ToDate = None
+        Skip = Some 2000
+        Take = Some 50
+    }
 
     let result = EventFilterValidator.validate filterDto
 
@@ -25,14 +26,15 @@ let ``validate keeps large skip values`` () =
 
 [<Fact>]
 let ``validate defaults skip and take when not provided`` () =
-    let filterDto: EventFilterDTO =
-        { UserId = None
-          EventType = None
-          EntityType = None
-          FromDate = None
-          ToDate = None
-          Skip = None
-          Take = None }
+    let filterDto: EventFilterDTO = {
+        UserId = None
+        EventType = None
+        EntityType = None
+        FromDate = None
+        ToDate = None
+        Skip = None
+        Take = None
+    }
 
     let result = EventFilterValidator.validate filterDto
 
@@ -44,14 +46,15 @@ let ``validate defaults skip and take when not provided`` () =
 
 [<Fact>]
 let ``validate rejects negative skip`` () =
-    let filterDto: EventFilterDTO =
-        { UserId = None
-          EventType = None
-          EntityType = None
-          FromDate = None
-          ToDate = None
-          Skip = Some -1
-          Take = Some 50 }
+    let filterDto: EventFilterDTO = {
+        UserId = None
+        EventType = None
+        EntityType = None
+        FromDate = None
+        ToDate = None
+        Skip = Some -1
+        Take = Some 50
+    }
 
     let result = EventFilterValidator.validate filterDto
 
@@ -61,14 +64,15 @@ let ``validate rejects negative skip`` () =
 
 [<Fact>]
 let ``validate rejects take over max`` () =
-    let filterDto: EventFilterDTO =
-        { UserId = None
-          EventType = None
-          EntityType = None
-          FromDate = None
-          ToDate = None
-          Skip = Some 0
-          Take = Some 101 }
+    let filterDto: EventFilterDTO = {
+        UserId = None
+        EventType = None
+        EntityType = None
+        FromDate = None
+        ToDate = None
+        Skip = Some 0
+        Take = Some 101
+    }
 
     let result = EventFilterValidator.validate filterDto
 
@@ -78,13 +82,14 @@ let ``validate rejects take over max`` () =
 
 [<Fact>]
 let ``validateAppFilter defaults includeRunEvents to true`` () =
-    let dto: AppEventFilterDTO =
-        { AppId = Guid.NewGuid().ToString()
-          FromDate = None
-          ToDate = None
-          Skip = None
-          Take = None
-          IncludeRunEvents = None }
+    let dto: AppEventFilterDTO = {
+        AppId = Guid.NewGuid().ToString()
+        FromDate = None
+        ToDate = None
+        Skip = None
+        Take = None
+        IncludeRunEvents = None
+    }
 
     let result = EventFilterValidator.validateAppFilter dto
 
@@ -94,13 +99,14 @@ let ``validateAppFilter defaults includeRunEvents to true`` () =
 
 [<Fact>]
 let ``validateAppFilter rejects invalid app id`` () =
-    let dto: AppEventFilterDTO =
-        { AppId = "bad-id"
-          FromDate = None
-          ToDate = None
-          Skip = Some 0
-          Take = Some 50
-          IncludeRunEvents = Some true }
+    let dto: AppEventFilterDTO = {
+        AppId = "bad-id"
+        FromDate = None
+        ToDate = None
+        Skip = Some 0
+        Take = Some 50
+        IncludeRunEvents = Some true
+    }
 
     let result = EventFilterValidator.validateAppFilter dto
 
@@ -112,12 +118,13 @@ let ``validateAppFilter rejects invalid app id`` () =
 let ``validateUserFilter parses user id and pagination`` () =
     let userId = Guid.NewGuid().ToString()
 
-    let dto: UserEventFilterDTO =
-        { UserId = userId
-          FromDate = None
-          ToDate = None
-          Skip = Some 8
-          Take = Some 20 }
+    let dto: UserEventFilterDTO = {
+        UserId = userId
+        FromDate = None
+        ToDate = None
+        Skip = Some 8
+        Take = Some 20
+    }
 
     let result = EventFilterValidator.validateUserFilter dto
 
@@ -130,12 +137,13 @@ let ``validateUserFilter parses user id and pagination`` () =
 
 [<Fact>]
 let ``validateUserFilter rejects invalid date range`` () =
-    let dto: UserEventFilterDTO =
-        { UserId = Guid.NewGuid().ToString()
-          FromDate = Some(DateTime(2026, 2, 2))
-          ToDate = Some(DateTime(2026, 2, 1))
-          Skip = None
-          Take = None }
+    let dto: UserEventFilterDTO = {
+        UserId = Guid.NewGuid().ToString()
+        FromDate = Some(DateTime(2026, 2, 2))
+        ToDate = Some(DateTime(2026, 2, 1))
+        Skip = None
+        Take = None
+    }
 
     let result = EventFilterValidator.validateUserFilter dto
 

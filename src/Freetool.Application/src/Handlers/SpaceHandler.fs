@@ -33,72 +33,76 @@ module SpaceHandler =
         | _ -> relation.ToString()
 
     /// List of all permission relations for space members
-    let allSpacePermissions =
-        [ ResourceCreate
-          ResourceEdit
-          ResourceDelete
-          AppCreate
-          AppEdit
-          AppDelete
-          AppRun
-          DashboardCreate
-          DashboardEdit
-          DashboardDelete
-          DashboardRun
-          FolderCreate
-          FolderEdit
-          FolderDelete ]
+    let allSpacePermissions = [
+        ResourceCreate
+        ResourceEdit
+        ResourceDelete
+        AppCreate
+        AppEdit
+        AppDelete
+        AppRun
+        DashboardCreate
+        DashboardEdit
+        DashboardDelete
+        DashboardRun
+        FolderCreate
+        FolderEdit
+        FolderDelete
+    ]
 
     /// Converts a Map of permission check results to SpacePermissionsDto
-    let permissionsMapToDto (permissionsMap: Map<AuthRelation, bool>) : SpacePermissionsDto =
-        { CreateResource = permissionsMap |> Map.tryFind ResourceCreate |> Option.defaultValue false
-          EditResource = permissionsMap |> Map.tryFind ResourceEdit |> Option.defaultValue false
-          DeleteResource = permissionsMap |> Map.tryFind ResourceDelete |> Option.defaultValue false
-          CreateApp = permissionsMap |> Map.tryFind AppCreate |> Option.defaultValue false
-          EditApp = permissionsMap |> Map.tryFind AppEdit |> Option.defaultValue false
-          DeleteApp = permissionsMap |> Map.tryFind AppDelete |> Option.defaultValue false
-          RunApp = permissionsMap |> Map.tryFind AppRun |> Option.defaultValue false
-          CreateDashboard = permissionsMap |> Map.tryFind DashboardCreate |> Option.defaultValue false
-          EditDashboard = permissionsMap |> Map.tryFind DashboardEdit |> Option.defaultValue false
-          DeleteDashboard = permissionsMap |> Map.tryFind DashboardDelete |> Option.defaultValue false
-          RunDashboard = permissionsMap |> Map.tryFind DashboardRun |> Option.defaultValue false
-          CreateFolder = permissionsMap |> Map.tryFind FolderCreate |> Option.defaultValue false
-          EditFolder = permissionsMap |> Map.tryFind FolderEdit |> Option.defaultValue false
-          DeleteFolder = permissionsMap |> Map.tryFind FolderDelete |> Option.defaultValue false }
+    let permissionsMapToDto (permissionsMap: Map<AuthRelation, bool>) : SpacePermissionsDto = {
+        CreateResource = permissionsMap |> Map.tryFind ResourceCreate |> Option.defaultValue false
+        EditResource = permissionsMap |> Map.tryFind ResourceEdit |> Option.defaultValue false
+        DeleteResource = permissionsMap |> Map.tryFind ResourceDelete |> Option.defaultValue false
+        CreateApp = permissionsMap |> Map.tryFind AppCreate |> Option.defaultValue false
+        EditApp = permissionsMap |> Map.tryFind AppEdit |> Option.defaultValue false
+        DeleteApp = permissionsMap |> Map.tryFind AppDelete |> Option.defaultValue false
+        RunApp = permissionsMap |> Map.tryFind AppRun |> Option.defaultValue false
+        CreateDashboard = permissionsMap |> Map.tryFind DashboardCreate |> Option.defaultValue false
+        EditDashboard = permissionsMap |> Map.tryFind DashboardEdit |> Option.defaultValue false
+        DeleteDashboard = permissionsMap |> Map.tryFind DashboardDelete |> Option.defaultValue false
+        RunDashboard = permissionsMap |> Map.tryFind DashboardRun |> Option.defaultValue false
+        CreateFolder = permissionsMap |> Map.tryFind FolderCreate |> Option.defaultValue false
+        EditFolder = permissionsMap |> Map.tryFind FolderEdit |> Option.defaultValue false
+        DeleteFolder = permissionsMap |> Map.tryFind FolderDelete |> Option.defaultValue false
+    }
 
     let permissionsDtoToMap (permissions: SpacePermissionsDto) : Map<AuthRelation, bool> =
-        Map.ofList
-            [ (ResourceCreate, permissions.CreateResource)
-              (ResourceEdit, permissions.EditResource)
-              (ResourceDelete, permissions.DeleteResource)
-              (AppCreate, permissions.CreateApp)
-              (AppEdit, permissions.EditApp)
-              (AppDelete, permissions.DeleteApp)
-              (AppRun, permissions.RunApp)
-              (DashboardCreate, permissions.CreateDashboard)
-              (DashboardEdit, permissions.EditDashboard)
-              (DashboardDelete, permissions.DeleteDashboard)
-              (DashboardRun, permissions.RunDashboard)
-              (FolderCreate, permissions.CreateFolder)
-              (FolderEdit, permissions.EditFolder)
-              (FolderDelete, permissions.DeleteFolder) ]
+        Map.ofList [
+            (ResourceCreate, permissions.CreateResource)
+            (ResourceEdit, permissions.EditResource)
+            (ResourceDelete, permissions.DeleteResource)
+            (AppCreate, permissions.CreateApp)
+            (AppEdit, permissions.EditApp)
+            (AppDelete, permissions.DeleteApp)
+            (AppRun, permissions.RunApp)
+            (DashboardCreate, permissions.CreateDashboard)
+            (DashboardEdit, permissions.EditDashboard)
+            (DashboardDelete, permissions.DeleteDashboard)
+            (DashboardRun, permissions.RunDashboard)
+            (FolderCreate, permissions.CreateFolder)
+            (FolderEdit, permissions.EditFolder)
+            (FolderDelete, permissions.DeleteFolder)
+        ]
 
     /// Creates a SpacePermissionsDto with all permissions set to true (for moderators)
-    let allPermissionsDto: SpacePermissionsDto =
-        { CreateResource = true
-          EditResource = true
-          DeleteResource = true
-          CreateApp = true
-          EditApp = true
-          DeleteApp = true
-          RunApp = true
-          CreateDashboard = true
-          EditDashboard = true
-          DeleteDashboard = true
-          RunDashboard = true
-          CreateFolder = true
-          EditFolder = true
-          DeleteFolder = true }
+    let allPermissionsDto: SpacePermissionsDto = {
+        CreateResource = true
+        EditResource = true
+        DeleteResource = true
+        CreateApp = true
+        EditApp = true
+        DeleteApp = true
+        RunApp = true
+        CreateDashboard = true
+        EditDashboard = true
+        DeleteDashboard = true
+        RunDashboard = true
+        CreateFolder = true
+        EditFolder = true
+        DeleteFolder = true
+    }
 
     let handleCommand
         (spaceRepository: ISpaceRepository)
@@ -129,11 +133,10 @@ module SpaceHandler =
                             // Validate all member IDs exist
                             let! validationResults =
                                 memberIds
-                                |> List.map (fun userId ->
-                                    task {
-                                        let! exists = userRepository.ExistsAsync userId
-                                        return (userId, exists)
-                                    })
+                                |> List.map (fun userId -> task {
+                                    let! exists = userRepository.ExistsAsync userId
+                                    return (userId, exists)
+                                })
                                 |> Task.WhenAll
 
                             let invalidMemberIds =
@@ -332,11 +335,12 @@ module SpaceHandler =
                         // Apply pagination
                         let paginatedSpaces = allSpaces |> List.skip skip |> List.truncate take
 
-                        let result =
-                            { Items = paginatedSpaces |> List.map (fun space -> space.State)
-                              TotalCount = totalCount
-                              Skip = skip
-                              Take = take }
+                        let result = {
+                            Items = paginatedSpaces |> List.map (fun space -> space.State)
+                            TotalCount = totalCount
+                            Skip = skip
+                            Take = take
+                        }
 
                         return Ok(SpacesResult result)
 
@@ -349,11 +353,12 @@ module SpaceHandler =
                     let! spaces = spaceRepository.GetAllAsync skip take
                     let! totalCount = spaceRepository.GetCountAsync()
 
-                    let result =
-                        { Items = spaces |> List.map (fun space -> space.State)
-                          TotalCount = totalCount
-                          Skip = skip
-                          Take = take }
+                    let result = {
+                        Items = spaces |> List.map (fun space -> space.State)
+                        TotalCount = totalCount
+                        Skip = skip
+                        Take = take
+                    }
 
                     return Ok(SpacesResult result)
 
@@ -392,68 +397,70 @@ module SpaceHandler =
                         // Build member permissions DTOs
                         let! memberPermissions =
                             paginatedUserIds
-                            |> List.map (fun userId ->
-                                task {
-                                    let userOption = userLookup |> Map.tryFind userId
-                                    let isModerator = userId = moderatorId
-                                    let userIdStr = userId.Value.ToString()
+                            |> List.map (fun userId -> task {
+                                let userOption = userLookup |> Map.tryFind userId
+                                let isModerator = userId = moderatorId
+                                let userIdStr = userId.Value.ToString()
 
-                                    // For moderators, all permissions are true
-                                    // For non-moderators, batch check permissions
-                                    let! permissions =
-                                        if isModerator then
-                                            Task.FromResult allPermissionsDto
-                                        else
-                                            task {
-                                                let! permMap =
-                                                    authService.BatchCheckPermissionsAsync
-                                                        (User userIdStr)
-                                                        allSpacePermissions
-                                                        (SpaceObject spaceId)
+                                // For moderators, all permissions are true
+                                // For non-moderators, batch check permissions
+                                let! permissions =
+                                    if isModerator then
+                                        Task.FromResult allPermissionsDto
+                                    else
+                                        task {
+                                            let! permMap =
+                                                authService.BatchCheckPermissionsAsync
+                                                    (User userIdStr)
+                                                    allSpacePermissions
+                                                    (SpaceObject spaceId)
 
-                                                return permissionsMapToDto permMap
-                                            }
+                                            return permissionsMapToDto permMap
+                                        }
 
-                                    // Check if user is an organization admin
-                                    let! isOrgAdmin =
-                                        authService.CheckPermissionAsync
-                                            (User userIdStr)
-                                            OrganizationAdmin
-                                            (OrganizationObject "default")
+                                // Check if user is an organization admin
+                                let! isOrgAdmin =
+                                    authService.CheckPermissionAsync
+                                        (User userIdStr)
+                                        OrganizationAdmin
+                                        (OrganizationObject "default")
 
-                                    let userName =
-                                        userOption
-                                        |> Option.map (fun u -> u.State.Name)
-                                        |> Option.defaultValue "Unknown User"
+                                let userName =
+                                    userOption
+                                    |> Option.map (fun u -> u.State.Name)
+                                    |> Option.defaultValue "Unknown User"
 
-                                    let userEmail =
-                                        userOption |> Option.map (fun u -> u.State.Email) |> Option.defaultValue ""
+                                let userEmail =
+                                    userOption |> Option.map (fun u -> u.State.Email) |> Option.defaultValue ""
 
-                                    let profilePicUrl = userOption |> Option.bind (fun u -> u.State.ProfilePicUrl)
+                                let profilePicUrl = userOption |> Option.bind (fun u -> u.State.ProfilePicUrl)
 
-                                    let memberDto: SpaceMemberPermissionsDto =
-                                        { UserId = userIdStr
-                                          UserName = userName
-                                          UserEmail = userEmail
-                                          ProfilePicUrl = profilePicUrl
-                                          IsModerator = isModerator
-                                          IsOrgAdmin = isOrgAdmin
-                                          Permissions = permissions }
+                                let memberDto: SpaceMemberPermissionsDto = {
+                                    UserId = userIdStr
+                                    UserName = userName
+                                    UserEmail = userEmail
+                                    ProfilePicUrl = profilePicUrl
+                                    IsModerator = isModerator
+                                    IsOrgAdmin = isOrgAdmin
+                                    Permissions = permissions
+                                }
 
-                                    return memberDto
-                                })
+                                return memberDto
+                            })
                             |> Task.WhenAll
 
-                        let pagedMembers: PagedResult<SpaceMemberPermissionsDto> =
-                            { Items = memberPermissions |> Array.toList
-                              TotalCount = totalCount
-                              Skip = skip
-                              Take = take }
+                        let pagedMembers: PagedResult<SpaceMemberPermissionsDto> = {
+                            Items = memberPermissions |> Array.toList
+                            TotalCount = totalCount
+                            Skip = skip
+                            Take = take
+                        }
 
-                        let response: SpaceMembersPermissionsResponseDto =
-                            { SpaceId = spaceId
-                              SpaceName = space.State.Name
-                              Members = pagedMembers }
+                        let response: SpaceMembersPermissionsResponseDto = {
+                            SpaceId = spaceId
+                            SpaceName = space.State.Name
+                            Members = pagedMembers
+                        }
 
                         return Ok(SpaceMembersPermissionsResult response)
 
@@ -502,10 +509,11 @@ module SpaceHandler =
                                         currentPermissionsMap |> Map.tryFind relation |> Option.defaultValue false
 
                                     desired && not current)
-                                |> List.map (fun (relation, _) ->
-                                    { Subject = User targetUserIdStr
-                                      Relation = relation
-                                      Object = SpaceObject spaceId })
+                                |> List.map (fun (relation, _) -> {
+                                    Subject = User targetUserIdStr
+                                    Relation = relation
+                                    Object = SpaceObject spaceId
+                                })
 
                             let tuplesToRemove =
                                 desiredPermissions
@@ -515,17 +523,19 @@ module SpaceHandler =
                                         currentPermissionsMap |> Map.tryFind relation |> Option.defaultValue false
 
                                     not desired && current)
-                                |> List.map (fun (relation, _) ->
-                                    { Subject = User targetUserIdStr
-                                      Relation = relation
-                                      Object = SpaceObject spaceId })
+                                |> List.map (fun (relation, _) -> {
+                                    Subject = User targetUserIdStr
+                                    Relation = relation
+                                    Object = SpaceObject spaceId
+                                })
 
                             // Update relationships atomically if there are changes
                             if not (List.isEmpty tuplesToAdd) || not (List.isEmpty tuplesToRemove) then
                                 do!
-                                    authService.UpdateRelationshipsAsync
-                                        { TuplesToAdd = tuplesToAdd
-                                          TuplesToRemove = tuplesToRemove }
+                                    authService.UpdateRelationshipsAsync {
+                                        TuplesToAdd = tuplesToAdd
+                                        TuplesToRemove = tuplesToRemove
+                                    }
 
                                 // Look up target user name for audit log
                                 let! targetUserOption = userRepository.GetByIdAsync targetUserId
@@ -574,10 +584,11 @@ module SpaceHandler =
                                 allSpacePermissions
                                 (SpaceObject spaceId)
 
-                        let response: SpaceDefaultMemberPermissionsResponseDto =
-                            { SpaceId = spaceId
-                              SpaceName = space.State.Name
-                              Permissions = permissionsMapToDto permissionsMap }
+                        let response: SpaceDefaultMemberPermissionsResponseDto = {
+                            SpaceId = spaceId
+                            SpaceName = space.State.Name
+                            Permissions = permissionsMapToDto permissionsMap
+                        }
 
                         return Ok(SpaceDefaultMemberPermissionsResult response)
 
@@ -609,10 +620,11 @@ module SpaceHandler =
                                     currentPermissionsMap |> Map.tryFind relation |> Option.defaultValue false
 
                                 desired && not current)
-                            |> List.map (fun (relation, _) ->
-                                { Subject = defaultMemberSubject
-                                  Relation = relation
-                                  Object = SpaceObject spaceId })
+                            |> List.map (fun (relation, _) -> {
+                                Subject = defaultMemberSubject
+                                Relation = relation
+                                Object = SpaceObject spaceId
+                            })
 
                         let tuplesToRemove =
                             desiredPermissions
@@ -622,16 +634,18 @@ module SpaceHandler =
                                     currentPermissionsMap |> Map.tryFind relation |> Option.defaultValue false
 
                                 not desired && current)
-                            |> List.map (fun (relation, _) ->
-                                { Subject = defaultMemberSubject
-                                  Relation = relation
-                                  Object = SpaceObject spaceId })
+                            |> List.map (fun (relation, _) -> {
+                                Subject = defaultMemberSubject
+                                Relation = relation
+                                Object = SpaceObject spaceId
+                            })
 
                         if not (List.isEmpty tuplesToAdd) || not (List.isEmpty tuplesToRemove) then
                             do!
-                                authService.UpdateRelationshipsAsync
-                                    { TuplesToAdd = tuplesToAdd
-                                      TuplesToRemove = tuplesToRemove }
+                                authService.UpdateRelationshipsAsync {
+                                    TuplesToAdd = tuplesToAdd
+                                    TuplesToRemove = tuplesToRemove
+                                }
 
                             let permissionsGranted =
                                 tuplesToAdd |> List.map (fun t -> authRelationToString t.Relation)

@@ -26,9 +26,7 @@ let ``RequestComposer should combine Resource and App correctly`` () =
             "User API"
             "API for user management"
             "https://api.example.com"
-            [ ("version", "v1") ]
-            [ ("Content-Type", "application/json") ]
-            [ ("client_id", "12345") ]
+            [ ("version", "v1") ] [ ("Content-Type", "application/json") ] [ ("client_id", "12345") ]
 
     let resource = unwrapResult resourceResult
     let resourceId = Resource.getId resource
@@ -90,16 +88,16 @@ let ``RequestComposer should handle URL path composition correctly`` () =
     let folderId = FolderId.NewId()
 
     // Test different URL path scenarios
-    let testCases =
-        [
-          // (Resource BaseUrl, App UrlPath, Expected Result)
-          "https://api.test.com", Some "/users", "https://api.test.com/users"
-          "https://api.test.com/", Some "/users", "https://api.test.com/users"
-          "https://api.test.com", Some "users", "https://api.test.com/users"
-          "https://api.test.com/", Some "users", "https://api.test.com/users"
-          "https://api.test.com/v1", Some "/users", "https://api.test.com/v1/users"
-          "https://api.test.com", None, "https://api.test.com"
-          "https://api.test.com/", None, "https://api.test.com/" ]
+    let testCases = [
+        // (Resource BaseUrl, App UrlPath, Expected Result)
+        "https://api.test.com", Some "/users", "https://api.test.com/users"
+        "https://api.test.com/", Some "/users", "https://api.test.com/users"
+        "https://api.test.com", Some "users", "https://api.test.com/users"
+        "https://api.test.com/", Some "users", "https://api.test.com/users"
+        "https://api.test.com/v1", Some "/users", "https://api.test.com/v1/users"
+        "https://api.test.com", None, "https://api.test.com"
+        "https://api.test.com/", None, "https://api.test.com/"
+    ]
 
     for baseUrl, urlPath, expected in testCases do
         // Create Resource with specific base URL
@@ -130,15 +128,9 @@ let ``RequestComposer should allow App extending Resource with new values`` () =
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
 
     let resourceResult =
-        Resource.create
-            actorUserId
-            spaceId
-            "API"
-            "Test API"
-            "https://api.test.com"
-            [ "version", "v1" ]
-            [ "Content-Type", "application/json" ]
-            [ "client_id", "12345" ]
+        Resource.create actorUserId spaceId "API" "Test API" "https://api.test.com" [ "version", "v1" ] [
+            "Content-Type", "application/json"
+        ] [ "client_id", "12345" ]
 
     let resource = unwrapResult resourceResult
     let resourceId = Resource.getId resource
@@ -227,15 +219,9 @@ let ``RequestComposer should handle empty App extensions`` () =
     let spaceId = SpaceId.FromGuid(Guid.NewGuid())
 
     let resourceResult =
-        Resource.create
-            actorUserId
-            spaceId
-            "API"
-            "Test API"
-            "https://api.test.com"
-            [ ("version", "v1") ]
-            [ ("Content-Type", "application/json") ]
-            [ ("client_id", "12345") ]
+        Resource.create actorUserId spaceId "API" "Test API" "https://api.test.com" [ ("version", "v1") ] [
+            ("Content-Type", "application/json")
+        ] [ ("client_id", "12345") ]
 
     let resource = unwrapResult resourceResult
     let resourceId = Resource.getId resource

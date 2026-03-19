@@ -33,45 +33,45 @@ open Freetool.Api.Services
 /// This catches bugs where a new event type is added to the DU but not to fromString.
 let private validateEventTypeRegistry (logger: ILogger) =
     // List all known event types that should be registered
-    let allEventTypes =
-        [ // User events
-          EventType.UserEvents UserCreatedEvent
-          EventType.UserEvents UserUpdatedEvent
-          EventType.UserEvents UserDeletedEvent
-          EventType.UserEvents UserInvitedEvent
-          EventType.UserEvents UserActivatedEvent
-          // App events
-          EventType.AppEvents AppCreatedEvent
-          EventType.AppEvents AppUpdatedEvent
-          EventType.AppEvents AppDeletedEvent
-          EventType.AppEvents AppRestoredEvent
-          // Dashboard events
-          EventType.DashboardEvents DashboardCreatedEvent
-          EventType.DashboardEvents DashboardUpdatedEvent
-          EventType.DashboardEvents DashboardDeletedEvent
-          EventType.DashboardEvents DashboardPreparedEvent
-          EventType.DashboardEvents DashboardPrepareFailedEvent
-          EventType.DashboardEvents DashboardActionExecutedEvent
-          EventType.DashboardEvents DashboardActionFailedEvent
-          // Resource events
-          EventType.ResourceEvents ResourceCreatedEvent
-          EventType.ResourceEvents ResourceUpdatedEvent
-          EventType.ResourceEvents ResourceDeletedEvent
-          EventType.ResourceEvents ResourceRestoredEvent
-          // Folder events
-          EventType.FolderEvents FolderCreatedEvent
-          EventType.FolderEvents FolderUpdatedEvent
-          EventType.FolderEvents FolderDeletedEvent
-          EventType.FolderEvents FolderRestoredEvent
-          // Run events
-          EventType.RunEvents RunCreatedEvent
-          EventType.RunEvents RunStatusChangedEvent
-          // Space events
-          EventType.SpaceEvents SpaceCreatedEvent
-          EventType.SpaceEvents SpaceUpdatedEvent
-          EventType.SpaceEvents SpaceDeletedEvent
-          EventType.SpaceEvents SpacePermissionsChangedEvent
-          EventType.SpaceEvents SpaceDefaultMemberPermissionsChangedEvent ]
+    let allEventTypes = [ // User events
+        EventType.UserEvents UserCreatedEvent
+        EventType.UserEvents UserUpdatedEvent
+        EventType.UserEvents UserDeletedEvent
+        EventType.UserEvents UserInvitedEvent
+        EventType.UserEvents UserActivatedEvent
+        // App events
+        EventType.AppEvents AppCreatedEvent
+        EventType.AppEvents AppUpdatedEvent
+        EventType.AppEvents AppDeletedEvent
+        EventType.AppEvents AppRestoredEvent
+        // Dashboard events
+        EventType.DashboardEvents DashboardCreatedEvent
+        EventType.DashboardEvents DashboardUpdatedEvent
+        EventType.DashboardEvents DashboardDeletedEvent
+        EventType.DashboardEvents DashboardPreparedEvent
+        EventType.DashboardEvents DashboardPrepareFailedEvent
+        EventType.DashboardEvents DashboardActionExecutedEvent
+        EventType.DashboardEvents DashboardActionFailedEvent
+        // Resource events
+        EventType.ResourceEvents ResourceCreatedEvent
+        EventType.ResourceEvents ResourceUpdatedEvent
+        EventType.ResourceEvents ResourceDeletedEvent
+        EventType.ResourceEvents ResourceRestoredEvent
+        // Folder events
+        EventType.FolderEvents FolderCreatedEvent
+        EventType.FolderEvents FolderUpdatedEvent
+        EventType.FolderEvents FolderDeletedEvent
+        EventType.FolderEvents FolderRestoredEvent
+        // Run events
+        EventType.RunEvents RunCreatedEvent
+        EventType.RunEvents RunStatusChangedEvent
+        // Space events
+        EventType.SpaceEvents SpaceCreatedEvent
+        EventType.SpaceEvents SpaceUpdatedEvent
+        EventType.SpaceEvents SpaceDeletedEvent
+        EventType.SpaceEvents SpacePermissionsChangedEvent
+        EventType.SpaceEvents SpaceDefaultMemberPermissionsChangedEvent
+    ]
 
     let mutable hasErrors = false
 
@@ -503,10 +503,11 @@ let main args =
                     let spaceId = Space.getId space
                     let spaceIdStr = spaceId.Value.ToString()
 
-                    let tuple =
-                        { Subject = Organization "default"
-                          Relation = SpaceOrganization
-                          Object = SpaceObject spaceIdStr }
+                    let tuple = {
+                        Subject = Organization "default"
+                        Relation = SpaceOrganization
+                        Object = SpaceObject spaceIdStr
+                    }
 
                     let relationTask = authService.CreateRelationshipsAsync([ tuple ])
                     relationTask.Wait()

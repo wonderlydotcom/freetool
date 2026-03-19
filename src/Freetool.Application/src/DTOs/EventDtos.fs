@@ -6,86 +6,94 @@ open System
 open System.ComponentModel.DataAnnotations
 
 [<CLIMutable>]
-type EventFilterDTO =
-    { UserId: string option
-      EventType: string option
-      EntityType: string option
-      FromDate: DateTime option
-      ToDate: DateTime option
+type EventFilterDTO = {
+    UserId: string option
+    EventType: string option
+    EntityType: string option
+    FromDate: DateTime option
+    ToDate: DateTime option
 
-      [<Range(0, 2147483647)>]
-      Skip: int option
+    [<Range(0, 2147483647)>]
+    Skip: int option
 
-      [<Range(0, 100)>]
-      Take: int option }
+    [<Range(0, 100)>]
+    Take: int option
+}
 
-type EventFilter =
-    { UserId: UserId option
-      EventType: EventType option
-      EntityType: EntityType option
-      FromDate: DateTime option
-      ToDate: DateTime option
-      Skip: int
-      Take: int }
-
-[<CLIMutable>]
-type AppEventFilterDTO =
-    { AppId: string
-      FromDate: DateTime option
-      ToDate: DateTime option
-
-      [<Range(0, 2147483647)>]
-      Skip: int option
-
-      [<Range(0, 100)>]
-      Take: int option
-      IncludeRunEvents: bool option }
-
-type AppEventFilter =
-    { AppId: AppId
-      FromDate: DateTime option
-      ToDate: DateTime option
-      Skip: int
-      Take: int
-      IncludeRunEvents: bool }
+type EventFilter = {
+    UserId: UserId option
+    EventType: EventType option
+    EntityType: EntityType option
+    FromDate: DateTime option
+    ToDate: DateTime option
+    Skip: int
+    Take: int
+}
 
 [<CLIMutable>]
-type DashboardEventFilterDTO =
-    { DashboardId: string
-      FromDate: DateTime option
-      ToDate: DateTime option
+type AppEventFilterDTO = {
+    AppId: string
+    FromDate: DateTime option
+    ToDate: DateTime option
 
-      [<Range(0, 2147483647)>]
-      Skip: int option
+    [<Range(0, 2147483647)>]
+    Skip: int option
 
-      [<Range(0, 100)>]
-      Take: int option }
+    [<Range(0, 100)>]
+    Take: int option
+    IncludeRunEvents: bool option
+}
 
-type DashboardEventFilter =
-    { DashboardId: DashboardId
-      FromDate: DateTime option
-      ToDate: DateTime option
-      Skip: int
-      Take: int }
+type AppEventFilter = {
+    AppId: AppId
+    FromDate: DateTime option
+    ToDate: DateTime option
+    Skip: int
+    Take: int
+    IncludeRunEvents: bool
+}
 
 [<CLIMutable>]
-type UserEventFilterDTO =
-    { UserId: string
-      FromDate: DateTime option
-      ToDate: DateTime option
+type DashboardEventFilterDTO = {
+    DashboardId: string
+    FromDate: DateTime option
+    ToDate: DateTime option
 
-      [<Range(0, 2147483647)>]
-      Skip: int option
+    [<Range(0, 2147483647)>]
+    Skip: int option
 
-      [<Range(0, 100)>]
-      Take: int option }
+    [<Range(0, 100)>]
+    Take: int option
+}
 
-type UserEventFilter =
-    { UserId: UserId
-      FromDate: DateTime option
-      ToDate: DateTime option
-      Skip: int
-      Take: int }
+type DashboardEventFilter = {
+    DashboardId: DashboardId
+    FromDate: DateTime option
+    ToDate: DateTime option
+    Skip: int
+    Take: int
+}
+
+[<CLIMutable>]
+type UserEventFilterDTO = {
+    UserId: string
+    FromDate: DateTime option
+    ToDate: DateTime option
+
+    [<Range(0, 2147483647)>]
+    Skip: int option
+
+    [<Range(0, 100)>]
+    Take: int option
+}
+
+type UserEventFilter = {
+    UserId: UserId
+    FromDate: DateTime option
+    ToDate: DateTime option
+    Skip: int
+    Take: int
+}
 
 module EventFilterValidator =
     let private validatePagination (skip: int option) (take: int option) (errors: string list) =
@@ -143,14 +151,15 @@ module EventFilterValidator =
         errors <- validateDateRange dto.FromDate dto.ToDate errors
 
         if List.isEmpty errors then
-            Ok
-                { UserId = userId
-                  EventType = eventType
-                  EntityType = entityType
-                  FromDate = dto.FromDate
-                  ToDate = dto.ToDate
-                  Skip = dto.Skip |> Option.defaultValue 0
-                  Take = dto.Take |> Option.defaultValue 50 }
+            Ok {
+                UserId = userId
+                EventType = eventType
+                EntityType = entityType
+                FromDate = dto.FromDate
+                ToDate = dto.ToDate
+                Skip = dto.Skip |> Option.defaultValue 0
+                Take = dto.Take |> Option.defaultValue 50
+            }
         else
             Error(List.rev errors)
 
@@ -166,13 +175,14 @@ module EventFilterValidator =
         errors <- validateDateRange dto.FromDate dto.ToDate errors
 
         if List.isEmpty errors then
-            Ok
-                { AppId = appId.Value
-                  FromDate = dto.FromDate
-                  ToDate = dto.ToDate
-                  Skip = dto.Skip |> Option.defaultValue 0
-                  Take = dto.Take |> Option.defaultValue 50
-                  IncludeRunEvents = dto.IncludeRunEvents |> Option.defaultValue true }
+            Ok {
+                AppId = appId.Value
+                FromDate = dto.FromDate
+                ToDate = dto.ToDate
+                Skip = dto.Skip |> Option.defaultValue 0
+                Take = dto.Take |> Option.defaultValue 50
+                IncludeRunEvents = dto.IncludeRunEvents |> Option.defaultValue true
+            }
         else
             Error(List.rev errors)
 
@@ -188,12 +198,13 @@ module EventFilterValidator =
         errors <- validateDateRange dto.FromDate dto.ToDate errors
 
         if List.isEmpty errors then
-            Ok
-                { DashboardId = dashboardId.Value
-                  FromDate = dto.FromDate
-                  ToDate = dto.ToDate
-                  Skip = dto.Skip |> Option.defaultValue 0
-                  Take = dto.Take |> Option.defaultValue 50 }
+            Ok {
+                DashboardId = dashboardId.Value
+                FromDate = dto.FromDate
+                ToDate = dto.ToDate
+                Skip = dto.Skip |> Option.defaultValue 0
+                Take = dto.Take |> Option.defaultValue 50
+            }
         else
             Error(List.rev errors)
 
@@ -209,26 +220,28 @@ module EventFilterValidator =
         errors <- validateDateRange dto.FromDate dto.ToDate errors
 
         if List.isEmpty errors then
-            Ok
-                { UserId = userId.Value
-                  FromDate = dto.FromDate
-                  ToDate = dto.ToDate
-                  Skip = dto.Skip |> Option.defaultValue 0
-                  Take = dto.Take |> Option.defaultValue 50 }
+            Ok {
+                UserId = userId.Value
+                FromDate = dto.FromDate
+                ToDate = dto.ToDate
+                Skip = dto.Skip |> Option.defaultValue 0
+                Take = dto.Take |> Option.defaultValue 50
+            }
         else
             Error(List.rev errors)
 
 [<CLIMutable>]
-type EnhancedEventData =
-    { Id: Guid
-      EventId: string
-      EventType: EventType
-      EntityType: EntityType
-      EntityId: string
-      EntityName: string
-      EventData: string
-      OccurredAt: DateTime
-      CreatedAt: DateTime
-      UserId: UserId
-      UserName: string
-      EventSummary: string }
+type EnhancedEventData = {
+    Id: Guid
+    EventId: string
+    EventType: EventType
+    EntityType: EntityType
+    EntityId: string
+    EntityName: string
+    EventData: string
+    OccurredAt: DateTime
+    CreatedAt: DateTime
+    UserId: UserId
+    UserName: string
+    EventSummary: string
+}

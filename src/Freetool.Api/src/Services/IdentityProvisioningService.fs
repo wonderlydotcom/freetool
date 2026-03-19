@@ -12,12 +12,13 @@ open Freetool.Domain.ValueObjects
 open Freetool.Application.Interfaces
 open Freetool.Api
 
-type IdentityProvisioningContext =
-    { Email: string
-      Name: string option
-      ProfilePicUrl: string option
-      GroupKeys: string list
-      Source: string }
+type IdentityProvisioningContext = {
+    Email: string
+    Name: string option
+    ProfilePicUrl: string option
+    GroupKeys: string list
+    Source: string
+}
 
 type IdentityProvisioningError =
     | InvalidEmailFormat of string
@@ -55,19 +56,18 @@ type IdentityProvisioningService
         | Conflict msg -> $"Conflict: {msg}"
         | InvalidOperation msg -> $"Invalid operation: {msg}"
 
-    let ensureOrgAdminIfConfigured (email: string) (userId: UserId) =
-        task {
-            let orgAdminEmail = configuration[ConfigurationKeys.OpenFGA.OrgAdminEmail]
+    let ensureOrgAdminIfConfigured (email: string) (userId: UserId) = task {
+        let orgAdminEmail = configuration[ConfigurationKeys.OpenFGA.OrgAdminEmail]
 
-            if
-                not (String.IsNullOrEmpty(orgAdminEmail))
-                && email.Equals(orgAdminEmail, StringComparison.OrdinalIgnoreCase)
-            then
-                try
-                    do! authService.InitializeOrganizationAsync "default" (userId.Value.ToString())
-                with ex ->
-                    logger.LogWarning("Failed to ensure org admin for {Email}: {Error}", email, ex.Message)
-        }
+        if
+            not (String.IsNullOrEmpty(orgAdminEmail))
+            && email.Equals(orgAdminEmail, StringComparison.OrdinalIgnoreCase)
+        then
+            try
+                do! authService.InitializeOrganizationAsync "default" (userId.Value.ToString())
+            with ex ->
+                logger.LogWarning("Failed to ensure org admin for {Email}: {Error}", email, ex.Message)
+    }
 
     let normalizeGroupKeys (groupKeys: string list) =
         groupKeys
@@ -141,156 +141,166 @@ type IdentityProvisioningService
         |> List.tryHead
         |> Option.map fst
 
-    let ensureSpaceForCurrentOrgUnitIfNeeded (userId: UserId) (groupKeys: string list) =
-        task {
-            match getCurrentOrgUnitGroupKey groupKeys with
-            | None -> return ()
-            | Some orgUnitGroupKey ->
-                let! allMappings = mappingRepository.GetAllAsync()
+    let ensureSpaceForCurrentOrgUnitIfNeeded (userId: UserId) (groupKeys: string list) = task {
+        match getCurrentOrgUnitGroupKey groupKeys with
+        | None -> return ()
+        | Some orgUnitGroupKey ->
+            let! allMappings = mappingRepository.GetAllAsync()
 
-                let hasActiveMapping =
-                    allMappings
-                    |> List.exists (fun mapping ->
-                        mapping.IsActive
-                        && mapping.GroupKey.Equals(orgUnitGroupKey, StringComparison.Ordinal))
+            let hasActiveMapping =
+                allMappings
+                |> List.exists (fun mapping ->
+                    mapping.IsActive
+                    && mapping.GroupKey.Equals(orgUnitGroupKey, StringComparison.Ordinal))
 
-                if not hasActiveMapping then
-                    let orgUnitPath =
-                        orgUnitGroupKey.Split(':', 2, StringSplitOptions.None)
-                        |> fun parts -> if parts.Length = 2 then parts.[1] else orgUnitGroupKey
+            if not hasActiveMapping then
+                let orgUnitPath =
+                    orgUnitGroupKey.Split(':', 2, StringSplitOptions.None)
+                    |> fun parts -> if parts.Length = 2 then parts.[1] else orgUnitGroupKey
 
-                    let preferredSpaceName, _ = deriveSpaceNamesFromOrgUnitPath orgUnitPath
+                let preferredSpaceName, _ = deriveSpaceNamesFromOrgUnitPath orgUnitPath
 
-                    let! targetSpaceOption = spaceRepository.GetByNameAsync preferredSpaceName
+                let! targetSpaceOption = spaceRepository.GetByNameAsync preferredSpaceName
 
-                    let! targetSpace =
-                        match targetSpaceOption with
-                        | Some existingSpace -> Task.FromResult(Some(existingSpace.State.Id, false))
-                        | None ->
-                            match Space.create userId preferredSpaceName userId None with
+                let! targetSpace =
+                    match targetSpaceOption with
+                    | Some existingSpace -> Task.FromResult(Some(existingSpace.State.Id, false))
+                    | None ->
+                        match Space.create userId preferredSpaceName userId None with
+                        | Error error ->
+                            logger.LogWarning(
+                                "Failed to create auto-provisioned space for OU key {OrgUnitGroupKey}: {Error}",
+                                orgUnitGroupKey,
+                                error
+                            )
+
+                            Task.FromResult(None)
+                        | Ok newSpace -> task {
+                            match! spaceRepository.AddAsync newSpace with
                             | Error error ->
                                 logger.LogWarning(
-                                    "Failed to create auto-provisioned space for OU key {OrgUnitGroupKey}: {Error}",
+                                    "Failed to save auto-provisioned space for OU key {OrgUnitGroupKey}: {Error}",
                                     orgUnitGroupKey,
                                     error
                                 )
 
-                                Task.FromResult(None)
-                            | Ok newSpace ->
-                                task {
-                                    match! spaceRepository.AddAsync newSpace with
-                                    | Error error ->
-                                        logger.LogWarning(
-                                            "Failed to save auto-provisioned space for OU key {OrgUnitGroupKey}: {Error}",
-                                            orgUnitGroupKey,
-                                            error
-                                        )
+                                return None
+                            | Ok() -> return Some(newSpace.State.Id, true)
+                          }
 
-                                        return None
-                                    | Ok() -> return Some(newSpace.State.Id, true)
-                                }
+                match targetSpace with
+                | None -> return ()
+                | Some(spaceId, wasCreatedNow) ->
+                    let spaceIdStr = spaceId.Value.ToString()
+                    let userIdStr = userId.Value.ToString()
 
-                    match targetSpace with
-                    | None -> return ()
-                    | Some(spaceId, wasCreatedNow) ->
-                        let spaceIdStr = spaceId.Value.ToString()
-                        let userIdStr = userId.Value.ToString()
-
-                        try
-                            let tuples =
-                                if wasCreatedNow then
-                                    [ { Subject = Organization "default"
+                    try
+                        let tuples =
+                            if wasCreatedNow then
+                                [
+                                    {
+                                        Subject = Organization "default"
                                         Relation = SpaceOrganization
-                                        Object = SpaceObject spaceIdStr }
-                                      { Subject = User userIdStr
+                                        Object = SpaceObject spaceIdStr
+                                    }
+                                    {
+                                        Subject = User userIdStr
                                         Relation = SpaceModerator
-                                        Object = SpaceObject spaceIdStr } ]
-                                else
-                                    [ { Subject = Organization "default"
+                                        Object = SpaceObject spaceIdStr
+                                    }
+                                ]
+                            else
+                                [
+                                    {
+                                        Subject = Organization "default"
                                         Relation = SpaceOrganization
-                                        Object = SpaceObject spaceIdStr } ]
+                                        Object = SpaceObject spaceIdStr
+                                    }
+                                ]
 
-                            do! authService.CreateRelationshipsAsync tuples
-                        with ex ->
-                            logger.LogWarning(
-                                "Failed to configure OpenFGA tuples for auto-provisioned space {SpaceId}: {Error}",
-                                spaceIdStr,
-                                ex.Message
-                            )
+                        do! authService.CreateRelationshipsAsync tuples
+                    with ex ->
+                        logger.LogWarning(
+                            "Failed to configure OpenFGA tuples for auto-provisioned space {SpaceId}: {Error}",
+                            spaceIdStr,
+                            ex.Message
+                        )
 
-                        match! mappingRepository.AddAsync userId orgUnitGroupKey spaceId with
-                        | Ok _ -> ()
-                        | Error(Conflict _) -> ()
+                    match! mappingRepository.AddAsync userId orgUnitGroupKey spaceId with
+                    | Ok _ -> ()
+                    | Error(Conflict _) -> ()
+                    | Error error ->
+                        logger.LogWarning(
+                            "Failed to create OU group-space mapping for {GroupKey} -> {SpaceId}: {Error}",
+                            orgUnitGroupKey,
+                            spaceIdStr,
+                            error
+                        )
+    }
+
+    let reconcileMappedSpaceMemberships (userId: UserId) (groupKeys: string list) = task {
+        let ensureSpaceMemberInRepository (spaceId: SpaceId) = task {
+            let! spaceOption = spaceRepository.GetByIdAsync spaceId
+
+            match spaceOption with
+            | None ->
+                logger.LogWarning(
+                    "Cannot ensure mapped membership for user {UserId} because space {SpaceId} was not found in repository",
+                    userId.Value,
+                    spaceId.Value
+                )
+            | Some space ->
+                if
+                    space.State.ModeratorUserId = userId
+                    || (space.State.MemberIds |> List.contains userId)
+                then
+                    ()
+                else
+                    match Space.addMember userId userId space with
+                    | Error error ->
+                        logger.LogWarning(
+                            "Failed to add user {UserId} to mapped space {SpaceId} in repository: {Error}",
+                            userId.Value,
+                            spaceId.Value,
+                            error
+                        )
+                    | Ok updatedSpace ->
+                        match! spaceRepository.UpdateAsync updatedSpace with
+                        | Ok() -> ()
                         | Error error ->
                             logger.LogWarning(
-                                "Failed to create OU group-space mapping for {GroupKey} -> {SpaceId}: {Error}",
-                                orgUnitGroupKey,
-                                spaceIdStr,
+                                "Failed to persist mapped membership for user {UserId} in space {SpaceId}: {Error}",
+                                userId.Value,
+                                spaceId.Value,
                                 error
                             )
         }
 
-    let reconcileMappedSpaceMemberships (userId: UserId) (groupKeys: string list) =
-        task {
-            let ensureSpaceMemberInRepository (spaceId: SpaceId) =
-                task {
-                    let! spaceOption = spaceRepository.GetByIdAsync spaceId
+        let normalizedGroupKeys = normalizeGroupKeys groupKeys
+        let! desiredSpaceIds = mappingRepository.GetSpaceIdsByGroupKeysAsync normalizedGroupKeys
 
-                    match spaceOption with
-                    | None ->
-                        logger.LogWarning(
-                            "Cannot ensure mapped membership for user {UserId} because space {SpaceId} was not found in repository",
-                            userId.Value,
-                            spaceId.Value
-                        )
-                    | Some space ->
-                        if
-                            space.State.ModeratorUserId = userId
-                            || (space.State.MemberIds |> List.contains userId)
-                        then
-                            ()
-                        else
-                            match Space.addMember userId userId space with
-                            | Error error ->
-                                logger.LogWarning(
-                                    "Failed to add user {UserId} to mapped space {SpaceId} in repository: {Error}",
-                                    userId.Value,
-                                    spaceId.Value,
-                                    error
-                                )
-                            | Ok updatedSpace ->
-                                match! spaceRepository.UpdateAsync updatedSpace with
-                                | Ok() -> ()
-                                | Error error ->
-                                    logger.LogWarning(
-                                        "Failed to persist mapped membership for user {UserId} in space {SpaceId}: {Error}",
-                                        userId.Value,
-                                        spaceId.Value,
-                                        error
-                                    )
-                }
+        for spaceId in desiredSpaceIds do
+            do! ensureSpaceMemberInRepository spaceId
 
-            let normalizedGroupKeys = normalizeGroupKeys groupKeys
-            let! desiredSpaceIds = mappingRepository.GetSpaceIdsByGroupKeysAsync normalizedGroupKeys
-
-            for spaceId in desiredSpaceIds do
-                do! ensureSpaceMemberInRepository spaceId
-
-                try
-                    do!
-                        authService.CreateRelationshipsAsync(
-                            [ { Subject = User(userId.Value.ToString())
+            try
+                do!
+                    authService.CreateRelationshipsAsync(
+                        [
+                            {
+                                Subject = User(userId.Value.ToString())
                                 Relation = SpaceMember
-                                Object = SpaceObject(spaceId.Value.ToString()) } ]
-                        )
-                with ex ->
-                    logger.LogWarning(
-                        "Failed to ensure mapped membership for user {UserId} in space {SpaceId}: {Error}",
-                        userId.Value,
-                        spaceId.Value,
-                        ex.Message
+                                Object = SpaceObject(spaceId.Value.ToString())
+                            }
+                        ]
                     )
-        }
+            with ex ->
+                logger.LogWarning(
+                    "Failed to ensure mapped membership for user {UserId} in space {SpaceId}: {Error}",
+                    userId.Value,
+                    spaceId.Value,
+                    ex.Message
+                )
+    }
 
     interface IIdentityProvisioningService with
         member _.EnsureUserAsync

@@ -176,16 +176,19 @@ let createTestFolder (spaceId: SpaceId) (folderId: FolderId) : ValidatedFolder =
     let folderName =
         FolderName.Create(Some "Test Folder") |> Result.toOption |> Option.get
 
-    { State =
-        { Id = folderId
-          Name = folderName
-          ParentId = None
-          SpaceId = spaceId
-          CreatedAt = DateTime.UtcNow
-          UpdatedAt = DateTime.UtcNow
-          IsDeleted = false
-          Children = [] }
-      UncommittedEvents = [] }
+    {
+        State = {
+            Id = folderId
+            Name = folderName
+            ParentId = None
+            SpaceId = spaceId
+            CreatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow
+            IsDeleted = false
+            Children = []
+        }
+        UncommittedEvents = []
+    }
 
 // Helper to create a test resource
 let createTestResource (spaceId: SpaceId) (resourceId: ResourceId) : ValidatedResource =
@@ -200,82 +203,90 @@ let createTestResource (spaceId: SpaceId) (resourceId: ResourceId) : ValidatedRe
     let baseUrl =
         BaseUrl.Create(Some "https://api.example.com") |> Result.toOption |> Option.get
 
-    { State =
-        { Id = resourceId
-          Name = resourceName
-          Description = resourceDesc
-          SpaceId = spaceId
-          ResourceKind = ResourceKind.Http
-          BaseUrl = Some baseUrl
-          UrlParameters = []
-          Headers = []
-          Body = []
-          DatabaseName = None
-          DatabaseHost = None
-          DatabasePort = None
-          DatabaseEngine = None
-          DatabaseAuthScheme = None
-          DatabaseUsername = None
-          DatabasePassword = None
-          UseSsl = false
-          EnableSshTunnel = false
-          ConnectionOptions = []
-          CreatedAt = DateTime.UtcNow
-          UpdatedAt = DateTime.UtcNow
-          IsDeleted = false }
-      UncommittedEvents = [] }
+    {
+        State = {
+            Id = resourceId
+            Name = resourceName
+            Description = resourceDesc
+            SpaceId = spaceId
+            ResourceKind = ResourceKind.Http
+            BaseUrl = Some baseUrl
+            UrlParameters = []
+            Headers = []
+            Body = []
+            DatabaseName = None
+            DatabaseHost = None
+            DatabasePort = None
+            DatabaseEngine = None
+            DatabaseAuthScheme = None
+            DatabaseUsername = None
+            DatabasePassword = None
+            UseSsl = false
+            EnableSshTunnel = false
+            ConnectionOptions = []
+            CreatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow
+            IsDeleted = false
+        }
+        UncommittedEvents = []
+    }
 
 // Helper to create a test app
-let createTestApp (folderId: FolderId) (resourceId: ResourceId) (appId: AppId) : ValidatedApp =
-    { State =
-        { Id = appId
-          Name = "Test App"
-          FolderId = folderId
-          ResourceId = resourceId
-          HttpMethod = HttpMethod.Get
-          Inputs = []
-          UrlPath = None
-          UrlParameters = []
-          Headers = []
-          Body = []
-          UseDynamicJsonBody = false
-          SqlConfig = None
-          Description = None
-          CreatedAt = DateTime.UtcNow
-          UpdatedAt = DateTime.UtcNow
-          IsDeleted = false }
-      UncommittedEvents = [] }
+let createTestApp (folderId: FolderId) (resourceId: ResourceId) (appId: AppId) : ValidatedApp = {
+    State = {
+        Id = appId
+        Name = "Test App"
+        FolderId = folderId
+        ResourceId = resourceId
+        HttpMethod = HttpMethod.Get
+        Inputs = []
+        UrlPath = None
+        UrlParameters = []
+        Headers = []
+        Body = []
+        UseDynamicJsonBody = false
+        SqlConfig = None
+        Description = None
+        CreatedAt = DateTime.UtcNow
+        UpdatedAt = DateTime.UtcNow
+        IsDeleted = false
+    }
+    UncommittedEvents = []
+}
 
 // Helper to create a test space
-let createTestSpace (spaceId: SpaceId) (moderatorUserId: UserId) : ValidatedSpace =
-    { State =
-        { Id = spaceId
-          Name = "Test Space"
-          ModeratorUserId = moderatorUserId
-          CreatedAt = DateTime.UtcNow
-          UpdatedAt = DateTime.UtcNow
-          IsDeleted = false
-          MemberIds = [] }
-      UncommittedEvents = [] }
+let createTestSpace (spaceId: SpaceId) (moderatorUserId: UserId) : ValidatedSpace = {
+    State = {
+        Id = spaceId
+        Name = "Test Space"
+        ModeratorUserId = moderatorUserId
+        CreatedAt = DateTime.UtcNow
+        UpdatedAt = DateTime.UtcNow
+        IsDeleted = false
+        MemberIds = []
+    }
+    UncommittedEvents = []
+}
 
 // Helper to create app data for response
-let createAppData (appId: AppId) (folderId: FolderId) (resourceId: ResourceId) : AppData =
-    { Id = appId
-      Name = "Test App"
-      FolderId = folderId
-      ResourceId = resourceId
-      HttpMethod = HttpMethod.Get
-      Inputs = []
-      UrlPath = None
-      UrlParameters = []
-      Headers = []
-      Body = []
-      UseDynamicJsonBody = false
-      SqlConfig = None
-      Description = None
-      CreatedAt = DateTime.UtcNow
-      UpdatedAt = DateTime.UtcNow
-      IsDeleted = false }
+let createAppData (appId: AppId) (folderId: FolderId) (resourceId: ResourceId) : AppData = {
+    Id = appId
+    Name = "Test App"
+    FolderId = folderId
+    ResourceId = resourceId
+    HttpMethod = HttpMethod.Get
+    Inputs = []
+    UrlPath = None
+    UrlParameters = []
+    Headers = []
+    Body = []
+    UseDynamicJsonBody = false
+    SqlConfig = None
+    Description = None
+    CreatedAt = DateTime.UtcNow
+    UpdatedAt = DateTime.UtcNow
+    IsDeleted = false
+}
 
 // Helper to create a test controller with mocked dependencies
 let createTestControllerWithSpaceAccess
@@ -353,759 +364,746 @@ let createTestController
 // ============================================================================
 
 [<Fact>]
-let ``CreateApp returns 201 with valid request`` () : Task =
-    task {
-        // Arrange
-        let userId = UserId.NewId()
-        let spaceId = SpaceId.NewId()
-        let folderId = FolderId.NewId()
-        let resourceId = ResourceId.NewId()
-        let appId = AppId.NewId()
+let ``CreateApp returns 201 with valid request`` () : Task = task {
+    // Arrange
+    let userId = UserId.NewId()
+    let spaceId = SpaceId.NewId()
+    let folderId = FolderId.NewId()
+    let resourceId = ResourceId.NewId()
+    let appId = AppId.NewId()
 
-        let folder = createTestFolder spaceId folderId
-        let resource = createTestResource spaceId resourceId
-        let space = createTestSpace spaceId userId
+    let folder = createTestFolder spaceId folderId
+    let resource = createTestResource spaceId resourceId
+    let space = createTestSpace spaceId userId
 
-        // Grant create_app permission
-        let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
-            match subject, relation, obj with
-            | User uid, AppCreate, SpaceObject sid -> uid = userId.Value.ToString() && sid = spaceId.Value.ToString()
-            | _ -> false
+    // Grant create_app permission
+    let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
+        match subject, relation, obj with
+        | User uid, AppCreate, SpaceObject sid -> uid = userId.Value.ToString() && sid = spaceId.Value.ToString()
+        | _ -> false
 
-        let getAppById _ = Task.FromResult(None)
+    let getAppById _ = Task.FromResult(None)
 
-        let getFolderById id =
-            Task.FromResult(if id = folderId then Some folder else None)
+    let getFolderById id =
+        Task.FromResult(if id = folderId then Some folder else None)
 
-        let getResourceById id =
-            Task.FromResult(if id = resourceId then Some resource else None)
+    let getResourceById id =
+        Task.FromResult(if id = resourceId then Some resource else None)
 
-        let handleCommand cmd =
-            match cmd with
-            | CreateApp _ ->
-                let appData = createAppData appId folderId resourceId
-                Task.FromResult(Ok(AppResult appData))
-            | _ -> Task.FromResult(Error(NotFound "Command not supported"))
+    let handleCommand cmd =
+        match cmd with
+        | CreateApp _ ->
+            let appData = createAppData appId folderId resourceId
+            Task.FromResult(Ok(AppResult appData))
+        | _ -> Task.FromResult(Error(NotFound "Command not supported"))
 
-        let controller =
-            createTestController checkPermission getAppById getFolderById getResourceById [ space ] handleCommand userId
+    let controller =
+        createTestController checkPermission getAppById getFolderById getResourceById [ space ] handleCommand userId
 
-        let createDto: CreateAppDto =
-            { Name = "My New App"
-              FolderId = folderId.Value.ToString()
-              ResourceId = resourceId.Value.ToString()
-              HttpMethod = "GET"
-              Inputs = []
-              UrlPath = None
-              UrlParameters = []
-              Headers = []
-              Body = []
-              UseDynamicJsonBody = false
-              SqlConfig = None
-              Description = None }
-
-        // Act
-        let! result = controller.CreateApp(createDto)
-
-        // Assert
-        match result with
-        | :? CreatedAtActionResult as createdResult ->
-            Assert.Equal(201, createdResult.StatusCode.Value)
-            Assert.NotNull(createdResult.Value)
-        | :? ObjectResult as objResult when objResult.StatusCode.HasValue ->
-            // If not 201, verify it's not an error
-            Assert.True(objResult.StatusCode.Value < 400, $"Expected success, got {objResult.StatusCode.Value}")
-        | _ -> ()
+    let createDto: CreateAppDto = {
+        Name = "My New App"
+        FolderId = folderId.Value.ToString()
+        ResourceId = resourceId.Value.ToString()
+        HttpMethod = "GET"
+        Inputs = []
+        UrlPath = None
+        UrlParameters = []
+        Headers = []
+        Body = []
+        UseDynamicJsonBody = false
+        SqlConfig = None
+        Description = None
     }
+
+    // Act
+    let! result = controller.CreateApp(createDto)
+
+    // Assert
+    match result with
+    | :? CreatedAtActionResult as createdResult ->
+        Assert.Equal(201, createdResult.StatusCode.Value)
+        Assert.NotNull(createdResult.Value)
+    | :? ObjectResult as objResult when objResult.StatusCode.HasValue ->
+        // If not 201, verify it's not an error
+        Assert.True(objResult.StatusCode.Value < 400, $"Expected success, got {objResult.StatusCode.Value}")
+    | _ -> ()
+}
 
 [<Fact>]
-let ``CreateApp returns 400 for invalid name`` () : Task =
-    task {
-        // Arrange
-        let userId = UserId.NewId()
-        let spaceId = SpaceId.NewId()
-        let folderId = FolderId.NewId()
-        let resourceId = ResourceId.NewId()
+let ``CreateApp returns 400 for invalid name`` () : Task = task {
+    // Arrange
+    let userId = UserId.NewId()
+    let spaceId = SpaceId.NewId()
+    let folderId = FolderId.NewId()
+    let resourceId = ResourceId.NewId()
 
-        let folder = createTestFolder spaceId folderId
-        let resource = createTestResource spaceId resourceId
-        let space = createTestSpace spaceId userId
+    let folder = createTestFolder spaceId folderId
+    let resource = createTestResource spaceId resourceId
+    let space = createTestSpace spaceId userId
 
-        // Grant create_app permission
-        let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
-            match subject, relation, obj with
-            | User uid, AppCreate, SpaceObject sid -> uid = userId.Value.ToString() && sid = spaceId.Value.ToString()
-            | _ -> false
+    // Grant create_app permission
+    let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
+        match subject, relation, obj with
+        | User uid, AppCreate, SpaceObject sid -> uid = userId.Value.ToString() && sid = spaceId.Value.ToString()
+        | _ -> false
 
-        let getAppById _ = Task.FromResult(None)
+    let getAppById _ = Task.FromResult(None)
 
-        let getFolderById id =
-            Task.FromResult(if id = folderId then Some folder else None)
+    let getFolderById id =
+        Task.FromResult(if id = folderId then Some folder else None)
 
-        let getResourceById id =
-            Task.FromResult(if id = resourceId then Some resource else None)
+    let getResourceById id =
+        Task.FromResult(if id = resourceId then Some resource else None)
 
-        let handleCommand cmd =
-            match cmd with
-            | CreateApp _ -> Task.FromResult(Error(ValidationError "Name is required"))
-            | _ -> Task.FromResult(Error(NotFound "Command not supported"))
+    let handleCommand cmd =
+        match cmd with
+        | CreateApp _ -> Task.FromResult(Error(ValidationError "Name is required"))
+        | _ -> Task.FromResult(Error(NotFound "Command not supported"))
 
-        let controller =
-            createTestController checkPermission getAppById getFolderById getResourceById [ space ] handleCommand userId
+    let controller =
+        createTestController checkPermission getAppById getFolderById getResourceById [ space ] handleCommand userId
 
-        // Empty name is invalid
-        let createDto: CreateAppDto =
-            { Name = ""
-              FolderId = folderId.Value.ToString()
-              ResourceId = resourceId.Value.ToString()
-              HttpMethod = "GET"
-              Inputs = []
-              UrlPath = None
-              UrlParameters = []
-              Headers = []
-              Body = []
-              UseDynamicJsonBody = false
-              SqlConfig = None
-              Description = None }
-
-        // Act
-        let! result = controller.CreateApp(createDto)
-
-        // Assert
-        match result with
-        | :? BadRequestObjectResult as badRequest -> Assert.Equal(400, badRequest.StatusCode.Value)
-        | :? ObjectResult as objResult when objResult.StatusCode.HasValue ->
-            Assert.Equal(400, objResult.StatusCode.Value)
-        | _ -> Assert.True(false, "Expected BadRequest result")
+    // Empty name is invalid
+    let createDto: CreateAppDto = {
+        Name = ""
+        FolderId = folderId.Value.ToString()
+        ResourceId = resourceId.Value.ToString()
+        HttpMethod = "GET"
+        Inputs = []
+        UrlPath = None
+        UrlParameters = []
+        Headers = []
+        Body = []
+        UseDynamicJsonBody = false
+        SqlConfig = None
+        Description = None
     }
+
+    // Act
+    let! result = controller.CreateApp(createDto)
+
+    // Assert
+    match result with
+    | :? BadRequestObjectResult as badRequest -> Assert.Equal(400, badRequest.StatusCode.Value)
+    | :? ObjectResult as objResult when objResult.StatusCode.HasValue -> Assert.Equal(400, objResult.StatusCode.Value)
+    | _ -> Assert.True(false, "Expected BadRequest result")
+}
 
 [<Fact>]
-let ``CreateApp returns 409 for duplicate name`` () : Task =
-    task {
-        // Arrange
-        let userId = UserId.NewId()
-        let spaceId = SpaceId.NewId()
-        let folderId = FolderId.NewId()
-        let resourceId = ResourceId.NewId()
+let ``CreateApp returns 409 for duplicate name`` () : Task = task {
+    // Arrange
+    let userId = UserId.NewId()
+    let spaceId = SpaceId.NewId()
+    let folderId = FolderId.NewId()
+    let resourceId = ResourceId.NewId()
 
-        let folder = createTestFolder spaceId folderId
-        let resource = createTestResource spaceId resourceId
-        let space = createTestSpace spaceId userId
+    let folder = createTestFolder spaceId folderId
+    let resource = createTestResource spaceId resourceId
+    let space = createTestSpace spaceId userId
 
-        // Grant create_app permission
-        let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
-            match subject, relation, obj with
-            | User uid, AppCreate, SpaceObject sid -> uid = userId.Value.ToString() && sid = spaceId.Value.ToString()
-            | _ -> false
+    // Grant create_app permission
+    let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
+        match subject, relation, obj with
+        | User uid, AppCreate, SpaceObject sid -> uid = userId.Value.ToString() && sid = spaceId.Value.ToString()
+        | _ -> false
 
-        let getAppById _ = Task.FromResult(None)
+    let getAppById _ = Task.FromResult(None)
 
-        let getFolderById id =
-            Task.FromResult(if id = folderId then Some folder else None)
+    let getFolderById id =
+        Task.FromResult(if id = folderId then Some folder else None)
 
-        let getResourceById id =
-            Task.FromResult(if id = resourceId then Some resource else None)
+    let getResourceById id =
+        Task.FromResult(if id = resourceId then Some resource else None)
 
-        // Handler returns conflict error
-        let handleCommand cmd =
-            match cmd with
-            | CreateApp _ -> Task.FromResult(Error(Conflict "An app with this name already exists in this folder"))
-            | _ -> Task.FromResult(Error(NotFound "Command not supported"))
+    // Handler returns conflict error
+    let handleCommand cmd =
+        match cmd with
+        | CreateApp _ -> Task.FromResult(Error(Conflict "An app with this name already exists in this folder"))
+        | _ -> Task.FromResult(Error(NotFound "Command not supported"))
 
-        let controller =
-            createTestController checkPermission getAppById getFolderById getResourceById [ space ] handleCommand userId
+    let controller =
+        createTestController checkPermission getAppById getFolderById getResourceById [ space ] handleCommand userId
 
-        let createDto: CreateAppDto =
-            { Name = "Existing App"
-              FolderId = folderId.Value.ToString()
-              ResourceId = resourceId.Value.ToString()
-              HttpMethod = "GET"
-              Inputs = []
-              UrlPath = None
-              UrlParameters = []
-              Headers = []
-              Body = []
-              UseDynamicJsonBody = false
-              SqlConfig = None
-              Description = None }
-
-        // Act
-        let! result = controller.CreateApp(createDto)
-
-        // Assert
-        match result with
-        | :? ConflictObjectResult as conflict -> Assert.Equal(409, conflict.StatusCode.Value)
-        | :? ObjectResult as objResult when objResult.StatusCode.HasValue ->
-            Assert.Equal(409, objResult.StatusCode.Value)
-        | _ -> Assert.True(false, "Expected Conflict result")
+    let createDto: CreateAppDto = {
+        Name = "Existing App"
+        FolderId = folderId.Value.ToString()
+        ResourceId = resourceId.Value.ToString()
+        HttpMethod = "GET"
+        Inputs = []
+        UrlPath = None
+        UrlParameters = []
+        Headers = []
+        Body = []
+        UseDynamicJsonBody = false
+        SqlConfig = None
+        Description = None
     }
+
+    // Act
+    let! result = controller.CreateApp(createDto)
+
+    // Assert
+    match result with
+    | :? ConflictObjectResult as conflict -> Assert.Equal(409, conflict.StatusCode.Value)
+    | :? ObjectResult as objResult when objResult.StatusCode.HasValue -> Assert.Equal(409, objResult.StatusCode.Value)
+    | _ -> Assert.True(false, "Expected Conflict result")
+}
 
 // ============================================================================
 // Read Operations Tests
 // ============================================================================
 
 [<Fact>]
-let ``GetAppById returns 200 with app data`` () : Task =
-    task {
-        // Arrange
-        let userId = UserId.NewId()
-        let spaceId = SpaceId.NewId()
-        let folderId = FolderId.NewId()
-        let resourceId = ResourceId.NewId()
-        let appId = AppId.NewId()
+let ``GetAppById returns 200 with app data`` () : Task = task {
+    // Arrange
+    let userId = UserId.NewId()
+    let spaceId = SpaceId.NewId()
+    let folderId = FolderId.NewId()
+    let resourceId = ResourceId.NewId()
+    let appId = AppId.NewId()
 
-        let folder = createTestFolder spaceId folderId
-        let app = createTestApp folderId resourceId appId
-        let space = createTestSpace spaceId userId
+    let folder = createTestFolder spaceId folderId
+    let app = createTestApp folderId resourceId appId
+    let space = createTestSpace spaceId userId
 
-        // Grant run_app permission (required for read)
-        let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
-            match subject, relation, obj with
-            | User uid, AppRun, SpaceObject sid -> uid = userId.Value.ToString() && sid = spaceId.Value.ToString()
-            | _ -> false
+    // Grant run_app permission (required for read)
+    let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
+        match subject, relation, obj with
+        | User uid, AppRun, SpaceObject sid -> uid = userId.Value.ToString() && sid = spaceId.Value.ToString()
+        | _ -> false
 
-        let getAppById id =
-            Task.FromResult(if id = appId then Some app else None)
+    let getAppById id =
+        Task.FromResult(if id = appId then Some app else None)
 
-        let getFolderById id =
-            Task.FromResult(if id = folderId then Some folder else None)
+    let getFolderById id =
+        Task.FromResult(if id = folderId then Some folder else None)
 
-        let getResourceById _ = Task.FromResult(None)
+    let getResourceById _ = Task.FromResult(None)
 
-        let handleCommand cmd =
-            match cmd with
-            | GetAppById _ ->
-                let appData = createAppData appId folderId resourceId
-                Task.FromResult(Ok(AppResult appData))
-            | _ -> Task.FromResult(Error(NotFound "Command not supported"))
+    let handleCommand cmd =
+        match cmd with
+        | GetAppById _ ->
+            let appData = createAppData appId folderId resourceId
+            Task.FromResult(Ok(AppResult appData))
+        | _ -> Task.FromResult(Error(NotFound "Command not supported"))
 
-        let controller =
-            createTestController checkPermission getAppById getFolderById getResourceById [ space ] handleCommand userId
+    let controller =
+        createTestController checkPermission getAppById getFolderById getResourceById [ space ] handleCommand userId
 
-        // Act
-        let! result = controller.GetAppById(appId.Value.ToString())
+    // Act
+    let! result = controller.GetAppById(appId.Value.ToString())
 
-        // Assert
-        match result with
-        | :? OkObjectResult as okResult ->
-            Assert.Equal(200, okResult.StatusCode.Value)
-            Assert.NotNull(okResult.Value)
-        | _ -> Assert.True(false, "Expected OkObjectResult")
-    }
-
-[<Fact>]
-let ``GetAppById returns 404 for nonexistent`` () : Task =
-    task {
-        // Arrange
-        let userId = UserId.NewId()
-        let nonExistentAppId = AppId.NewId()
-
-        // No app exists
-        let checkPermission _ _ _ = true // Grant all permissions
-
-        let getAppById _ = Task.FromResult(None)
-        let getFolderById _ = Task.FromResult(None)
-        let getResourceById _ = Task.FromResult(None)
-
-        let handleCommand _ =
-            Task.FromResult(Error(NotFound "App not found"))
-
-        let controller =
-            createTestController checkPermission getAppById getFolderById getResourceById [] handleCommand userId
-
-        // Act
-        let! result = controller.GetAppById(nonExistentAppId.Value.ToString())
-
-        // Assert
-        match result with
-        | :? NotFoundObjectResult as notFound -> Assert.Equal(404, notFound.StatusCode.Value)
-        | :? ObjectResult as objResult when objResult.StatusCode.HasValue ->
-            Assert.Equal(404, objResult.StatusCode.Value)
-        | _ -> Assert.True(false, "Expected NotFound result")
-    }
+    // Assert
+    match result with
+    | :? OkObjectResult as okResult ->
+        Assert.Equal(200, okResult.StatusCode.Value)
+        Assert.NotNull(okResult.Value)
+    | _ -> Assert.True(false, "Expected OkObjectResult")
+}
 
 [<Fact>]
-let ``GetAppsByFolderId returns 200 with paginated list`` () : Task =
-    task {
-        // Arrange
-        let userId = UserId.NewId()
-        let spaceId = SpaceId.NewId()
-        let folderId = FolderId.NewId()
-        let resourceId = ResourceId.NewId()
-        let appId = AppId.NewId()
+let ``GetAppById returns 404 for nonexistent`` () : Task = task {
+    // Arrange
+    let userId = UserId.NewId()
+    let nonExistentAppId = AppId.NewId()
 
-        let folder = createTestFolder spaceId folderId
-        let space = createTestSpace spaceId userId
+    // No app exists
+    let checkPermission _ _ _ = true // Grant all permissions
 
-        // Grant run_app permission
-        let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
-            match subject, relation, obj with
-            | User uid, AppRun, SpaceObject sid -> uid = userId.Value.ToString() && sid = spaceId.Value.ToString()
-            | _ -> false
+    let getAppById _ = Task.FromResult(None)
+    let getFolderById _ = Task.FromResult(None)
+    let getResourceById _ = Task.FromResult(None)
 
-        let getAppById _ = Task.FromResult(None)
+    let handleCommand _ =
+        Task.FromResult(Error(NotFound "App not found"))
 
-        let getFolderById id =
-            Task.FromResult(if id = folderId then Some folder else None)
+    let controller =
+        createTestController checkPermission getAppById getFolderById getResourceById [] handleCommand userId
 
-        let getResourceById _ = Task.FromResult(None)
+    // Act
+    let! result = controller.GetAppById(nonExistentAppId.Value.ToString())
 
-        let handleCommand cmd =
-            match cmd with
-            | GetAppsByFolderId _ ->
-                let appData = createAppData appId folderId resourceId
-
-                let pagedResult: PagedResult<AppData> =
-                    { Items = [ appData ]
-                      TotalCount = 1
-                      Skip = 0
-                      Take = 10 }
-
-                Task.FromResult(Ok(AppsResult pagedResult))
-            | _ -> Task.FromResult(Error(NotFound "Command not supported"))
-
-        let controller =
-            createTestController checkPermission getAppById getFolderById getResourceById [ space ] handleCommand userId
-
-        // Act
-        let! result = controller.GetAppsByFolderId(folderId.Value.ToString(), 0, 10)
-
-        // Assert
-        match result with
-        | :? OkObjectResult as okResult ->
-            Assert.Equal(200, okResult.StatusCode.Value)
-            Assert.NotNull(okResult.Value)
-        | _ -> Assert.True(false, "Expected OkObjectResult")
-    }
+    // Assert
+    match result with
+    | :? NotFoundObjectResult as notFound -> Assert.Equal(404, notFound.StatusCode.Value)
+    | :? ObjectResult as objResult when objResult.StatusCode.HasValue -> Assert.Equal(404, objResult.StatusCode.Value)
+    | _ -> Assert.True(false, "Expected NotFound result")
+}
 
 [<Fact>]
-let ``GetApps includes spaces where user is moderator`` () : Task =
-    task {
-        // Arrange
-        let userId = UserId.NewId()
-        let spaceId = SpaceId.NewId()
-        let space = createTestSpace spaceId userId
+let ``GetAppsByFolderId returns 200 with paginated list`` () : Task = task {
+    // Arrange
+    let userId = UserId.NewId()
+    let spaceId = SpaceId.NewId()
+    let folderId = FolderId.NewId()
+    let resourceId = ResourceId.NewId()
+    let appId = AppId.NewId()
 
-        let checkPermission _ _ _ = true
-        let getAppById _ = Task.FromResult(None)
-        let getFolderById _ = Task.FromResult(None)
-        let getResourceById _ = Task.FromResult(None)
+    let folder = createTestFolder spaceId folderId
+    let space = createTestSpace spaceId userId
 
-        let receivedSpaceIds = ref []
+    // Grant run_app permission
+    let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
+        match subject, relation, obj with
+        | User uid, AppRun, SpaceObject sid -> uid = userId.Value.ToString() && sid = spaceId.Value.ToString()
+        | _ -> false
 
-        let handleCommand cmd =
-            match cmd with
-            | GetAppsBySpaceIds(spaceIds, skip, take) ->
-                receivedSpaceIds := spaceIds
+    let getAppById _ = Task.FromResult(None)
 
-                let pagedResult: PagedResult<AppData> =
-                    { Items = []
-                      TotalCount = 0
-                      Skip = skip
-                      Take = take }
+    let getFolderById id =
+        Task.FromResult(if id = folderId then Some folder else None)
 
-                Task.FromResult(Ok(AppsResult pagedResult))
-            | _ -> Task.FromResult(Error(NotFound "Command not supported"))
+    let getResourceById _ = Task.FromResult(None)
 
-        let controller =
-            createTestControllerWithSpaceAccess
-                checkPermission
-                getAppById
-                getFolderById
-                getResourceById
-                []
-                [ space ]
-                handleCommand
-                userId
+    let handleCommand cmd =
+        match cmd with
+        | GetAppsByFolderId _ ->
+            let appData = createAppData appId folderId resourceId
 
-        // Act
-        let! result = controller.GetApps(0, 10)
+            let pagedResult: PagedResult<AppData> = {
+                Items = [ appData ]
+                TotalCount = 1
+                Skip = 0
+                Take = 10
+            }
 
-        // Assert
-        match result with
-        | :? OkObjectResult as okResult ->
-            Assert.Equal(200, okResult.StatusCode.Value)
-            Assert.Equal<SpaceId list>([ spaceId ], !receivedSpaceIds)
-        | _ -> Assert.True(false, "Expected OkObjectResult")
-    }
+            Task.FromResult(Ok(AppsResult pagedResult))
+        | _ -> Task.FromResult(Error(NotFound "Command not supported"))
+
+    let controller =
+        createTestController checkPermission getAppById getFolderById getResourceById [ space ] handleCommand userId
+
+    // Act
+    let! result = controller.GetAppsByFolderId(folderId.Value.ToString(), 0, 10)
+
+    // Assert
+    match result with
+    | :? OkObjectResult as okResult ->
+        Assert.Equal(200, okResult.StatusCode.Value)
+        Assert.NotNull(okResult.Value)
+    | _ -> Assert.True(false, "Expected OkObjectResult")
+}
+
+[<Fact>]
+let ``GetApps includes spaces where user is moderator`` () : Task = task {
+    // Arrange
+    let userId = UserId.NewId()
+    let spaceId = SpaceId.NewId()
+    let space = createTestSpace spaceId userId
+
+    let checkPermission _ _ _ = true
+    let getAppById _ = Task.FromResult(None)
+    let getFolderById _ = Task.FromResult(None)
+    let getResourceById _ = Task.FromResult(None)
+
+    let receivedSpaceIds = ref []
+
+    let handleCommand cmd =
+        match cmd with
+        | GetAppsBySpaceIds(spaceIds, skip, take) ->
+            receivedSpaceIds := spaceIds
+
+            let pagedResult: PagedResult<AppData> = {
+                Items = []
+                TotalCount = 0
+                Skip = skip
+                Take = take
+            }
+
+            Task.FromResult(Ok(AppsResult pagedResult))
+        | _ -> Task.FromResult(Error(NotFound "Command not supported"))
+
+    let controller =
+        createTestControllerWithSpaceAccess
+            checkPermission
+            getAppById
+            getFolderById
+            getResourceById
+            []
+            [ space ]
+            handleCommand
+            userId
+
+    // Act
+    let! result = controller.GetApps(0, 10)
+
+    // Assert
+    match result with
+    | :? OkObjectResult as okResult ->
+        Assert.Equal(200, okResult.StatusCode.Value)
+        Assert.Equal<SpaceId list>([ spaceId ], !receivedSpaceIds)
+    | _ -> Assert.True(false, "Expected OkObjectResult")
+}
 
 // ============================================================================
 // Delete Operations Tests
 // ============================================================================
 
 [<Fact>]
-let ``DeleteApp returns 204 on success`` () : Task =
-    task {
-        // Arrange
-        let userId = UserId.NewId()
-        let spaceId = SpaceId.NewId()
-        let folderId = FolderId.NewId()
-        let resourceId = ResourceId.NewId()
-        let appId = AppId.NewId()
+let ``DeleteApp returns 204 on success`` () : Task = task {
+    // Arrange
+    let userId = UserId.NewId()
+    let spaceId = SpaceId.NewId()
+    let folderId = FolderId.NewId()
+    let resourceId = ResourceId.NewId()
+    let appId = AppId.NewId()
 
-        let folder = createTestFolder spaceId folderId
-        let app = createTestApp folderId resourceId appId
-        let space = createTestSpace spaceId userId
+    let folder = createTestFolder spaceId folderId
+    let app = createTestApp folderId resourceId appId
+    let space = createTestSpace spaceId userId
 
-        // Grant delete_app permission
-        let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
-            match subject, relation, obj with
-            | User uid, AppDelete, SpaceObject sid -> uid = userId.Value.ToString() && sid = spaceId.Value.ToString()
-            | _ -> false
+    // Grant delete_app permission
+    let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
+        match subject, relation, obj with
+        | User uid, AppDelete, SpaceObject sid -> uid = userId.Value.ToString() && sid = spaceId.Value.ToString()
+        | _ -> false
 
-        let getAppById id =
-            Task.FromResult(if id = appId then Some app else None)
+    let getAppById id =
+        Task.FromResult(if id = appId then Some app else None)
 
-        let getFolderById id =
-            Task.FromResult(if id = folderId then Some folder else None)
+    let getFolderById id =
+        Task.FromResult(if id = folderId then Some folder else None)
 
-        let getResourceById _ = Task.FromResult(None)
+    let getResourceById _ = Task.FromResult(None)
 
-        let handleCommand cmd =
-            match cmd with
-            | DeleteApp _ -> Task.FromResult(Ok(AppUnitResult()))
-            | _ -> Task.FromResult(Error(NotFound "Command not supported"))
+    let handleCommand cmd =
+        match cmd with
+        | DeleteApp _ -> Task.FromResult(Ok(AppUnitResult()))
+        | _ -> Task.FromResult(Error(NotFound "Command not supported"))
 
-        let controller =
-            createTestController checkPermission getAppById getFolderById getResourceById [ space ] handleCommand userId
+    let controller =
+        createTestController checkPermission getAppById getFolderById getResourceById [ space ] handleCommand userId
 
-        // Act
-        let! result = controller.DeleteApp(appId.Value.ToString())
+    // Act
+    let! result = controller.DeleteApp(appId.Value.ToString())
 
-        // Assert
-        match result with
-        | :? NoContentResult as noContent -> Assert.Equal(204, noContent.StatusCode)
-        | :? ObjectResult as objResult when objResult.StatusCode.HasValue ->
-            Assert.True(objResult.StatusCode.Value = 204 || objResult.StatusCode.Value < 400)
-        | _ -> ()
-    }
+    // Assert
+    match result with
+    | :? NoContentResult as noContent -> Assert.Equal(204, noContent.StatusCode)
+    | :? ObjectResult as objResult when objResult.StatusCode.HasValue ->
+        Assert.True(objResult.StatusCode.Value = 204 || objResult.StatusCode.Value < 400)
+    | _ -> ()
+}
 
 [<Fact>]
-let ``DeleteApp returns 403 without permission`` () : Task =
-    task {
-        // Arrange
-        let userId = UserId.NewId()
-        let spaceId = SpaceId.NewId()
-        let folderId = FolderId.NewId()
-        let resourceId = ResourceId.NewId()
-        let appId = AppId.NewId()
+let ``DeleteApp returns 403 without permission`` () : Task = task {
+    // Arrange
+    let userId = UserId.NewId()
+    let spaceId = SpaceId.NewId()
+    let folderId = FolderId.NewId()
+    let resourceId = ResourceId.NewId()
+    let appId = AppId.NewId()
 
-        let folder = createTestFolder spaceId folderId
-        let app = createTestApp folderId resourceId appId
-        let space = createTestSpace spaceId userId
+    let folder = createTestFolder spaceId folderId
+    let app = createTestApp folderId resourceId appId
+    let space = createTestSpace spaceId userId
 
-        // No permissions granted
-        let checkPermission _ _ _ = false
+    // No permissions granted
+    let checkPermission _ _ _ = false
 
-        let getAppById id =
-            Task.FromResult(if id = appId then Some app else None)
+    let getAppById id =
+        Task.FromResult(if id = appId then Some app else None)
 
-        let getFolderById id =
-            Task.FromResult(if id = folderId then Some folder else None)
+    let getFolderById id =
+        Task.FromResult(if id = folderId then Some folder else None)
 
-        let getResourceById _ = Task.FromResult(None)
+    let getResourceById _ = Task.FromResult(None)
 
-        let handleCommand _ =
-            Task.FromResult(Error(NotFound "Should not be called"))
+    let handleCommand _ =
+        Task.FromResult(Error(NotFound "Should not be called"))
 
-        let controller =
-            createTestController checkPermission getAppById getFolderById getResourceById [ space ] handleCommand userId
+    let controller =
+        createTestController checkPermission getAppById getFolderById getResourceById [ space ] handleCommand userId
 
-        // Act
-        let! result = controller.DeleteApp(appId.Value.ToString())
+    // Act
+    let! result = controller.DeleteApp(appId.Value.ToString())
 
-        // Assert
-        match result with
-        | :? ObjectResult as objResult -> Assert.Equal(403, objResult.StatusCode.Value)
-        | _ -> Assert.True(false, "Expected ObjectResult with status code 403")
-    }
+    // Assert
+    match result with
+    | :? ObjectResult as objResult -> Assert.Equal(403, objResult.StatusCode.Value)
+    | _ -> Assert.True(false, "Expected ObjectResult with status code 403")
+}
 
 // ============================================================================
 // Update Operations Tests
 // ============================================================================
 
 [<Fact>]
-let ``UpdateAppName returns 200 on success`` () : Task =
-    task {
-        // Arrange
-        let userId = UserId.NewId()
-        let spaceId = SpaceId.NewId()
-        let folderId = FolderId.NewId()
-        let resourceId = ResourceId.NewId()
-        let appId = AppId.NewId()
+let ``UpdateAppName returns 200 on success`` () : Task = task {
+    // Arrange
+    let userId = UserId.NewId()
+    let spaceId = SpaceId.NewId()
+    let folderId = FolderId.NewId()
+    let resourceId = ResourceId.NewId()
+    let appId = AppId.NewId()
 
-        let folder = createTestFolder spaceId folderId
-        let app = createTestApp folderId resourceId appId
-        let space = createTestSpace spaceId userId
+    let folder = createTestFolder spaceId folderId
+    let app = createTestApp folderId resourceId appId
+    let space = createTestSpace spaceId userId
 
-        // Grant edit_app permission
-        let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
-            match subject, relation, obj with
-            | User uid, AppEdit, SpaceObject sid -> uid = userId.Value.ToString() && sid = spaceId.Value.ToString()
-            | _ -> false
+    // Grant edit_app permission
+    let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
+        match subject, relation, obj with
+        | User uid, AppEdit, SpaceObject sid -> uid = userId.Value.ToString() && sid = spaceId.Value.ToString()
+        | _ -> false
 
-        let getAppById id =
-            Task.FromResult(if id = appId then Some app else None)
+    let getAppById id =
+        Task.FromResult(if id = appId then Some app else None)
 
-        let getFolderById id =
-            Task.FromResult(if id = folderId then Some folder else None)
+    let getFolderById id =
+        Task.FromResult(if id = folderId then Some folder else None)
 
-        let getResourceById _ = Task.FromResult(None)
+    let getResourceById _ = Task.FromResult(None)
 
-        let handleCommand cmd =
-            match cmd with
-            | UpdateAppName _ ->
-                let appData =
-                    { createAppData appId folderId resourceId with
-                        Name = "Updated App Name" }
+    let handleCommand cmd =
+        match cmd with
+        | UpdateAppName _ ->
+            let appData = {
+                createAppData appId folderId resourceId with
+                    Name = "Updated App Name"
+            }
 
-                Task.FromResult(Ok(AppResult appData))
-            | _ -> Task.FromResult(Error(NotFound "Command not supported"))
+            Task.FromResult(Ok(AppResult appData))
+        | _ -> Task.FromResult(Error(NotFound "Command not supported"))
 
-        let controller =
-            createTestController checkPermission getAppById getFolderById getResourceById [ space ] handleCommand userId
+    let controller =
+        createTestController checkPermission getAppById getFolderById getResourceById [ space ] handleCommand userId
 
-        let updateDto: UpdateAppNameDto = { Name = "Updated App Name" }
+    let updateDto: UpdateAppNameDto = { Name = "Updated App Name" }
 
-        // Act
-        let! result = controller.UpdateAppName(appId.Value.ToString(), updateDto)
+    // Act
+    let! result = controller.UpdateAppName(appId.Value.ToString(), updateDto)
 
-        // Assert
-        match result with
-        | :? OkObjectResult as okResult ->
-            Assert.Equal(200, okResult.StatusCode.Value)
-            Assert.NotNull(okResult.Value)
-        | _ -> Assert.True(false, "Expected OkObjectResult")
-    }
-
-[<Fact>]
-let ``UpdateAppName returns 403 without edit permission`` () : Task =
-    task {
-        // Arrange
-        let userId = UserId.NewId()
-        let spaceId = SpaceId.NewId()
-        let folderId = FolderId.NewId()
-        let resourceId = ResourceId.NewId()
-        let appId = AppId.NewId()
-
-        let folder = createTestFolder spaceId folderId
-        let app = createTestApp folderId resourceId appId
-        let space = createTestSpace spaceId userId
-
-        // No permissions granted
-        let checkPermission _ _ _ = false
-
-        let getAppById id =
-            Task.FromResult(if id = appId then Some app else None)
-
-        let getFolderById id =
-            Task.FromResult(if id = folderId then Some folder else None)
-
-        let getResourceById _ = Task.FromResult(None)
-
-        let handleCommand _ =
-            Task.FromResult(Error(NotFound "Should not be called"))
-
-        let controller =
-            createTestController checkPermission getAppById getFolderById getResourceById [ space ] handleCommand userId
-
-        let updateDto: UpdateAppNameDto = { Name = "Updated App Name" }
-
-        // Act
-        let! result = controller.UpdateAppName(appId.Value.ToString(), updateDto)
-
-        // Assert
-        match result with
-        | :? ObjectResult as objResult -> Assert.Equal(403, objResult.StatusCode.Value)
-        | _ -> Assert.True(false, "Expected ObjectResult with status code 403")
-    }
+    // Assert
+    match result with
+    | :? OkObjectResult as okResult ->
+        Assert.Equal(200, okResult.StatusCode.Value)
+        Assert.NotNull(okResult.Value)
+    | _ -> Assert.True(false, "Expected OkObjectResult")
+}
 
 [<Fact>]
-let ``UpdateAppName returns 404 for nonexistent`` () : Task =
-    task {
-        // Arrange
-        let userId = UserId.NewId()
-        let nonExistentAppId = AppId.NewId()
+let ``UpdateAppName returns 403 without edit permission`` () : Task = task {
+    // Arrange
+    let userId = UserId.NewId()
+    let spaceId = SpaceId.NewId()
+    let folderId = FolderId.NewId()
+    let resourceId = ResourceId.NewId()
+    let appId = AppId.NewId()
 
-        // Grant all permissions
-        let checkPermission _ _ _ = true
+    let folder = createTestFolder spaceId folderId
+    let app = createTestApp folderId resourceId appId
+    let space = createTestSpace spaceId userId
 
-        let getAppById _ = Task.FromResult(None)
-        let getFolderById _ = Task.FromResult(None)
-        let getResourceById _ = Task.FromResult(None)
+    // No permissions granted
+    let checkPermission _ _ _ = false
 
-        let handleCommand _ =
-            Task.FromResult(Error(NotFound "App not found"))
+    let getAppById id =
+        Task.FromResult(if id = appId then Some app else None)
 
-        let controller =
-            createTestController checkPermission getAppById getFolderById getResourceById [] handleCommand userId
+    let getFolderById id =
+        Task.FromResult(if id = folderId then Some folder else None)
 
-        let updateDto: UpdateAppNameDto = { Name = "Updated App Name" }
+    let getResourceById _ = Task.FromResult(None)
 
-        // Act
-        let! result = controller.UpdateAppName(nonExistentAppId.Value.ToString(), updateDto)
+    let handleCommand _ =
+        Task.FromResult(Error(NotFound "Should not be called"))
 
-        // Assert
-        match result with
-        | :? NotFoundObjectResult as notFound -> Assert.Equal(404, notFound.StatusCode.Value)
-        | :? ObjectResult as objResult when objResult.StatusCode.HasValue ->
-            Assert.Equal(404, objResult.StatusCode.Value)
-        | _ -> Assert.True(false, "Expected NotFound result")
-    }
+    let controller =
+        createTestController checkPermission getAppById getFolderById getResourceById [ space ] handleCommand userId
 
-[<Fact>]
-let ``UpdateAppInputs returns 200 with updated app`` () : Task =
-    task {
-        // Arrange
-        let userId = UserId.NewId()
-        let spaceId = SpaceId.NewId()
-        let folderId = FolderId.NewId()
-        let resourceId = ResourceId.NewId()
-        let appId = AppId.NewId()
+    let updateDto: UpdateAppNameDto = { Name = "Updated App Name" }
 
-        let folder = createTestFolder spaceId folderId
-        let app = createTestApp folderId resourceId appId
-        let space = createTestSpace spaceId userId
+    // Act
+    let! result = controller.UpdateAppName(appId.Value.ToString(), updateDto)
 
-        // Grant edit_app permission
-        let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
-            match subject, relation, obj with
-            | User uid, AppEdit, SpaceObject sid -> uid = userId.Value.ToString() && sid = spaceId.Value.ToString()
-            | _ -> false
-
-        let getAppById id =
-            Task.FromResult(if id = appId then Some app else None)
-
-        let getFolderById id =
-            Task.FromResult(if id = folderId then Some folder else None)
-
-        let getResourceById _ = Task.FromResult(None)
-
-        let handleCommand cmd =
-            match cmd with
-            | UpdateAppInputs _ ->
-                let appData = createAppData appId folderId resourceId
-                Task.FromResult(Ok(AppResult appData))
-            | _ -> Task.FromResult(Error(NotFound "Command not supported"))
-
-        let controller =
-            createTestController checkPermission getAppById getFolderById getResourceById [ space ] handleCommand userId
-
-        let updateDto: UpdateAppInputsDto = { Inputs = [] }
-
-        // Act
-        let! result = controller.UpdateAppInputs(appId.Value.ToString(), updateDto)
-
-        // Assert
-        match result with
-        | :? OkObjectResult as okResult ->
-            Assert.Equal(200, okResult.StatusCode.Value)
-            Assert.NotNull(okResult.Value)
-        | _ -> Assert.True(false, "Expected OkObjectResult")
-    }
+    // Assert
+    match result with
+    | :? ObjectResult as objResult -> Assert.Equal(403, objResult.StatusCode.Value)
+    | _ -> Assert.True(false, "Expected ObjectResult with status code 403")
+}
 
 [<Fact>]
-let ``UpdateAppQueryParameters returns 200`` () : Task =
-    task {
-        // Arrange
-        let userId = UserId.NewId()
-        let spaceId = SpaceId.NewId()
-        let folderId = FolderId.NewId()
-        let resourceId = ResourceId.NewId()
-        let appId = AppId.NewId()
+let ``UpdateAppName returns 404 for nonexistent`` () : Task = task {
+    // Arrange
+    let userId = UserId.NewId()
+    let nonExistentAppId = AppId.NewId()
 
-        let folder = createTestFolder spaceId folderId
-        let app = createTestApp folderId resourceId appId
-        let resource = createTestResource spaceId resourceId
-        let space = createTestSpace spaceId userId
+    // Grant all permissions
+    let checkPermission _ _ _ = true
 
-        // Grant edit_app permission
-        let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
-            match subject, relation, obj with
-            | User uid, AppEdit, SpaceObject sid -> uid = userId.Value.ToString() && sid = spaceId.Value.ToString()
-            | _ -> false
+    let getAppById _ = Task.FromResult(None)
+    let getFolderById _ = Task.FromResult(None)
+    let getResourceById _ = Task.FromResult(None)
 
-        let getAppById id =
-            Task.FromResult(if id = appId then Some app else None)
+    let handleCommand _ =
+        Task.FromResult(Error(NotFound "App not found"))
 
-        let getFolderById id =
-            Task.FromResult(if id = folderId then Some folder else None)
+    let controller =
+        createTestController checkPermission getAppById getFolderById getResourceById [] handleCommand userId
 
-        let getResourceById id =
-            Task.FromResult(if id = resourceId then Some resource else None)
+    let updateDto: UpdateAppNameDto = { Name = "Updated App Name" }
 
-        let handleCommand cmd =
-            match cmd with
-            | UpdateAppQueryParameters _ ->
-                let appData = createAppData appId folderId resourceId
-                Task.FromResult(Ok(AppResult appData))
-            | _ -> Task.FromResult(Error(NotFound "Command not supported"))
+    // Act
+    let! result = controller.UpdateAppName(nonExistentAppId.Value.ToString(), updateDto)
 
-        let controller =
-            createTestController checkPermission getAppById getFolderById getResourceById [ space ] handleCommand userId
-
-        let updateDto: UpdateAppQueryParametersDto = { UrlParameters = [] }
-
-        // Act
-        let! result = controller.UpdateAppQueryParameters(appId.Value.ToString(), updateDto)
-
-        // Assert
-        match result with
-        | :? OkObjectResult as okResult ->
-            Assert.Equal(200, okResult.StatusCode.Value)
-            Assert.NotNull(okResult.Value)
-        | _ -> Assert.True(false, "Expected OkObjectResult")
-    }
+    // Assert
+    match result with
+    | :? NotFoundObjectResult as notFound -> Assert.Equal(404, notFound.StatusCode.Value)
+    | :? ObjectResult as objResult when objResult.StatusCode.HasValue -> Assert.Equal(404, objResult.StatusCode.Value)
+    | _ -> Assert.True(false, "Expected NotFound result")
+}
 
 [<Fact>]
-let ``UpdateAppBody returns 200`` () : Task =
-    task {
-        // Arrange
-        let userId = UserId.NewId()
-        let spaceId = SpaceId.NewId()
-        let folderId = FolderId.NewId()
-        let resourceId = ResourceId.NewId()
-        let appId = AppId.NewId()
+let ``UpdateAppInputs returns 200 with updated app`` () : Task = task {
+    // Arrange
+    let userId = UserId.NewId()
+    let spaceId = SpaceId.NewId()
+    let folderId = FolderId.NewId()
+    let resourceId = ResourceId.NewId()
+    let appId = AppId.NewId()
 
-        let folder = createTestFolder spaceId folderId
-        let app = createTestApp folderId resourceId appId
-        let resource = createTestResource spaceId resourceId
-        let space = createTestSpace spaceId userId
+    let folder = createTestFolder spaceId folderId
+    let app = createTestApp folderId resourceId appId
+    let space = createTestSpace spaceId userId
 
-        // Grant edit_app permission
-        let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
-            match subject, relation, obj with
-            | User uid, AppEdit, SpaceObject sid -> uid = userId.Value.ToString() && sid = spaceId.Value.ToString()
-            | _ -> false
+    // Grant edit_app permission
+    let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
+        match subject, relation, obj with
+        | User uid, AppEdit, SpaceObject sid -> uid = userId.Value.ToString() && sid = spaceId.Value.ToString()
+        | _ -> false
 
-        let getAppById id =
-            Task.FromResult(if id = appId then Some app else None)
+    let getAppById id =
+        Task.FromResult(if id = appId then Some app else None)
 
-        let getFolderById id =
-            Task.FromResult(if id = folderId then Some folder else None)
+    let getFolderById id =
+        Task.FromResult(if id = folderId then Some folder else None)
 
-        let getResourceById id =
-            Task.FromResult(if id = resourceId then Some resource else None)
+    let getResourceById _ = Task.FromResult(None)
 
-        let handleCommand cmd =
-            match cmd with
-            | UpdateAppBody _ ->
-                let appData = createAppData appId folderId resourceId
-                Task.FromResult(Ok(AppResult appData))
-            | _ -> Task.FromResult(Error(NotFound "Command not supported"))
+    let handleCommand cmd =
+        match cmd with
+        | UpdateAppInputs _ ->
+            let appData = createAppData appId folderId resourceId
+            Task.FromResult(Ok(AppResult appData))
+        | _ -> Task.FromResult(Error(NotFound "Command not supported"))
 
-        let controller =
-            createTestController checkPermission getAppById getFolderById getResourceById [ space ] handleCommand userId
+    let controller =
+        createTestController checkPermission getAppById getFolderById getResourceById [ space ] handleCommand userId
 
-        let updateDto: UpdateAppBodyDto = { Body = [] }
+    let updateDto: UpdateAppInputsDto = { Inputs = [] }
 
-        // Act
-        let! result = controller.UpdateAppBody(appId.Value.ToString(), updateDto)
+    // Act
+    let! result = controller.UpdateAppInputs(appId.Value.ToString(), updateDto)
 
-        // Assert
-        match result with
-        | :? OkObjectResult as okResult ->
-            Assert.Equal(200, okResult.StatusCode.Value)
-            Assert.NotNull(okResult.Value)
-        | _ -> Assert.True(false, "Expected OkObjectResult")
-    }
+    // Assert
+    match result with
+    | :? OkObjectResult as okResult ->
+        Assert.Equal(200, okResult.StatusCode.Value)
+        Assert.NotNull(okResult.Value)
+    | _ -> Assert.True(false, "Expected OkObjectResult")
+}
+
+[<Fact>]
+let ``UpdateAppQueryParameters returns 200`` () : Task = task {
+    // Arrange
+    let userId = UserId.NewId()
+    let spaceId = SpaceId.NewId()
+    let folderId = FolderId.NewId()
+    let resourceId = ResourceId.NewId()
+    let appId = AppId.NewId()
+
+    let folder = createTestFolder spaceId folderId
+    let app = createTestApp folderId resourceId appId
+    let resource = createTestResource spaceId resourceId
+    let space = createTestSpace spaceId userId
+
+    // Grant edit_app permission
+    let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
+        match subject, relation, obj with
+        | User uid, AppEdit, SpaceObject sid -> uid = userId.Value.ToString() && sid = spaceId.Value.ToString()
+        | _ -> false
+
+    let getAppById id =
+        Task.FromResult(if id = appId then Some app else None)
+
+    let getFolderById id =
+        Task.FromResult(if id = folderId then Some folder else None)
+
+    let getResourceById id =
+        Task.FromResult(if id = resourceId then Some resource else None)
+
+    let handleCommand cmd =
+        match cmd with
+        | UpdateAppQueryParameters _ ->
+            let appData = createAppData appId folderId resourceId
+            Task.FromResult(Ok(AppResult appData))
+        | _ -> Task.FromResult(Error(NotFound "Command not supported"))
+
+    let controller =
+        createTestController checkPermission getAppById getFolderById getResourceById [ space ] handleCommand userId
+
+    let updateDto: UpdateAppQueryParametersDto = { UrlParameters = [] }
+
+    // Act
+    let! result = controller.UpdateAppQueryParameters(appId.Value.ToString(), updateDto)
+
+    // Assert
+    match result with
+    | :? OkObjectResult as okResult ->
+        Assert.Equal(200, okResult.StatusCode.Value)
+        Assert.NotNull(okResult.Value)
+    | _ -> Assert.True(false, "Expected OkObjectResult")
+}
+
+[<Fact>]
+let ``UpdateAppBody returns 200`` () : Task = task {
+    // Arrange
+    let userId = UserId.NewId()
+    let spaceId = SpaceId.NewId()
+    let folderId = FolderId.NewId()
+    let resourceId = ResourceId.NewId()
+    let appId = AppId.NewId()
+
+    let folder = createTestFolder spaceId folderId
+    let app = createTestApp folderId resourceId appId
+    let resource = createTestResource spaceId resourceId
+    let space = createTestSpace spaceId userId
+
+    // Grant edit_app permission
+    let checkPermission (subject: AuthSubject) (relation: AuthRelation) (obj: AuthObject) =
+        match subject, relation, obj with
+        | User uid, AppEdit, SpaceObject sid -> uid = userId.Value.ToString() && sid = spaceId.Value.ToString()
+        | _ -> false
+
+    let getAppById id =
+        Task.FromResult(if id = appId then Some app else None)
+
+    let getFolderById id =
+        Task.FromResult(if id = folderId then Some folder else None)
+
+    let getResourceById id =
+        Task.FromResult(if id = resourceId then Some resource else None)
+
+    let handleCommand cmd =
+        match cmd with
+        | UpdateAppBody _ ->
+            let appData = createAppData appId folderId resourceId
+            Task.FromResult(Ok(AppResult appData))
+        | _ -> Task.FromResult(Error(NotFound "Command not supported"))
+
+    let controller =
+        createTestController checkPermission getAppById getFolderById getResourceById [ space ] handleCommand userId
+
+    let updateDto: UpdateAppBodyDto = { Body = [] }
+
+    // Act
+    let! result = controller.UpdateAppBody(appId.Value.ToString(), updateDto)
+
+    // Assert
+    match result with
+    | :? OkObjectResult as okResult ->
+        Assert.Equal(200, okResult.StatusCode.Value)
+        Assert.NotNull(okResult.Value)
+    | _ -> Assert.True(false, "Expected OkObjectResult")
+}

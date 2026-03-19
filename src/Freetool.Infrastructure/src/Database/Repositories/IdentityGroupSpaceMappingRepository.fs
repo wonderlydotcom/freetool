@@ -16,59 +16,53 @@ type IdentityGroupSpaceMappingRepository(context: FreetoolDbContext) =
         (spaceNameLookup: Map<SpaceId, string>)
         (mapping: IdentityGroupSpaceMappingData)
         : IdentityGroupSpaceMappingDto =
-        { Id = mapping.Id.ToString()
-          GroupKey = mapping.GroupKey
-          SpaceId = mapping.SpaceId.Value.ToString()
-          SpaceName = spaceNameLookup |> Map.tryFind mapping.SpaceId
-          IsActive = mapping.IsActive
-          CreatedAt = mapping.CreatedAt
-          UpdatedAt = mapping.UpdatedAt }
+        {
+            Id = mapping.Id.ToString()
+            GroupKey = mapping.GroupKey
+            SpaceId = mapping.SpaceId.Value.ToString()
+            SpaceName = spaceNameLookup |> Map.tryFind mapping.SpaceId
+            IsActive = mapping.IsActive
+            CreatedAt = mapping.CreatedAt
+            UpdatedAt = mapping.UpdatedAt
+        }
 
     interface IIdentityGroupSpaceMappingRepository with
-        member _.GetAllAsync() : Task<IdentityGroupSpaceMappingDto list> =
-            task {
-                let! mappings =
+        member _.GetAllAsync() : Task<IdentityGroupSpaceMappingDto list> = task {
+            let! mappings =
+                context.IdentityGroupSpaceMappings.OrderBy(fun m -> m.GroupKey).ThenBy(fun m -> m.SpaceId).ToListAsync()
+
+            if mappings.Count = 0 then
+                return []
+            else
+                let spaceIds =
+                    mappings |> Seq.map (fun m -> m.SpaceId) |> Seq.distinct |> Seq.toList
+
+                let! spaces =
+                    context.Spaces.Where(fun s -> spaceIds.Contains(s.Id)).Select(fun s -> (s.Id, s.Name)).ToListAsync()
+
+                let spaceNameLookup = spaces |> Seq.map (fun (id, name) -> (id, name)) |> Map.ofSeq
+                return mappings |> Seq.map (toDto spaceNameLookup) |> Seq.toList
+        }
+
+        member _.GetSpaceIdsByGroupKeysAsync(groupKeys: string list) : Task<SpaceId list> = task {
+            let normalizedKeys =
+                groupKeys
+                |> List.map (fun g -> g.Trim())
+                |> List.filter (fun g -> not (String.IsNullOrWhiteSpace g))
+                |> List.distinct
+
+            if List.isEmpty normalizedKeys then
+                return []
+            else
+                let! spaceIds =
                     context.IdentityGroupSpaceMappings
-                        .OrderBy(fun m -> m.GroupKey)
-                        .ThenBy(fun m -> m.SpaceId)
+                        .Where(fun m -> m.IsActive && normalizedKeys.Contains(m.GroupKey))
+                        .Select(fun m -> m.SpaceId)
+                        .Distinct()
                         .ToListAsync()
 
-                if mappings.Count = 0 then
-                    return []
-                else
-                    let spaceIds =
-                        mappings |> Seq.map (fun m -> m.SpaceId) |> Seq.distinct |> Seq.toList
-
-                    let! spaces =
-                        context.Spaces
-                            .Where(fun s -> spaceIds.Contains(s.Id))
-                            .Select(fun s -> (s.Id, s.Name))
-                            .ToListAsync()
-
-                    let spaceNameLookup = spaces |> Seq.map (fun (id, name) -> (id, name)) |> Map.ofSeq
-                    return mappings |> Seq.map (toDto spaceNameLookup) |> Seq.toList
-            }
-
-        member _.GetSpaceIdsByGroupKeysAsync(groupKeys: string list) : Task<SpaceId list> =
-            task {
-                let normalizedKeys =
-                    groupKeys
-                    |> List.map (fun g -> g.Trim())
-                    |> List.filter (fun g -> not (String.IsNullOrWhiteSpace g))
-                    |> List.distinct
-
-                if List.isEmpty normalizedKeys then
-                    return []
-                else
-                    let! spaceIds =
-                        context.IdentityGroupSpaceMappings
-                            .Where(fun m -> m.IsActive && normalizedKeys.Contains(m.GroupKey))
-                            .Select(fun m -> m.SpaceId)
-                            .Distinct()
-                            .ToListAsync()
-
-                    return spaceIds |> Seq.toList
-            }
+                return spaceIds |> Seq.toList
+        }
 
         member _.AddAsync
             (actorUserId: UserId)
@@ -95,15 +89,16 @@ type IdentityGroupSpaceMappingRepository(context: FreetoolDbContext) =
                         else
                             let now = DateTime.UtcNow
 
-                            let mapping =
-                                { Id = Guid.NewGuid()
-                                  GroupKey = normalizedGroupKey
-                                  SpaceId = spaceId
-                                  IsActive = true
-                                  CreatedByUserId = actorUserId
-                                  UpdatedByUserId = actorUserId
-                                  CreatedAt = now
-                                  UpdatedAt = now }
+                            let mapping = {
+                                Id = Guid.NewGuid()
+                                GroupKey = normalizedGroupKey
+                                SpaceId = spaceId
+                                IsActive = true
+                                CreatedByUserId = actorUserId
+                                UpdatedByUserId = actorUserId
+                                CreatedAt = now
+                                UpdatedAt = now
+                            }
 
                             context.IdentityGroupSpaceMappings.Add(mapping) |> ignore
 
@@ -133,11 +128,12 @@ type IdentityGroupSpaceMappingRepository(context: FreetoolDbContext) =
                 match Option.ofObj existing with
                 | None -> return Error(NotFound "Mapping not found")
                 | Some mapping ->
-                    let updated =
-                        { mapping with
+                    let updated = {
+                        mapping with
                             IsActive = isActive
                             UpdatedByUserId = actorUserId
-                            UpdatedAt = DateTime.UtcNow }
+                            UpdatedAt = DateTime.UtcNow
+                    }
 
                     context.Entry(mapping).CurrentValues.SetValues(updated)
 
@@ -148,18 +144,17 @@ type IdentityGroupSpaceMappingRepository(context: FreetoolDbContext) =
                         return Error(Conflict $"Failed to update mapping: {ex.Message}")
             }
 
-        member _.DeleteAsync(mappingId: Guid) : Task<Result<unit, DomainError>> =
-            task {
-                let! existing = context.IdentityGroupSpaceMappings.FirstOrDefaultAsync(fun m -> m.Id = mappingId)
+        member _.DeleteAsync(mappingId: Guid) : Task<Result<unit, DomainError>> = task {
+            let! existing = context.IdentityGroupSpaceMappings.FirstOrDefaultAsync(fun m -> m.Id = mappingId)
 
-                match Option.ofObj existing with
-                | None -> return Error(NotFound "Mapping not found")
-                | Some mapping ->
-                    context.IdentityGroupSpaceMappings.Remove(mapping) |> ignore
+            match Option.ofObj existing with
+            | None -> return Error(NotFound "Mapping not found")
+            | Some mapping ->
+                context.IdentityGroupSpaceMappings.Remove(mapping) |> ignore
 
-                    try
-                        let! _ = context.SaveChangesAsync()
-                        return Ok()
-                    with :? DbUpdateException as ex ->
-                        return Error(Conflict $"Failed to delete mapping: {ex.Message}")
-            }
+                try
+                    let! _ = context.SaveChangesAsync()
+                    return Ok()
+                with :? DbUpdateException as ex ->
+                    return Error(Conflict $"Failed to delete mapping: {ex.Message}")
+        }

@@ -21,11 +21,12 @@ module DashboardHandler =
         | PrepareOutput of string
         | Literal of string
 
-    type private BindingDefinition =
-        { AppId: AppId option
-          ActionId: ActionId option
-          InputName: string
-          Source: BindingSource }
+    type private BindingDefinition = {
+        AppId: AppId option
+        ActionId: ActionId option
+        InputName: string
+        Source: BindingSource
+    }
 
     let private parseDashboardId (dashboardId: string) : Result<DashboardId, DomainError> =
         match Guid.TryParse dashboardId with
@@ -188,11 +189,12 @@ module DashboardHandler =
             | _, Error err, _ -> Error err
             | _, _, Error err -> Error err
             | Ok actionId, Ok appId, Ok source ->
-                Ok
-                    { AppId = appId
-                      ActionId = actionId
-                      InputName = inputName
-                      Source = source }
+                Ok {
+                    AppId = appId
+                    ActionId = actionId
+                    InputName = inputName
+                    Source = source
+                }
 
     let private parseDashboardConfiguration
         (configuration: string)
@@ -389,16 +391,19 @@ module DashboardHandler =
                         | Error err -> Error err
                         | Ok resolvedValue ->
                             Ok(
-                                { Title = binding.InputName
-                                  Value = resolvedValue }
+                                {
+                                    Title = binding.InputName
+                                    Value = resolvedValue
+                                }
                                 :: runInputs
                             ))
                 (Ok [])
             |> Result.map List.rev
 
-    let private createRunDto (inputs: RunInputDto list) : CreateRunDto =
-        { InputValues = inputs
-          DynamicBody = None }
+    let private createRunDto (inputs: RunInputDto list) : CreateRunDto = {
+        InputValues = inputs
+        DynamicBody = None
+    }
 
     let private saveRuntimeEventAsync
         (eventRepository: IEventRepository)
@@ -514,11 +519,12 @@ module DashboardHandler =
                                         | Ok() ->
                                             return
                                                 Ok(
-                                                    DashboardPrepareResult
-                                                        { PrepareRunId = runData.Id.Value.ToString()
-                                                          Status = runData.Status.ToString()
-                                                          Response = runData.Response
-                                                          ErrorMessage = runData.ErrorMessage }
+                                                    DashboardPrepareResult {
+                                                        PrepareRunId = runData.Id.Value.ToString()
+                                                        Status = runData.Status.ToString()
+                                                        Response = runData.Response
+                                                        ErrorMessage = runData.ErrorMessage
+                                                    }
                                                 )
                                     | _ ->
                                         let failureMessage =
@@ -577,48 +583,45 @@ module DashboardHandler =
                             match actionMap.TryFind actionId with
                             | None -> return Error(NotFound $"Dashboard action '{actionId.Value}' was not found")
                             | Some actionDefinition ->
-                                let! prepareResponseResult =
-                                    task {
-                                        match dashboard.State.PrepareAppId, dto.PrepareRunId with
-                                        | Some _, None ->
-                                            return
-                                                Error(
-                                                    ValidationError
-                                                        "prepareRunId is required to run dashboard actions when prepare app is configured"
-                                                )
-                                        | None, Some _ ->
-                                            return
-                                                Error(
-                                                    ValidationError
-                                                        "prepareRunId was provided but dashboard has no prepare app"
-                                                )
-                                        | None, None -> return Ok None
-                                        | Some prepareAppId, Some prepareRunIdValue ->
-                                            match parseRunId prepareRunIdValue with
-                                            | Error err -> return Error err
-                                            | Ok prepareRunId ->
-                                                let! prepareRunOption = runRepository.GetByIdAsync prepareRunId
+                                let! prepareResponseResult = task {
+                                    match dashboard.State.PrepareAppId, dto.PrepareRunId with
+                                    | Some _, None ->
+                                        return
+                                            Error(
+                                                ValidationError
+                                                    "prepareRunId is required to run dashboard actions when prepare app is configured"
+                                            )
+                                    | None, Some _ ->
+                                        return
+                                            Error(
+                                                ValidationError
+                                                    "prepareRunId was provided but dashboard has no prepare app"
+                                            )
+                                    | None, None -> return Ok None
+                                    | Some prepareAppId, Some prepareRunIdValue ->
+                                        match parseRunId prepareRunIdValue with
+                                        | Error err -> return Error err
+                                        | Ok prepareRunId ->
+                                            let! prepareRunOption = runRepository.GetByIdAsync prepareRunId
 
-                                                match prepareRunOption with
-                                                | None ->
-                                                    return
-                                                        Error(
-                                                            NotFound $"Prepare run '{prepareRunId.Value}' was not found"
-                                                        )
-                                                | Some prepareRun when Run.getAppId prepareRun <> prepareAppId ->
-                                                    return
-                                                        Error(
-                                                            ValidationError
-                                                                "prepareRunId does not belong to this dashboard prepare app"
-                                                        )
-                                                | Some prepareRun when prepareRun.State.Status <> RunStatus.Success ->
-                                                    return
-                                                        Error(
-                                                            ValidationError
-                                                                "prepareRunId must reference a successful prepare run"
-                                                        )
-                                                | Some prepareRun -> return Ok(Run.getResponse prepareRun)
-                                    }
+                                            match prepareRunOption with
+                                            | None ->
+                                                return
+                                                    Error(NotFound $"Prepare run '{prepareRunId.Value}' was not found")
+                                            | Some prepareRun when Run.getAppId prepareRun <> prepareAppId ->
+                                                return
+                                                    Error(
+                                                        ValidationError
+                                                            "prepareRunId does not belong to this dashboard prepare app"
+                                                    )
+                                            | Some prepareRun when prepareRun.State.Status <> RunStatus.Success ->
+                                                return
+                                                    Error(
+                                                        ValidationError
+                                                            "prepareRunId must reference a successful prepare run"
+                                                    )
+                                            | Some prepareRun -> return Ok(Run.getResponse prepareRun)
+                                }
 
                                 match prepareResponseResult with
                                 | Error err -> return Error err
@@ -695,11 +698,12 @@ module DashboardHandler =
                                             | Ok() ->
                                                 return
                                                     Ok(
-                                                        DashboardActionResult
-                                                            { ActionRunId = runData.Id.Value.ToString()
-                                                              Status = runData.Status.ToString()
-                                                              Response = runData.Response
-                                                              ErrorMessage = runData.ErrorMessage }
+                                                        DashboardActionResult {
+                                                            ActionRunId = runData.Id.Value.ToString()
+                                                            Status = runData.Status.ToString()
+                                                            Response = runData.Response
+                                                            ErrorMessage = runData.ErrorMessage
+                                                        }
                                                     )
         }
 
@@ -752,11 +756,12 @@ module DashboardHandler =
                     let! dashboards = dashboardRepository.GetByFolderIdAsync folderIdObj skip take
                     let! totalCount = dashboardRepository.GetCountByFolderIdAsync folderIdObj
 
-                    let result: PagedResult<DashboardData> =
-                        { Items = dashboards |> List.map (fun dashboard -> dashboard.State)
-                          TotalCount = totalCount
-                          Skip = skip
-                          Take = take }
+                    let result: PagedResult<DashboardData> = {
+                        Items = dashboards |> List.map (fun dashboard -> dashboard.State)
+                        TotalCount = totalCount
+                        Skip = skip
+                        Take = take
+                    }
 
                     return Ok(DashboardsResult result)
 
@@ -767,11 +772,12 @@ module DashboardHandler =
                     let! dashboards = dashboardRepository.GetAllAsync skip take
                     let! totalCount = dashboardRepository.GetCountAsync()
 
-                    let result: PagedResult<DashboardData> =
-                        { Items = dashboards |> List.map (fun dashboard -> dashboard.State)
-                          TotalCount = totalCount
-                          Skip = skip
-                          Take = take }
+                    let result: PagedResult<DashboardData> = {
+                        Items = dashboards |> List.map (fun dashboard -> dashboard.State)
+                        TotalCount = totalCount
+                        Skip = skip
+                        Take = take
+                    }
 
                     return Ok(DashboardsResult result)
 
@@ -782,21 +788,23 @@ module DashboardHandler =
                     if List.isEmpty spaceIds then
                         return
                             Ok(
-                                DashboardsResult
-                                    { Items = []
-                                      TotalCount = 0
-                                      Skip = skip
-                                      Take = take }
+                                DashboardsResult {
+                                    Items = []
+                                    TotalCount = 0
+                                    Skip = skip
+                                    Take = take
+                                }
                             )
                     else
                         let! dashboards = dashboardRepository.GetBySpaceIdsAsync spaceIds skip take
                         let! totalCount = dashboardRepository.GetCountBySpaceIdsAsync spaceIds
 
-                        let result: PagedResult<DashboardData> =
-                            { Items = dashboards |> List.map (fun dashboard -> dashboard.State)
-                              TotalCount = totalCount
-                              Skip = skip
-                              Take = take }
+                        let result: PagedResult<DashboardData> = {
+                            Items = dashboards |> List.map (fun dashboard -> dashboard.State)
+                            TotalCount = totalCount
+                            Skip = skip
+                            Take = take
+                        }
 
                         return Ok(DashboardsResult result)
 

@@ -76,42 +76,45 @@ let ``AppData with complex JSON properties can be persisted and retrieved`` () =
         | Ok inputType -> inputType
         | Error _ -> failwith "Failed to create test InputType"
 
-    let testInput: Freetool.Domain.Events.Input =
-        { Title = "Test Input"
-          Description = None
-          Type = testInputType
-          Required = true
-          DefaultValue = None }
+    let testInput: Freetool.Domain.Events.Input = {
+        Title = "Test Input"
+        Description = None
+        Type = testInputType
+        Required = true
+        DefaultValue = None
+    }
 
-    let currencyInput: Freetool.Domain.Events.Input =
-        { Title = "Budget"
-          Description = Some "USD currency field"
-          Type = InputType.Currency(SupportedCurrency.USD)
-          Required = false
-          DefaultValue = None }
+    let currencyInput: Freetool.Domain.Events.Input = {
+        Title = "Budget"
+        Description = Some "USD currency field"
+        Type = InputType.Currency(SupportedCurrency.USD)
+        Required = false
+        DefaultValue = None
+    }
 
     let testKeyValuePair =
         match KeyValuePair.Create("testKey", "testValue") with
         | Ok kvp -> kvp
         | Error _ -> failwith "Failed to create test KeyValuePair"
 
-    let appData: AppData =
-        { Id = AppId.NewId()
-          Name = "Test App"
-          FolderId = FolderId.NewId()
-          ResourceId = ResourceId.NewId()
-          HttpMethod = HttpMethod.Get
-          Inputs = [ testInput; currencyInput ]
-          UrlPath = Some "/test"
-          UrlParameters = [ testKeyValuePair ]
-          Headers = [ testKeyValuePair ]
-          Body = [ testKeyValuePair ]
-          UseDynamicJsonBody = false
-          SqlConfig = None
-          Description = None
-          CreatedAt = DateTime.UtcNow
-          UpdatedAt = DateTime.UtcNow
-          IsDeleted = false }
+    let appData: AppData = {
+        Id = AppId.NewId()
+        Name = "Test App"
+        FolderId = FolderId.NewId()
+        ResourceId = ResourceId.NewId()
+        HttpMethod = HttpMethod.Get
+        Inputs = [ testInput; currencyInput ]
+        UrlPath = Some "/test"
+        UrlParameters = [ testKeyValuePair ]
+        Headers = [ testKeyValuePair ]
+        Body = [ testKeyValuePair ]
+        UseDynamicJsonBody = false
+        SqlConfig = None
+        Description = None
+        CreatedAt = DateTime.UtcNow
+        UpdatedAt = DateTime.UtcNow
+        IsDeleted = false
+    }
 
     // Act - This will fail if JSON serialization doesn't work
     context.Apps.Add(appData) |> ignore
@@ -167,29 +170,30 @@ let ``ResourceData with complex JSON properties can be persisted and retrieved``
         | Ok url -> url
         | Error _ -> failwith "Failed to create BaseUrl"
 
-    let resourceData: ResourceData =
-        { Id = ResourceId.NewId()
-          SpaceId = SpaceId.FromGuid(Guid.NewGuid())
-          Name = resourceName
-          Description = resourceDescription
-          ResourceKind = ResourceKind.Http
-          BaseUrl = Some baseUrl
-          UrlParameters = [ testKeyValuePair ]
-          Headers = [ testKeyValuePair ]
-          Body = [ testKeyValuePair ]
-          DatabaseName = None
-          DatabaseHost = None
-          DatabasePort = None
-          DatabaseEngine = None
-          DatabaseAuthScheme = None
-          DatabaseUsername = None
-          DatabasePassword = None
-          UseSsl = false
-          EnableSshTunnel = false
-          ConnectionOptions = []
-          CreatedAt = DateTime.UtcNow
-          UpdatedAt = DateTime.UtcNow
-          IsDeleted = false }
+    let resourceData: ResourceData = {
+        Id = ResourceId.NewId()
+        SpaceId = SpaceId.FromGuid(Guid.NewGuid())
+        Name = resourceName
+        Description = resourceDescription
+        ResourceKind = ResourceKind.Http
+        BaseUrl = Some baseUrl
+        UrlParameters = [ testKeyValuePair ]
+        Headers = [ testKeyValuePair ]
+        Body = [ testKeyValuePair ]
+        DatabaseName = None
+        DatabaseHost = None
+        DatabasePort = None
+        DatabaseEngine = None
+        DatabaseAuthScheme = None
+        DatabaseUsername = None
+        DatabasePassword = None
+        UseSsl = false
+        EnableSshTunnel = false
+        ConnectionOptions = []
+        CreatedAt = DateTime.UtcNow
+        UpdatedAt = DateTime.UtcNow
+        IsDeleted = false
+    }
 
     // Act - This will fail if JSON serialization doesn't work
     context.Resources.Add(resourceData) |> ignore
@@ -228,15 +232,16 @@ let ``Entity Framework model validation passes for all configured entities`` () 
         entityTypes |> Seq.map (fun et -> et.ClrType.Name) |> Set.ofSeq
 
     let expectedTypes =
-        Set.ofList
-            [ "AppData"
-              "ResourceData"
-              "UserData"
-              "FolderData"
-              "EventData"
-              "RunData"
-              "SpaceData"
-              "SpaceMemberData" ]
+        Set.ofList [
+            "AppData"
+            "ResourceData"
+            "UserData"
+            "FolderData"
+            "EventData"
+            "RunData"
+            "SpaceData"
+            "SpaceMemberData"
+        ]
 
     Assert.True(
         expectedTypes.IsSubsetOf(entityTypeNames),

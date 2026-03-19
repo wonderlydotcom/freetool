@@ -81,22 +81,24 @@ type OptionalStringLengthAttribute(maxLength: int) =
         | _ -> false
 
 
-type PagedResult<'T> =
-    { Items: 'T list
-      TotalCount: int
-      Skip: int
-      Take: int }
+type PagedResult<'T> = {
+    Items: 'T list
+    TotalCount: int
+    Skip: int
+    Take: int
+}
 
-type InputDto =
-    { [<Required>]
-      [<StringLength(ValidationConstants.InputTitleMaxLength,
-                     MinimumLength = ValidationConstants.InputTitleMinLength,
-                     ErrorMessage = ValidationConstants.InputTitleErrorMessage)>]
-      Title: string
+type InputDto = {
+    [<Required>]
+    [<StringLength(ValidationConstants.InputTitleMaxLength,
+                   MinimumLength = ValidationConstants.InputTitleMinLength,
+                   ErrorMessage = ValidationConstants.InputTitleErrorMessage)>]
+    Title: string
 
-      [<OptionalStringLength(ValidationConstants.InputDescriptionMaxLength,
-                             ErrorMessage = ValidationConstants.InputDescriptionErrorMessage)>]
-      Description: string option
+    [<OptionalStringLength(ValidationConstants.InputDescriptionMaxLength,
+                           ErrorMessage = ValidationConstants.InputDescriptionErrorMessage)>]
+    Description: string option
 
-      [<Required>]
-      Type: InputTypeDto }
+    [<Required>]
+    Type: InputTypeDto
+}

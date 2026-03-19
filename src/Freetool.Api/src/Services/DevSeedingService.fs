@@ -67,10 +67,11 @@ module DevSeedingService =
 
                         // 3. Ensure organization relation for the space
                         try
-                            let orgTuple =
-                                { Subject = Organization "default"
-                                  Relation = SpaceOrganization
-                                  Object = SpaceObject spaceIdStr }
+                            let orgTuple = {
+                                Subject = Organization "default"
+                                Relation = SpaceOrganization
+                                Object = SpaceObject spaceIdStr
+                            }
 
                             do! authService.CreateRelationshipsAsync [ orgTuple ]
 
@@ -90,10 +91,11 @@ module DevSeedingService =
                             let moderatorUserIdStr = moderatorUserId.Value.ToString()
 
                             try
-                                let moderatorTuple =
-                                    { Subject = User moderatorUserIdStr
-                                      Relation = SpaceModerator
-                                      Object = SpaceObject spaceIdStr }
+                                let moderatorTuple = {
+                                    Subject = User moderatorUserIdStr
+                                    Relation = SpaceModerator
+                                    Object = SpaceObject spaceIdStr
+                                }
 
                                 do! authService.CreateRelationshipsAsync [ moderatorTuple ]
 
@@ -113,17 +115,20 @@ module DevSeedingService =
                             let memberUserIdStr = memberUserId.Value.ToString()
 
                             memberTuples.Add(
-                                { Subject = User memberUserIdStr
-                                  Relation = SpaceMember
-                                  Object = SpaceObject spaceIdStr }
+                                {
+                                    Subject = User memberUserIdStr
+                                    Relation = SpaceMember
+                                    Object = SpaceObject spaceIdStr
+                                }
                             )
 
                             // Also add run_app permission for member
                             try
-                                let runAppTuple =
-                                    { Subject = User memberUserIdStr
-                                      Relation = AppRun
-                                      Object = SpaceObject spaceIdStr }
+                                let runAppTuple = {
+                                    Subject = User memberUserIdStr
+                                    Relation = AppRun
+                                    Object = SpaceObject spaceIdStr
+                                }
 
                                 do! authService.CreateRelationshipsAsync [ runAppTuple ]
 
@@ -141,9 +146,11 @@ module DevSeedingService =
                             let nopermUserIdStr = nopermUserId.Value.ToString()
 
                             memberTuples.Add(
-                                { Subject = User nopermUserIdStr
-                                  Relation = SpaceMember
-                                  Object = SpaceObject spaceIdStr }
+                                {
+                                    Subject = User nopermUserIdStr
+                                    Relation = SpaceMember
+                                    Object = SpaceObject spaceIdStr
+                                }
                             )
                         | None -> logger.LogInformation("[DEV MODE] Noperm user not found")
 
@@ -296,10 +303,11 @@ module DevSeedingService =
 
                                         // Set up organization relation for the space
                                         try
-                                            let orgTuple =
-                                                { Subject = Organization "default"
-                                                  Relation = SpaceOrganization
-                                                  Object = SpaceObject spaceIdStr }
+                                            let orgTuple = {
+                                                Subject = Organization "default"
+                                                Relation = SpaceOrganization
+                                                Object = SpaceObject spaceIdStr
+                                            }
 
                                             do! authService.CreateRelationshipsAsync [ orgTuple ]
                                             logger.LogInformation("[DEV MODE] Set up organization relation for space")
@@ -311,10 +319,11 @@ module DevSeedingService =
 
                                         // Set up moderator relation in OpenFGA
                                         try
-                                            let moderatorTuple =
-                                                { Subject = User(moderatorUserId.Value.ToString())
-                                                  Relation = SpaceModerator
-                                                  Object = SpaceObject spaceIdStr }
+                                            let moderatorTuple = {
+                                                Subject = User(moderatorUserId.Value.ToString())
+                                                Relation = SpaceModerator
+                                                Object = SpaceObject spaceIdStr
+                                            }
 
                                             do! authService.CreateRelationshipsAsync [ moderatorTuple ]
                                             logger.LogInformation("[DEV MODE] Set up moderator relation")
@@ -326,13 +335,18 @@ module DevSeedingService =
 
                                         // Set up member relations in OpenFGA
                                         try
-                                            let memberTuples =
-                                                [ { Subject = User(memberUserId.Value.ToString())
+                                            let memberTuples = [
+                                                {
+                                                    Subject = User(memberUserId.Value.ToString())
                                                     Relation = SpaceMember
-                                                    Object = SpaceObject spaceIdStr }
-                                                  { Subject = User(nopermUserId.Value.ToString())
+                                                    Object = SpaceObject spaceIdStr
+                                                }
+                                                {
+                                                    Subject = User(nopermUserId.Value.ToString())
                                                     Relation = SpaceMember
-                                                    Object = SpaceObject spaceIdStr } ]
+                                                    Object = SpaceObject spaceIdStr
+                                                }
+                                            ]
 
                                             do! authService.CreateRelationshipsAsync memberTuples
                                             logger.LogInformation("[DEV MODE] Set up member relations")
@@ -344,10 +358,11 @@ module DevSeedingService =
 
                                         // Give member user run_app permission
                                         try
-                                            let runAppTuple =
-                                                { Subject = User(memberUserId.Value.ToString())
-                                                  Relation = AppRun
-                                                  Object = SpaceObject spaceIdStr }
+                                            let runAppTuple = {
+                                                Subject = User(memberUserId.Value.ToString())
+                                                Relation = AppRun
+                                                Object = SpaceObject spaceIdStr
+                                            }
 
                                             do! authService.CreateRelationshipsAsync [ runAppTuple ]
                                             logger.LogInformation("[DEV MODE] Set up run_app permission for member")
@@ -365,9 +380,7 @@ module DevSeedingService =
                                                 "Sample API"
                                                 "A sample API resource for testing"
                                                 "https://httpbin.org/get"
-                                                []
-                                                []
-                                                []
+                                                [] [] []
                                         with
                                         | Error err ->
                                             logger.LogWarning("[DEV MODE] Failed to create resource: {Error}", err)
