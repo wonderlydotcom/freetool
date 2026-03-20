@@ -120,4 +120,4 @@ jobs:
           test -s "$tfvars_path"
 
       - name: Deploy app
-        run: scripts/deploy-app-from-tofu.sh -var-file=terraform.tfvars
+        run: scripts/deploy-app-from-tofu.sh

@@ -176,9 +176,9 @@ fi
 
 log "Applying OpenTofu with image_tag=${IMAGE_TAG}"
 tofu -chdir="${INFRA_DIR}" apply -auto-approve \
+  "${TOFU_APPLY_ARGS[@]}" \
   -var "image_name=${IMAGE_NAME}" \
-  -var "image_tag=${IMAGE_TAG}" \
-  "${TOFU_APPLY_ARGS[@]}"
+  -var "image_tag=${IMAGE_TAG}"
 
 OUTPUT_JSON="$(tofu -chdir="${INFRA_DIR}" output -json)"
 NAMESPACE="$(resolve_value APP_NAMESPACE namespace "app namespace")"
