@@ -1,7 +1,6 @@
 project_id                 = "wonderly-idp-sso"
 artifact_registry_location = "us-central1"
 image_name                 = "freetool-api"
-image_tag                  = "manual-20260318193702"
 workload_name              = "app"
 data_mount_path            = "/app/data"
 runtime_secrets_mount_path = "/var/run/secrets/app"
