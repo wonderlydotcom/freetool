@@ -19,7 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       INFRA_DIR: infra/opentofu
-      TFVARS_PATH: infra/opentofu/terraform.tfvars
       GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
       GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
       GCP_DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
