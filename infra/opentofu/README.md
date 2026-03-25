@@ -22,7 +22,7 @@ Get the contract for your app from the shared infra repo:
 tofu -chdir=../internal-tools-infra/platform/apps output -json app_contracts
 ```
 
-Copy the entry for `freetool` into `platform_contract` in `terraform.tfvars`.
+Keep the committed, non-secret `infra/opentofu/terraform.tfvars` up to date and copy the `freetool` entry into `platform_contract`.
 
 The values that matter here are:
 
@@ -93,3 +93,13 @@ IMAGE_TAG=$(git rev-parse --short HEAD) scripts/deploy-app-from-tofu.sh
 PUBLISH_LATEST=true scripts/deploy-app-from-tofu.sh
 scripts/deploy-app-from-tofu.sh -var-file=environments/dev/terraform.tfvars.example
 ```
+
+The selected `image_tag` is passed to OpenTofu at apply time and is not written back into `terraform.tfvars`.
+
+## App-Owned Changes
+
+In app repos, the normal changes are:
+
+- deploy a new container image by setting `IMAGE_TAG` or using the default git-sha tag; no `terraform.tfvars` edit is required
+- add or change `app_config` keys for non-secret runtime config
+- copy refreshed contract values after shared-platform changes

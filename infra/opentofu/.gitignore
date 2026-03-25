@@ -8,3 +8,4 @@ override.tf.json
 *_override.tf.json
 crash.log
 terraform.tfvars
+!terraform.tfvars

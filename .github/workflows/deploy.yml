@@ -24,7 +24,6 @@ jobs:
       GCP_DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
       GKE_CLUSTER_NAME: ${{ vars.GKE_CLUSTER_NAME }}
       GKE_CLUSTER_LOCATION: ${{ vars.GKE_CLUSTER_LOCATION }}
-      TOFU_TFVARS_BASE64: ${{ vars.TOFU_TFVARS_BASE64 }}
 
     steps:
       - name: Checkout
@@ -39,23 +38,10 @@ jobs:
             GCP_DEPLOY_SERVICE_ACCOUNT
             GKE_CLUSTER_NAME
             GKE_CLUSTER_LOCATION
-            TOFU_TFVARS_BASE64
           )
 
           for var_name in "${required_vars[@]}"; do
             if [[ -z "${!var_name:-}" ]]; then
-              if [[ "$var_name" == "TOFU_TFVARS_BASE64" ]]; then
-                echo "Missing required GitHub Actions variable: TOFU_TFVARS_BASE64" >&2
-                echo >&2
-                echo "Generate the value from a repo-specific OpenTofu var-file and store it as a repo variable:" >&2
-                echo "  ./scripts/encode-tofu-tfvars-base64.sh path/to/terraform.tfvars" >&2
-                echo >&2
-                echo "Then set it in GitHub, for example:" >&2
-                echo "  gh variable set TOFU_TFVARS_BASE64 --body \"\$(./scripts/encode-tofu-tfvars-base64.sh path/to/terraform.tfvars)\" --repo wonderlydotcom/freetool" >&2
-                echo >&2
-                echo "If \`gh auth status\` reports an invalid token, re-authenticate first with:" >&2
-                echo "  gh auth login -h github.com" >&2
-              fi
               echo "Missing required GitHub Actions variable: ${var_name}" >&2
               exit 1
             fi
@@ -106,18 +92,6 @@ jobs:
         run: |
           set -euo pipefail
           tofu -chdir="${INFRA_DIR}" init -input=false
-
-      - name: Write OpenTofu deploy tfvars
-        run: |
-          set -euo pipefail
-          tfvars_path="${INFRA_DIR}/terraform.tfvars"
-          printf '%s' "$TOFU_TFVARS_BASE64" | base64 --decode > "$tfvars_path"
-          awk '
-            /^[[:space:]]*image_tag[[:space:]]*=/ { next }
-            { print }
-          ' "$tfvars_path" > "${tfvars_path}.normalized"
-          mv "${tfvars_path}.normalized" "$tfvars_path"
-          test -s "$tfvars_path"
 
       - name: Deploy app
         run: scripts/deploy-app-from-tofu.sh

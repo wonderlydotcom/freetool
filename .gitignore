@@ -223,6 +223,7 @@ dist/
 *.tfvars
 *.tfvars.json
 terraform.tfvars
+!infra/opentofu/terraform.tfvars
 
 # Claude Code
 .claude/

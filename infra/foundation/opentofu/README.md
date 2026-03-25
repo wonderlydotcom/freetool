@@ -36,4 +36,5 @@ The app deploy workflow still needs cluster and app-contract values:
 
 - `GKE_CLUSTER_NAME`
 - `GKE_CLUSTER_LOCATION`
-- `TOFU_TFVARS_BASE64`
+
+The app deploy workflow now reads committed `infra/opentofu/terraform.tfvars` directly from checkout.
