@@ -641,8 +641,8 @@ This project uses **SQLite** with **DBUp** for database migrations. SQLite is a 
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/freetool.git
-   cd freetool
+   git clone https://github.com/wonderlydotcom/internal-tool-freetool.git
+   cd internal-tool-freetool
    ```
 
 2. **Restore dependencies**

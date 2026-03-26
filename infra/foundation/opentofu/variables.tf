@@ -33,7 +33,7 @@ variable "github_repository_owner" {
 }
 
 variable "github_repository_name" {
-  description = "Optional override for the GitHub repository name allowed to deploy. Defaults to freetool."
+  description = "Optional override for the GitHub repository name allowed to deploy. Defaults to internal-tool-freetool."
   type        = string
   default     = ""
 }

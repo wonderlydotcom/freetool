@@ -6,7 +6,7 @@ locals {
   github_repository_name = (
     trimspace(var.github_repository_name) != ""
     ? trimspace(var.github_repository_name)
-    : "freetool"
+    : "internal-tool-freetool"
   )
   github_repository = "${var.github_repository_owner}/${local.github_repository_name}"
   deploy_branch_ref = startswith(var.github_deploy_branch, "refs/") ? var.github_deploy_branch : "refs/heads/${var.github_deploy_branch}"

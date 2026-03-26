@@ -3,5 +3,5 @@ project_name = "Freetool"
 # Optional overrides:
 # state_bucket_name       = "iac-state-freetool"
 # github_repository_owner = "wonderlydotcom"
-# github_repository_name  = "freetool"
+# github_repository_name  = "internal-tool-freetool"
 # github_deploy_branch    = "main"
