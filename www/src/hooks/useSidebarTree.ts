@@ -20,14 +20,11 @@ import {
   getCurrencyFromBackendType,
   getRadioOptionsFromBackendType,
 } from "@/lib/inputTypeMapper";
-import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { fetchAllPages } from "@/lib/pagination";
 import type { components } from "@/schema";
 import type { Space, SpaceUser, SpaceWithDetails } from "@/types/space";
 
 type InputType = components["schemas"]["InputType"];
-
-// Constants for pagination
-const MAX_PAGE_SIZE = DEFAULT_PAGE_SIZE;
 
 // Query keys for cache invalidation
 export const sidebarQueryKeys = {
@@ -39,49 +36,6 @@ interface SidebarTreeData {
   nodes: Record<string, SpaceNode>;
   spaces: SpaceWithDetails[];
   rootId: string;
-}
-
-interface PaginatedResponse<T> {
-  items?: T[] | null;
-  totalCount?: number;
-  skip?: number;
-  take?: number;
-}
-
-// Helper to fetch all pages of a paginated endpoint
-async function fetchAllPages<T>(
-  fetcher: (
-    skip: number,
-    take: number
-  ) => Promise<{ data?: PaginatedResponse<T> | null; error?: unknown }>
-): Promise<T[]> {
-  const allItems: T[] = [];
-  let skip = 0;
-  let hasMore = true;
-
-  while (hasMore) {
-    const response = await fetcher(skip, MAX_PAGE_SIZE);
-    if (response.error || !response.data?.items) {
-      break;
-    }
-
-    const pageItems = response.data.items;
-    if (pageItems.length === 0) {
-      break;
-    }
-
-    allItems.push(...pageItems);
-
-    const totalCount = response.data.totalCount;
-    const pageSize = response.data.take ?? pageItems.length;
-    skip += pageItems.length;
-    hasMore =
-      totalCount !== undefined
-        ? skip < totalCount
-        : pageItems.length === pageSize;
-  }
-
-  return allItems;
 }
 
 // API response types

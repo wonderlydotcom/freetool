@@ -56,6 +56,7 @@ import {
 } from "@/hooks/usePermissions";
 import { useSpaceDefaultMemberPermissions } from "@/hooks/useSpaceDefaultMemberPermissions";
 import { useSpaceMembersPermissions } from "@/hooks/useSpaceMembersPermissions";
+import { fetchAllPages } from "@/lib/pagination";
 import { compareUsersByName } from "@/lib/utils";
 import type { Permission, SpacePermissions } from "@/types/permissions";
 
@@ -209,19 +210,18 @@ export default function SpaceSettingsView({
     const fetchUsers = async () => {
       try {
         setUsersLoading(true);
-        const response = await getUsers();
-        if (response.data) {
-          const userData: User[] =
-            response.data.items?.map((user) => ({
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              profilePicUrl: user.profilePicUrl,
-              invitedAt: user.invitedAt,
-              isOrgAdmin: user.isOrgAdmin,
-            })) || [];
-          setAllUsers(userData);
-        }
+        const users = await fetchAllPages((currentSkip, currentTake) =>
+          getUsers(currentSkip, currentTake)
+        );
+        const userData: User[] = users.map((user) => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          profilePicUrl: user.profilePicUrl,
+          invitedAt: user.invitedAt,
+          isOrgAdmin: user.isOrgAdmin,
+        }));
+        setAllUsers(userData);
       } finally {
         setUsersLoading(false);
       }

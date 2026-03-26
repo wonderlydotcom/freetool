@@ -43,6 +43,7 @@ import {
 import { usePagination } from "@/hooks/usePagination";
 import { useIsOrgAdmin } from "@/hooks/usePermissions";
 import { sidebarQueryKeys } from "@/hooks/useSidebarTree";
+import { fetchAllPages } from "@/lib/pagination";
 
 interface User {
   id: string;
@@ -101,19 +102,18 @@ export default function SpacesView() {
     const fetchUsers = async () => {
       try {
         setUsersLoading(true);
-        const response = await getUsers();
-        if (response.data) {
-          const userData: User[] =
-            response.data.items?.map((user) => ({
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              profilePicUrl: user.profilePicUrl,
-              invitedAt: user.invitedAt,
-              isOrgAdmin: user.isOrgAdmin,
-            })) || [];
-          setUsers(userData);
-        }
+        const allUsers = await fetchAllPages((currentSkip, currentTake) =>
+          getUsers(currentSkip, currentTake)
+        );
+        const userData: User[] = allUsers.map((user) => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          profilePicUrl: user.profilePicUrl,
+          invitedAt: user.invitedAt,
+          isOrgAdmin: user.isOrgAdmin,
+        }));
+        setUsers(userData);
       } finally {
         setUsersLoading(false);
       }

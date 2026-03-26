@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getSpaceById, getSpaces, getUsers } from "@/api/api";
+import { fetchAllPages } from "@/lib/pagination";
 import type { Space, SpaceUser, SpaceWithDetails } from "@/types/space";
 
 interface SpaceListResponse {
@@ -33,18 +34,17 @@ export function useSpaces() {
         : responseData.items || [];
 
       // Fetch all users to enrich space data
-      const usersResult = await getUsers();
       const usersMap = new Map<string, SpaceUser>();
 
-      if (usersResult.data?.items) {
-        for (const user of usersResult.data.items) {
-          usersMap.set(user.id, {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            profilePicUrl: user.profilePicUrl,
-          });
-        }
+      const users = await fetchAllPages((skip, take) => getUsers(skip, take));
+
+      for (const user of users) {
+        usersMap.set(user.id, {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          profilePicUrl: user.profilePicUrl,
+        });
       }
 
       // Enrich spaces with user details
@@ -110,18 +110,17 @@ export function useSpace(spaceId: string | undefined) {
       const space = result.data as Space;
 
       // Fetch users for enrichment
-      const usersResult = await getUsers();
       const usersMap = new Map<string, SpaceUser>();
 
-      if (usersResult.data?.items) {
-        for (const user of usersResult.data.items) {
-          usersMap.set(user.id, {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            profilePicUrl: user.profilePicUrl,
-          });
-        }
+      const users = await fetchAllPages((skip, take) => getUsers(skip, take));
+
+      for (const user of users) {
+        usersMap.set(user.id, {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          profilePicUrl: user.profilePicUrl,
+        });
       }
 
       const moderator = usersMap.get(space.moderatorUserId) || {
