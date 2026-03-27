@@ -1,4 +1,0 @@
-interface:
-  display_name: "EF F# Mapping Guide"
-  short_description: "Map F# value objects/unions through EF Core + JSON boundaries"
-  default_prompt: "Document and implement F# type mapping patterns for EF Core and JSON serialization in hexagonal architecture."

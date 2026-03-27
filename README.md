@@ -9,8 +9,7 @@ This repo now uses the deployed `internal-tools-mcp` server as the canonical sou
 - Codex reads [`.codex/config.toml`](./.codex/config.toml).
 - Claude Code reads [`.mcp.json`](./.mcp.json) and [`.claude/settings.json`](./.claude/settings.json).
 - Set `INTERNAL_TOOLS_MCP_BEARER_TOKEN` before launching either client.
-- Keep `freetool-controller-authoring`, `freetool-iap-auth-architecture`, and `freetool-openfga-hexagonal-architecture` as repo-local skills.
-- Treat the remaining shared folders under `.agents/skills` as transitional duplicates until the deletion wave.
+- Keep only `freetool-controller-authoring`, `freetool-iap-auth-architecture`, and `freetool-openfga-hexagonal-architecture` as repo-local skills.
 
 # Contributing
 

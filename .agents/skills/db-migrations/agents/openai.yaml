@@ -1,4 +1,0 @@
-interface:
-  display_name: "DBUp Migrations"
-  short_description: "Guide DBUp migration workflows in Freetool"
-  default_prompt: "Use $db-migrations to add, run, and verify DBUp SQL migrations for Freetool, including first-time database setup and EF model change handling."

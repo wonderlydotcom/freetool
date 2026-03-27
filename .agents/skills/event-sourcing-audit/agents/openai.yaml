@@ -1,4 +1,0 @@
-interface:
-  display_name: "Event Sourcing Audit"
-  short_description: "Backend event sourcing and audit log guide"
-  default_prompt: "Use $event-sourcing-audit to map architecture boundaries, add new audit event types, and wire full backend audit logging changes safely."
