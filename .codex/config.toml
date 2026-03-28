@@ -1,4 +1,3 @@
 [mcp_servers.internal_tools]
 url = "https://internal-tools-mcp.wonderly.info/mcp"
-bearer_token_env_var = "INTERNAL_TOOLS_MCP_BEARER_TOKEN"
 required = true

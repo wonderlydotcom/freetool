@@ -2,10 +2,7 @@
   "mcpServers": {
     "internal-tools": {
       "type": "http",
-      "url": "https://internal-tools-mcp.wonderly.info/mcp",
-      "headers": {
-        "Authorization": "Bearer ${INTERNAL_TOOLS_MCP_BEARER_TOKEN}"
-      }
+      "url": "https://internal-tools-mcp.wonderly.info/mcp"
     }
   }
 }
