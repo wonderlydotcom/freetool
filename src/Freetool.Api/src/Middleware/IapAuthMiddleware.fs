@@ -212,7 +212,7 @@ type IapAuthMiddleware(next: RequestDelegate, logger: ILogger<IapAuthMiddleware>
 
         if
             not (String.IsNullOrWhiteSpace(requestPath))
-            && requestPath.StartsWith("/health", StringComparison.OrdinalIgnoreCase)
+            && String.Equals(requestPath, "/healthy", StringComparison.OrdinalIgnoreCase)
         then
             do! next.Invoke context
         else

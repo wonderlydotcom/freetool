@@ -266,6 +266,22 @@ let ``Allows health checks without IAP headers`` () : Task = task {
 }
 
 [<Fact>]
+let ``Does not bypass non-canonical health paths`` () : Task = task {
+    let context = createTestHttpContext ()
+    context.Request.Path <- PathString("/healthz")
+    let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
+    let authService = MockAuthorizationService(Ok())
+    setupServices context userRepo authService None [] |> ignore
+
+    let middleware, wasNextCalled = createMiddleware ()
+
+    do! middleware.InvokeAsync(context)
+
+    Assert.Equal(401, context.Response.StatusCode)
+    Assert.False(wasNextCalled ())
+}
+
+[<Fact>]
 let ``Returns 401 when IAP email header missing`` () : Task = task {
     let context = createTestHttpContext ()
     let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
