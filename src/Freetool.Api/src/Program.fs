@@ -594,7 +594,6 @@ let main args =
         app.UseMiddleware<IapAuthMiddleware>() |> ignore
 
     app.MapGet("/healthy", Func<IResult>(fun () -> Results.Ok())) |> ignore
-    app.MapGet("/healthz", Func<IResult>(fun () -> Results.Ok())) |> ignore
 
     app.MapControllers() |> ignore
 
