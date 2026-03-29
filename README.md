@@ -841,6 +841,18 @@ CREATE TABLE UserPreferences (
 - Integration tests may be **slower** but provide **high confidence** in real-world scenarios
 - Use test databases and mock external services in integration tests
 
+## Workflow
+
+After each meaningful change:
+
+1. Create a pull request
+2. Run the shared `review-backend` skill from the `internal-tools` MCP server on backend changes (`src/Freetool.Domain`, `src/Freetool.Application`, `src/Freetool.Infrastructure`, `src/Freetool.Api`).
+3. Run the shared `review-frontend` skill from the `internal-tools` MCP server on frontend changes (`www/`).
+4. Run `./scripts/signoff-pr.sh` without any arguments - this script runs all validation needed
+5. Address any feedback from the script (usually some formatting fails or maybe lint rules)
+6. Re-run `./scripts/signoff-pr.sh`
+7. Squash merge the PR
+
 ## 🛠️ Development Workflow
 
 ### Adding New Features
