@@ -8,12 +8,19 @@ Freetool is an open-source internal tools platform (Retool alternative) built wi
 
 ## Shared MCP Skills
 
-Use the deployed `internal-tools-mcp` server as the canonical source for shared internal-tools skills in this repo.
+Shared internal-tools skills are served by the deployed `internal-tools-mcp` server.
 
 - Codex reads [`.codex/config.toml`](./.codex/config.toml).
 - Claude Code reads [`.mcp.json`](./.mcp.json) and [`.claude/settings.json`](./.claude/settings.json).
 - No bearer token or local secret bootstrap is required before starting either client.
-- Keep only `freetool-controller-authoring`, `freetool-iap-auth-architecture`, and `freetool-openfga-hexagonal-architecture` as repo-local skills.
+- Shared internal-tools workflows are now surfaced locally as thin `.agents/skills/*/SKILL.md` stubs that delegate to `internal-tools.use_workflow`.
+- If the right shared workflow is not obvious, call `internal-tools.recommend_workflows` first, then call `internal-tools.use_workflow` for the top match before editing.
+- Before editing EF Core mappings, repositories, or `DbContext` code, load `entity-framework-fsharp` first.
+- Before editing schema or migration code, load `db-migrations` first.
+- Consult the matching shared stub before infra, deploy, secret, OpenAPI, or review work when the task clearly maps to one of those workflows.
+- After loading a primary workflow, also consult related shared stubs such as `domain-driven-design`, `event-sourcing-audit`, and `otel-tracing` when they exist in this repo and the task touches business rules, audit/events, or new request paths.
+- Keep `freetool-controller-authoring`, `freetool-iap-auth-architecture`, and `freetool-openfga-hexagonal-architecture` as the full repo-local override skills.
+- Use those repo-local skills instead of shared `new-controller`, `iap-auth`, and `openfga` in this repo.
 
 ## Essential Commands
 

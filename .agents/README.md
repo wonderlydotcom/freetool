@@ -1,11 +1,11 @@
 # Freetool Agent Skills
 
-Shared internal-tools skills are now served by the deployed `internal-tools-mcp` server configured in [`.codex/config.toml`](../.codex/config.toml) and [`.mcp.json`](../.mcp.json).
+Shared internal-tools workflows are checked in here as thin `SKILL.md` stubs that delegate to the deployed `internal-tools-mcp` server configured in [`.codex/config.toml`](../.codex/config.toml) and [`.mcp.json`](../.mcp.json).
 
-## Local Skills
+## Shared Stubs
 
-- `freetool-controller-authoring`: repo-specific controller authoring guidance
-- `freetool-iap-auth-architecture`: repo-specific IAP architecture guidance
-- `freetool-openfga-hexagonal-architecture`: repo-specific OpenFGA architecture guidance
-
-Reserve `.agents/skills` for repo-specific capabilities like the items above. Shared skills should come from MCP.
+- Use the matching shared stub before controller/endpoint, persistence, migration, infra, deploy, secret, OpenAPI, and review work.
+- If the right shared workflow is not obvious, call `internal-tools.recommend_workflows` first, then `internal-tools.use_workflow` for the top match before editing.
+- After loading a primary workflow, also consult related shared stubs such as `domain-driven-design`, `event-sourcing-audit`, and `otel-tracing` when they exist in this repo and the task touches business rules, audit/events, or new request paths.
+- Keep `freetool-controller-authoring`, `freetool-iap-auth-architecture`, and `freetool-openfga-hexagonal-architecture` as the full repo-local override skills.
+- Use those repo-local skills instead of shared `new-controller`, `iap-auth`, and `openfga` in this repo.
