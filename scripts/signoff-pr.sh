@@ -241,4 +241,8 @@ ensure_upstream_tracking
 ensure_pull_request
 
 echo "Signing off PR with gh-signoff..."
-gh signoff "$@"
+if [ "$#" -gt 0 ]; then
+  echo "Ignoring unexpected arguments to signoff-pr.sh: $*"
+fi
+
+gh signoff
