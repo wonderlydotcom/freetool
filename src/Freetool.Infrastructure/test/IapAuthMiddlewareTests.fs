@@ -277,7 +277,14 @@ let setupServicesWithDirectory
     (additionalConfig: (string * string) list)
     (directoryIdentityData: GoogleDirectoryIdentityData option)
     =
-    setupServicesWithDirectoryCore context userRepo authService orgAdminEmail additionalConfig directoryIdentityData None
+    setupServicesWithDirectoryCore
+        context
+        userRepo
+        authService
+        orgAdminEmail
+        additionalConfig
+        directoryIdentityData
+        None
 
 let setupServicesWithJwtDirectory
     (context: HttpContext)
@@ -427,7 +434,9 @@ let ``Uses JWT email when JWT validation enabled and IAP email header missing`` 
     let audience = "/projects/123/global/backendServices/456"
     let jwtAssertion, jwksJson = createJwtTestMaterial audience email
 
-    let context = createTestHttpContext () |> fun c -> addHeader c "X-Goog-Iap-Jwt-Assertion" jwtAssertion
+    let context =
+        createTestHttpContext ()
+        |> fun c -> addHeader c "X-Goog-Iap-Jwt-Assertion" jwtAssertion
 
     let userRepo = MockUserRepository(Map.empty, Ok(), Ok())
     let authService = MockAuthorizationService(Ok())

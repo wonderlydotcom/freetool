@@ -342,7 +342,9 @@ type IapAuthMiddleware(next: RequestDelegate, logger: ILogger<IapAuthMiddleware>
                     match validatedPrincipal, jwtEmail with
                     | Some _, Some tokenEmail ->
                         match headerEmail with
-                        | Some currentHeaderEmail when not (tokenEmail.Equals(currentHeaderEmail, StringComparison.OrdinalIgnoreCase)) ->
+                        | Some currentHeaderEmail when
+                            not (tokenEmail.Equals(currentHeaderEmail, StringComparison.OrdinalIgnoreCase))
+                            ->
                             Tracing.addAttribute currentActivity "iap.auth.warning" "jwt_email_header_mismatch"
 
                             logger.LogWarning(
@@ -458,10 +460,7 @@ type IapAuthMiddleware(next: RequestDelegate, logger: ILogger<IapAuthMiddleware>
                         Tracing.addAttribute currentActivity "iap.auth.user_email" userEmail
                         Tracing.addAttribute currentActivity "iap.auth.groups_count" (string groupKeys.Length)
 
-                        Tracing.addAttribute
-                            currentActivity
-                            "iap.auth.iap_groups_count"
-                            (string iapGroupKeys.Length)
+                        Tracing.addAttribute currentActivity "iap.auth.iap_groups_count" (string iapGroupKeys.Length)
 
                         Tracing.addAttribute
                             currentActivity
