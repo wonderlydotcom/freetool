@@ -686,14 +686,14 @@ This project uses **SQLite** with **DBUp** for database migrations. SQLite is a 
 
 5. **Access the API**
    - API: http://localhost:5000
-   - Swagger UI: http://localhost:5001/swagger
+   - OpenAPI UI: http://localhost:5001/openapi
    - OTEL traces: http://localhost:18888/
 
 ### Quick Test
 
 Once the application is running, you can test the User API:
 
-1. **Open Swagger UI** at http://localhost:5001/swagger
+1. **Open OpenAPI UI** at http://localhost:5001/openapi
 2. **Create a user** using the `POST /user` endpoint:
    ```json
    {

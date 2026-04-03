@@ -94,7 +94,7 @@ docker-compose logs -f freetool-api
 
 **Service URLs:**
 - API: http://localhost:5001
-- Swagger UI: http://localhost:5001/swagger
+- OpenAPI UI: http://localhost:5001/openapi
 - OTEL/Aspire Dashboard: http://localhost:18888
 - OpenFGA: http://localhost:8090
 - OpenFGA Playground: http://localhost:3030
@@ -729,7 +729,7 @@ Freetool is designed to run behind **Google Cloud IAP** at the root path (`/`).
 
 7. **Regenerate Frontend Types:**
    - Start backend: `docker compose up -d`
-   - Export spec: `curl http://localhost:5001/swagger/v1/swagger.json > openapi.spec.json`
+   - Export spec: `curl http://localhost:5001/openapi/v1.json > openapi.spec.json`
    - Generate types: `cd www && npm run generate-api-types`
    - Verify: `cd www && npx tsc --noEmit`
 
@@ -788,7 +788,7 @@ When adding properties to entities, you MUST configure them in `OnModelCreating`
 7. **Parse Error in Audit Log**: Event schema changed but old events in DB have different structure - wipe DB during development or add fallback deserialization
 
 ### Frontend
-8. **Frontend Type Errors / `never` Types**: If `response.data` is typed as `never` or API calls show type mismatches, regenerate types: `docker compose up -d && curl http://localhost:5001/swagger/v1/swagger.json > openapi.spec.json && cd www && npm run generate-api-types`
+8. **Frontend Type Errors / `never` Types**: If `response.data` is typed as `never` or API calls show type mismatches, regenerate types: `docker compose up -d && curl http://localhost:5001/openapi/v1.json > openapi.spec.json && cd www && npm run generate-api-types`
 9. **Signoff Script Fails on Frontend Checks**: Run `cd www && npm run check && npm run lint && npm run format` to fix the repo before signing off the PR
 10. **Fast Refresh Not Working**: Component files must only export components - see [Frontend Code Quality Standards](#frontend-code-quality-standards)
 11. **Stale State in useEffect**: Fix React Hook dependency warnings immediately - they are real bugs
