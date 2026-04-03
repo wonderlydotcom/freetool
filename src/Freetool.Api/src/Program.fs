@@ -583,9 +583,6 @@ let main args =
                 ex.Message
             )
 
-    app.UseSwagger() |> ignore
-    app.UseSwaggerUI() |> ignore
-
     app.UseHttpsRedirection() |> ignore
 
     // Enable CORS for dev mode
@@ -603,6 +600,14 @@ let main args =
         app.UseMiddleware<DevAuthMiddleware>() |> ignore
     else
         app.UseMiddleware<IapAuthMiddleware>() |> ignore
+
+    app.UseSwagger(fun options -> options.RouteTemplate <- "openapi/{documentName}.json")
+    |> ignore
+
+    app.UseSwaggerUI(fun options ->
+        options.RoutePrefix <- "openapi"
+        options.SwaggerEndpoint("/openapi/v1.json", "freetool v1"))
+    |> ignore
 
     app.MapGet("/healthy", Func<IResult>(fun () -> Results.Ok())) |> ignore
 

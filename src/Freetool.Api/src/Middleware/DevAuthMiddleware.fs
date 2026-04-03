@@ -28,8 +28,12 @@ type DevAuthMiddleware(next: RequestDelegate) =
         let currentActivity = Option.ofObj Activity.Current
         let path = context.Request.Path.Value
 
-        // Allow /dev/* endpoints without authentication (needed to fetch user list)
-        if not (isNull path) && path.StartsWith("/dev/") then
+        // Allow development helpers and OpenAPI docs without authentication.
+        if
+            not (isNull path)
+            && (path.StartsWith("/dev/")
+                || path.StartsWith("/openapi", System.StringComparison.OrdinalIgnoreCase))
+        then
             do! next.Invoke context
         else
             let userIdOption = extractHeader DEV_USER_ID_HEADER context
