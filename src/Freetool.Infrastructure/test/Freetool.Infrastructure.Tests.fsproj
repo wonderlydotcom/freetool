@@ -9,6 +9,7 @@
     <Compile Include="DbContextConfigurationTests.fs" />
     <Compile Include="OpenFgaServiceTests.fs" />
     <Compile Include="SpaceAuthorizationTests.fs" />
+    <Compile Include="ControllerConventionsTests.fs" />
     <Compile Include="SpaceControllerTests.fs" />
     <Compile Include="SpaceDefaultMemberPermissionsControllerTests.fs" />
     <Compile Include="IdentityProvisioningControllerTests.fs" />
