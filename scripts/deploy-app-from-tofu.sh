@@ -115,6 +115,138 @@ resolve_value() {
   printf '%s' "${value}"
 }
 
+selector_from_workload() {
+  local namespace="$1"
+  local workload_kind="$2"
+  local workload_name="$3"
+
+  kubectl -n "${namespace}" get "${workload_kind}" "${workload_name}" -o json \
+    | jq -r '.spec.selector.matchLabels // {} | to_entries | map("\(.key)=\(.value)") | join(",")'
+}
+
+print_rollout_debug() {
+  local namespace="$1"
+  local workload_kind="$2"
+  local workload_name="$3"
+  local selector=""
+  local pod_name=""
+
+  echo "Rollout diagnostics for ${workload_kind}/${workload_name} in namespace ${namespace}:" >&2
+  kubectl -n "${namespace}" get "${workload_kind}" "${workload_name}" -o wide >&2 || true
+  kubectl -n "${namespace}" describe "${workload_kind}" "${workload_name}" >&2 || true
+
+  selector="$(selector_from_workload "${namespace}" "${workload_kind}" "${workload_name}" 2>/dev/null || true)"
+
+  if [[ -n "${selector}" ]]; then
+    kubectl -n "${namespace}" get pods -l "${selector}" -o wide >&2 || true
+
+    while IFS= read -r pod_name; do
+      [[ -n "${pod_name}" ]] || continue
+      kubectl -n "${namespace}" describe pod "${pod_name}" >&2 || true
+      kubectl -n "${namespace}" logs "${pod_name}" --all-containers=true --tail=200 >&2 || true
+      kubectl -n "${namespace}" logs "${pod_name}" --all-containers=true --previous --tail=200 >&2 || true
+    done < <(
+      kubectl -n "${namespace}" get pods -l "${selector}" -o json \
+        | jq -r '.items | sort_by(.metadata.creationTimestamp) | .[].metadata.name'
+    )
+  else
+    kubectl -n "${namespace}" get pods -o wide >&2 || true
+  fi
+
+  kubectl -n "${namespace}" get events --sort-by=.metadata.creationTimestamp >&2 || true
+}
+
+find_stale_blocking_pod() {
+  local namespace="$1"
+  local workload_kind="$2"
+  local workload_name="$3"
+  local workload_json=""
+  local selector=""
+  local pods_json=""
+  local replicas=""
+  local pod_count=""
+  local pod_name=""
+  local desired_images=""
+  local current_images=""
+  local pod_ready=""
+
+  workload_json="$(kubectl -n "${namespace}" get "${workload_kind}" "${workload_name}" -o json 2>/dev/null)" || return 1
+  replicas="$(jq -r '.spec.replicas // 1' <<<"${workload_json}")"
+
+  if [[ "${replicas}" != "1" ]]; then
+    return 1
+  fi
+
+  selector="$(jq -r '.spec.selector.matchLabels // {} | to_entries | map("\(.key)=\(.value)") | join(",")' <<<"${workload_json}")"
+
+  if [[ -z "${selector}" ]]; then
+    return 1
+  fi
+
+  pods_json="$(kubectl -n "${namespace}" get pods -l "${selector}" -o json 2>/dev/null)" || return 1
+  pod_count="$(jq -r '.items | length' <<<"${pods_json}")"
+
+  if [[ "${pod_count}" != "1" ]]; then
+    return 1
+  fi
+
+  desired_images="$(jq -r '.spec.template.spec.containers | map("\(.name)=\(.image)") | join("\n")' <<<"${workload_json}")"
+  current_images="$(jq -r '.items[0].spec.containers | map("\(.name)=\(.image)") | join("\n")' <<<"${pods_json}")"
+
+  if [[ "${desired_images}" == "${current_images}" ]]; then
+    return 1
+  fi
+
+  pod_ready="$(
+    jq -r '
+      if (.items[0].status.containerStatuses // [] | length) == 0
+      then "false"
+      else ((.items[0].status.containerStatuses | map(.ready) | all) | tostring)
+      end
+    ' <<<"${pods_json}"
+  )"
+
+  if [[ "${pod_ready}" == "true" ]]; then
+    return 1
+  fi
+
+  pod_name="$(jq -r '.items[0].metadata.name' <<<"${pods_json}")"
+
+  if [[ -z "${pod_name}" || "${pod_name}" == "null" ]]; then
+    return 1
+  fi
+
+  printf '%s' "${pod_name}"
+}
+
+wait_for_rollout_with_recovery() {
+  local namespace="$1"
+  local workload_kind="$2"
+  local workload_name="$3"
+  local stale_pod=""
+
+  if kubectl -n "${namespace}" rollout status "${workload_kind}/${workload_name}" --timeout "${ROLLOUT_TIMEOUT}"; then
+    return 0
+  fi
+
+  stale_pod="$(find_stale_blocking_pod "${namespace}" "${workload_kind}" "${workload_name}" || true)"
+
+  if [[ -n "${stale_pod}" ]]; then
+    log "Scaling ${workload_kind}/${workload_name} down to 0 to recycle stale unhealthy pod ${stale_pod}"
+    kubectl -n "${namespace}" scale "${workload_kind}/${workload_name}" --replicas=0
+    kubectl -n "${namespace}" rollout status "${workload_kind}/${workload_name}" --timeout "${ROLLOUT_TIMEOUT}"
+    log "Scaling ${workload_kind}/${workload_name} back to 1 and retrying rollout"
+    kubectl -n "${namespace}" scale "${workload_kind}/${workload_name}" --replicas=1
+
+    if kubectl -n "${namespace}" rollout status "${workload_kind}/${workload_name}" --timeout "${ROLLOUT_TIMEOUT}"; then
+      return 0
+    fi
+  fi
+
+  print_rollout_debug "${namespace}" "${workload_kind}" "${workload_name}"
+  return 1
+}
+
 if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
   usage
   exit 0
@@ -183,10 +315,11 @@ tofu -chdir="${INFRA_DIR}" apply -auto-approve \
 OUTPUT_JSON="$(tofu -chdir="${INFRA_DIR}" output -json)"
 NAMESPACE="$(resolve_value APP_NAMESPACE namespace "app namespace")"
 WORKLOAD_NAME="$(resolve_value WORKLOAD_NAME workload_name "workload name")"
+WORKLOAD_KIND="statefulset"
 DEPLOYED_IMAGE_REF="$(read_output image_ref)"
 
 log "Waiting for rollout in namespace ${NAMESPACE}"
-kubectl -n "${NAMESPACE}" rollout status "statefulset/${WORKLOAD_NAME}" --timeout "${ROLLOUT_TIMEOUT}"
+wait_for_rollout_with_recovery "${NAMESPACE}" "${WORKLOAD_KIND}" "${WORKLOAD_NAME}"
 
 cat <<EOF
 Deployment finished.

@@ -63,6 +63,8 @@ resource "kubernetes_config_map_v1" "app_config" {
 }
 
 resource "kubernetes_stateful_set_v1" "app" {
+  wait_for_rollout = false
+
   metadata {
     name      = var.workload_name
     namespace = var.platform_contract.namespace
