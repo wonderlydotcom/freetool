@@ -11,7 +11,7 @@ sqlite_pvc_subpath         = "freetool-db"
 openfga_pvc_subpath        = "openfga"
 
 app_config = {
-  ASPNETCORE_ENVIRONMENT                           = "Production"
+  ASPNETCORE_ENVIRONMENT                          = "Production"
   OpenFGA__OrgAdminEmail                          = "chander@wonderly.com"
   Auth__IAP__ValidateJwt                          = "true"
   Auth__GoogleDirectory__Enabled                  = "true"

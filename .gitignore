@@ -232,3 +232,5 @@ terraform.tfvars
 /.claude/*
 !/.claude/settings.local.json
 !/.claude/settings.json
+
+*.py[cod]
