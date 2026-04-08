@@ -224,15 +224,10 @@ validate_tofu_root() {
   local slug
   slug="$(tr '/.' '__' <<<"$root")"
   local data_dir="$TMP_ROOT/tofu-$slug"
-  local plugin_dir="$ROOT_DIR/$root/.terraform/providers"
 
   mkdir -p "$data_dir"
 
-  if [ -d "$plugin_dir" ]; then
-    TF_DATA_DIR="$data_dir" tofu -chdir="$root" init -backend=false -input=false -lockfile=readonly -plugin-dir="$plugin_dir"
-  else
-    TF_DATA_DIR="$data_dir" tofu -chdir="$root" init -backend=false -input=false -lockfile=readonly
-  fi
+  TF_DATA_DIR="$data_dir" tofu -chdir="$root" init -backend=false -input=false -lockfile=readonly
 
   TF_DATA_DIR="$data_dir" tofu -chdir="$root" validate
 }
@@ -255,7 +250,7 @@ validate_frontend_schema() {
 validate_backend_changed_coverage() {
   local results_dir="$1"
   local reports=()
-  local args=(backend --threshold "$BACKEND_COVERAGE_THRESHOLD")
+  local args=(backend --threshold "$BACKEND_COVERAGE_THRESHOLD" --diff-base "$DIFF_BASE_REF")
 
   mapfile -t reports < <(find "$results_dir" -name 'coverage.cobertura.xml' -print | sort)
 
@@ -276,11 +271,11 @@ validate_backend_changed_coverage() {
 }
 
 validate_frontend_changed_coverage() {
-  local summary_path="$1/coverage-summary.json"
-  local args=(frontend --threshold "$FRONTEND_COVERAGE_THRESHOLD" --summary "$summary_path")
+  local lcov_path="$1/lcov.info"
+  local args=(frontend --threshold "$FRONTEND_COVERAGE_THRESHOLD" --lcov "$lcov_path" --diff-base "$DIFF_BASE_REF")
 
-  if [ ! -f "$summary_path" ]; then
-    echo "Frontend coverage summary was not produced at $summary_path."
+  if [ ! -f "$lcov_path" ]; then
+    echo "Frontend LCOV report was not produced at $lcov_path."
     exit 1
   fi
 
@@ -516,7 +511,7 @@ if [ "$RUN_FRONTEND" = true ]; then
   run_step "Running frontend lint" run_frontend_script lint
   run_step "Building frontend" run_frontend_script build
   FRONTEND_COVERAGE_RESULTS_DIR="$TMP_ROOT/frontend-coverage"
-  run_step "Running frontend tests with coverage" run_frontend_script test -- --coverage.enabled=true --coverage.provider=v8 --coverage.reporter=text-summary --coverage.reporter=json-summary --coverage.reportsDirectory "$FRONTEND_COVERAGE_RESULTS_DIR"
+run_step "Running frontend tests with coverage" run_frontend_script test -- --coverage.enabled=true --coverage.provider=v8 --coverage.reporter=text-summary --coverage.reporter=lcovonly --coverage.reportsDirectory "$FRONTEND_COVERAGE_RESULTS_DIR"
   run_step "Checking frontend changed-file coverage (${FRONTEND_COVERAGE_THRESHOLD}% minimum)" validate_frontend_changed_coverage "$FRONTEND_COVERAGE_RESULTS_DIR"
 else
   echo "No frontend-related files changed; skipping frontend verification steps."
