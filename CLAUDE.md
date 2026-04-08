@@ -403,16 +403,19 @@ The frontend uses `openapi-fetch` to generate a type-safe client from `openapi.s
 
 The frontend uses **Biome** for linting and formatting - a unified, high-performance tool that replaces ESLint + Prettier. **All linting must pass with zero warnings before committing.**
 
-### Signoff Workflow
+### Required PR Signoff Workflow
 
-Use `./scripts/signoff-pr.sh` before requesting review or signing off a pull request.
+Always run `./scripts/signoff-pr.sh` from the current branch with no arguments before requesting review or finalizing a pull request.
+
+- Run it even if the pull request already exists; the script handles both PR updates and the required CI signoff.
+- If the script reports issues, fix them and re-run `./scripts/signoff-pr.sh` until it succeeds.
+- Do not bypass this workflow with manual GitHub signoff commands or alternate PR/signoff commands.
 
 **What it does:**
 - Detects whether the branch changes backend files under `src/` or frontend files under `www/`
 - Runs the relevant verification steps only for the changed area
 - Ensures the branch has an upstream
-- Creates a pull request with `gh pr create` if one does not already exist
-- Signs off the pull request with `gh signoff`
+- Creates a pull request if one does not already exist
 
 **Checks run by the script:**
 
