@@ -330,13 +330,10 @@ type OpenFgaService(apiUrl: string, logger: ILogger<OpenFgaService>, ?storeId: s
 
         /// Checks if a store with the given ID exists
         member _.StoreExistsAsync(storeId: string) : Task<bool> = task {
-            try
-                use client = createClientWithoutStore ()
-                let request = ClientListStoresRequest()
-                let! response = client.ListStores(request)
-                return response.Stores |> Seq.exists (fun s -> s.Id = storeId)
-            with _ ->
-                return false
+            use client = createClientWithoutStore ()
+            let request = ClientListStoresRequest()
+            let! response = client.ListStores(request)
+            return response.Stores |> Seq.exists (fun s -> s.Id = storeId)
         }
 
         /// Batch checks multiple permissions for a subject on an object

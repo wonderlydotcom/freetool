@@ -33,6 +33,7 @@
     <Compile Include="src/Tracing/TracingExtensions.fs" />
     <Compile Include="src/Tracing/TracingAttributes.fs" />
     <Compile Include="src/Tracing/AutoTracing.fs" />
+    <Compile Include="src/Services/OpenFgaStoreInitialization.fs" />
     <Compile Include="src/Services/GoogleDirectoryIdentityService.fs" />
     <Compile Include="src/Services/IdentityProvisioningService.fs" />
     <Compile Include="src/Services/OpenFgaDefaultMemberPermissionRepairService.fs" />

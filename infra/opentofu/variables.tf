@@ -84,7 +84,7 @@ variable "runtime_secrets_mount_path" {
 variable "openfga_image" {
   description = "OpenFGA image used for the sidecar and migration init container."
   type        = string
-  default     = "openfga/openfga:latest"
+  default     = "openfga/openfga@sha256:f0d5591d7ddda326ac4b84dbc9d9192cb13e97f79957749006ef0774b0d818f6"
 
   validation {
     condition     = trimspace(var.openfga_image) != ""

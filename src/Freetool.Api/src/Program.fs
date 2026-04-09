@@ -105,111 +105,6 @@ let private validateEventTypeRegistry (logger: ILogger) =
     else
         logger.LogInformation("EventType registry validation passed ({Count} event types)", allEventTypes.Length)
 
-/// Creates a new OpenFGA store and saves the ID to the database
-let private createAndSaveNewStore (logger: ILogger) (connectionString: string) (apiUrl: string) : string =
-    let tempService = OpenFgaService(apiUrl, NullLogger<OpenFgaService>.Instance)
-    let authService = tempService :> IAuthorizationService
-
-    logger.LogInformation("Creating new OpenFGA store...")
-    let storeTask = authService.CreateStoreAsync({ Name = "freetool-authorization" })
-    storeTask.Wait()
-    let newStoreId = storeTask.Result.Id
-    logger.LogInformation("Created new OpenFGA store with ID: {StoreId}", newStoreId)
-
-    // Save to database for future restarts
-    SettingsStore.set connectionString ConfigurationKeys.OpenFGA.StoreId newStoreId
-    logger.LogInformation("Saved OpenFGA store ID to database")
-
-    newStoreId
-
-/// Checks if a store exists in OpenFGA
-let private storeExists (apiUrl: string) (storeId: string) : bool =
-    let tempService = OpenFgaService(apiUrl, NullLogger<OpenFgaService>.Instance)
-    let authService = tempService :> IAuthorizationService
-    let existsTask = authService.StoreExistsAsync(storeId)
-    existsTask.Wait()
-    existsTask.Result
-
-/// Ensures an OpenFGA store exists, creating one if necessary
-/// Persists the store ID to the database to survive restarts
-/// Returns the store ID to use for the application
-let ensureOpenFgaStore
-    (logger: ILogger)
-    (connectionString: string)
-    (apiUrl: string)
-    (configuredStoreId: string)
-    : string =
-    // First, check if we have a store ID saved in the database
-    let dbStoreId = SettingsStore.get connectionString ConfigurationKeys.OpenFGA.StoreId
-
-    match dbStoreId with
-    | Some storeId when not (System.String.IsNullOrEmpty(storeId)) ->
-        // We have a store ID in the database, verify it exists in OpenFGA
-        logger.LogInformation("Found OpenFGA store ID in database: {StoreId}", storeId)
-
-        if storeExists apiUrl storeId then
-            logger.LogInformation("OpenFGA store {StoreId} exists, using it", storeId)
-            storeId
-        else
-            // Store was deleted from OpenFGA, create a new one
-            logger.LogInformation("OpenFGA store {StoreId} no longer exists. Creating new store...", storeId)
-            createAndSaveNewStore logger connectionString apiUrl
-    | _ ->
-        // No store ID in database, check config
-        if System.String.IsNullOrEmpty(configuredStoreId) then
-            // No store configured anywhere, create a new one
-            logger.LogInformation("No OpenFGA store ID configured. Creating new store...")
-            createAndSaveNewStore logger connectionString apiUrl
-        else
-            // Check if configured store exists
-            logger.LogInformation("Checking if configured OpenFGA store {StoreId} exists...", configuredStoreId)
-
-            if storeExists apiUrl configuredStoreId then
-                logger.LogInformation(
-                    "OpenFGA store {StoreId} exists, using it and saving to database",
-                    configuredStoreId
-                )
-                // Save the config store ID to database for future restarts
-                SettingsStore.set connectionString ConfigurationKeys.OpenFGA.StoreId configuredStoreId
-                configuredStoreId
-            else
-                // Configured store doesn't exist, create a new one
-                logger.LogInformation(
-                    "OpenFGA store {StoreId} does not exist. Creating new store...",
-                    configuredStoreId
-                )
-
-                createAndSaveNewStore logger connectionString apiUrl
-
-let private ensureOpenFgaStoreWithRetry
-    (logger: ILogger)
-    (connectionString: string)
-    (apiUrl: string)
-    (configuredStoreId: string)
-    : string =
-    let maxAttempts = 20
-    let retryDelay = System.TimeSpan.FromSeconds(2.0)
-
-    let rec attempt currentAttempt =
-        try
-            ensureOpenFgaStore logger connectionString apiUrl configuredStoreId
-        with ex ->
-            if currentAttempt >= maxAttempts then
-                raise ex
-            else
-                logger.LogWarning(
-                    ex,
-                    "OpenFGA store initialization failed on attempt {Attempt}/{MaxAttempts}. Retrying in {DelaySeconds} seconds...",
-                    currentAttempt,
-                    maxAttempts,
-                    retryDelay.TotalSeconds
-                )
-
-                System.Threading.Thread.Sleep(retryDelay)
-                attempt (currentAttempt + 1)
-
-    attempt 1
-
 [<EntryPoint>]
 let main args =
     let builder = WebApplication.CreateBuilder(args)
@@ -340,16 +235,33 @@ let main args =
     let openFgaApiUrl = builder.Configuration[ConfigurationKeys.OpenFGA.ApiUrl]
     let configuredStoreId = builder.Configuration[ConfigurationKeys.OpenFGA.StoreId]
 
+    let openFgaStoreInitializationDependencies =
+        OpenFgaStoreInitialization.createDependencies connectionString openFgaApiUrl
+
+    let allowAutoCreateWhenPersistedStoreMissing = builder.Environment.IsDevelopment()
+
     let actualStoreId =
         try
-            ensureOpenFgaStoreWithRetry startupLogger connectionString openFgaApiUrl configuredStoreId
+            OpenFgaStoreInitialization.ensureOpenFgaStoreWithRetry
+                startupLogger
+                openFgaStoreInitializationDependencies
+                configuredStoreId
+                allowAutoCreateWhenPersistedStoreMissing
         with ex ->
-            startupLogger.LogWarning(
-                "Could not ensure OpenFGA store exists: {Error}. Using configured store ID (if any). Authorization may fail.",
-                ex.Message
-            )
+            if builder.Environment.IsDevelopment() then
+                startupLogger.LogWarning(
+                    "Could not ensure OpenFGA store exists: {Error}. Using configured store ID (if any). Authorization may fail.",
+                    ex.Message
+                )
 
-            configuredStoreId
+                configuredStoreId
+            else
+                startupLogger.LogCritical(
+                    ex,
+                    "Could not ensure OpenFGA store exists. Refusing to start because authorization state may be inconsistent."
+                )
+
+                reraise ()
 
     builder.Services.AddScoped<IAuthorizationService>(fun serviceProvider ->
         // Always create with the actual store ID (which may have been created)
