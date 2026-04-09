@@ -115,6 +115,75 @@ resolve_value() {
   printf '%s' "${value}"
 }
 
+read_secret_provider_resource_names() {
+  local namespace="$1"
+  local secret_provider_class_name="$2"
+
+  kubectl -n "${namespace}" get secretproviderclass "${secret_provider_class_name}" -o json     | jq -r '.spec.parameters.secrets // ""'     | awk -F'"' '/resourceName:/ {print $2}'
+}
+
+is_secret_manager_versions_permission_denied() {
+  local output="$1"
+
+  [[ "${output}" == *"PERMISSION_DENIED"* ]] || [[ "${output}" == *"secretmanager.versions.list"* ]]
+}
+
+validate_runtime_secret_versions() {
+  local project_id="$1"
+  local namespace="$2"
+  local secret_provider_class_name="$3"
+  local resource_name=""
+  local secret_id=""
+  local enabled_version=""
+  local gcloud_output=""
+  local missing_secret_ids=()
+
+  if [[ -z "${secret_provider_class_name}" || "${secret_provider_class_name}" == "null" ]]; then
+    return 0
+  fi
+
+  if ! kubectl -n "${namespace}" get secretproviderclass "${secret_provider_class_name}" >/dev/null 2>&1; then
+    echo "Missing SecretProviderClass ${secret_provider_class_name} in namespace ${namespace}." >&2
+    exit 1
+  fi
+
+  while IFS= read -r resource_name; do
+    [[ -n "${resource_name}" ]] || continue
+
+    if [[ "${resource_name}" =~ ^projects/[^/]+/secrets/([^/]+)/versions/[^/]+$ ]]; then
+      secret_id="${BASH_REMATCH[1]}"
+    else
+      echo "Could not parse Secret Manager resource name: ${resource_name}" >&2
+      exit 1
+    fi
+
+    if ! gcloud_output="$(
+      gcloud secrets versions list "${secret_id}"         --project "${project_id}"         --filter "state=enabled"         --format 'value(name)'         --limit 1 2>&1
+    )"; then
+      if is_secret_manager_versions_permission_denied "${gcloud_output}"; then
+        log "Skipping runtime secret version validation because the current Google Cloud identity cannot list Secret Manager versions. Shared platform filtering remains the authoritative zero-version guard in CI."
+        return 0
+      fi
+
+      echo "Failed to inspect enabled Secret Manager versions for ${secret_id}: ${gcloud_output}" >&2
+      exit 1
+    fi
+
+    enabled_version="${gcloud_output}"
+
+    if [[ -z "${enabled_version}" ]]; then
+      missing_secret_ids+=("${secret_id}")
+    fi
+  done < <(read_secret_provider_resource_names "${namespace}" "${secret_provider_class_name}")
+
+  if [[ "${#missing_secret_ids[@]}" -gt 0 ]]; then
+    echo "Refusing to deploy: SecretProviderClass ${secret_provider_class_name} in namespace ${namespace} references secrets with no enabled versions:" >&2
+    printf '  - %s\n' "${missing_secret_ids[@]}" >&2
+    echo "Upload a secret version or remove the secret from the platform app catalog before rolling pods." >&2
+    exit 1
+  fi
+}
+
 selector_from_workload() {
   local namespace="$1"
   local workload_kind="$2"
@@ -313,6 +382,16 @@ tofu -chdir="${INFRA_DIR}" apply -auto-approve \
   -var "image_tag=${IMAGE_TAG}"
 
 OUTPUT_JSON="$(tofu -chdir="${INFRA_DIR}" output -json)"
+NAMESPACE="$(read_output namespace)"
+SECRET_PROVIDER_CLASS_NAME="$(read_output secret_provider_class_name)"
+
+if [[ -n "${NAMESPACE}" && "${NAMESPACE}" != "null" && -n "${SECRET_PROVIDER_CLASS_NAME}" && "${SECRET_PROVIDER_CLASS_NAME}" != "null" ]]; then
+  log "Validating runtime secrets from ${SECRET_PROVIDER_CLASS_NAME} in namespace ${NAMESPACE}"
+  validate_runtime_secret_versions "${PROJECT_ID}" "${NAMESPACE}" "${SECRET_PROVIDER_CLASS_NAME}"
+else
+  log "Skipping runtime secret validation because namespace or SecretProviderClass output is not available yet"
+fi
+
 NAMESPACE="$(resolve_value APP_NAMESPACE namespace "app namespace")"
 WORKLOAD_NAME="$(resolve_value WORKLOAD_NAME workload_name "workload name")"
 WORKLOAD_KIND="statefulset"
