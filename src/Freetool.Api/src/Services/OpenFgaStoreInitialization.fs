@@ -137,3 +137,38 @@ module OpenFgaStoreInitialization =
                     attempt (currentAttempt + 1)
 
         attempt 1
+
+    let resolveActualStoreId
+        (logger: ILogger)
+        (dependencies: OpenFgaStoreInitializationDependencies)
+        (configuredStoreId: string)
+        (allowAutoCreateWhenPersistedStoreMissing: bool)
+        (isDevelopment: bool)
+        : string =
+        try
+            ensureOpenFgaStoreWithRetry logger dependencies configuredStoreId allowAutoCreateWhenPersistedStoreMissing
+        with ex ->
+            if isDevelopment then
+                logger.LogWarning(
+                    "Could not ensure OpenFGA store exists: {Error}. Using configured store ID (if any). Authorization may fail.",
+                    ex.Message
+                )
+
+                configuredStoreId
+            else
+                logger.LogCritical(
+                    ex,
+                    "Could not ensure OpenFGA store exists. Refusing to start because authorization state may be inconsistent."
+                )
+
+                raise ex
+
+    let resolveActualStoreIdFromRuntime
+        (logger: ILogger)
+        (connectionString: string)
+        (apiUrl: string)
+        (configuredStoreId: string)
+        (isDevelopment: bool)
+        : string =
+        let dependencies = createDependencies connectionString apiUrl
+        resolveActualStoreId logger dependencies configuredStoreId isDevelopment isDevelopment
