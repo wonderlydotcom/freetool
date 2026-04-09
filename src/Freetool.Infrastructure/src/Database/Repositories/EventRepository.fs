@@ -161,11 +161,9 @@ type EventRepository(context: FreetoolDbContext) =
             | None, None -> return! toPagedResultAsync baseFilteredQuery filter.Skip filter.Take
             | _ ->
                 // EF Core + SQLite does not reliably translate DU filters that use value-converted columns.
-                let! items =
-                    baseFilteredQuery.OrderByDescending(fun e -> e.OccurredAt).ToListAsync()
+                let! items = baseFilteredQuery.OrderByDescending(fun e -> e.OccurredAt).ToListAsync()
 
-                let filteredItems =
-                    applyInMemoryEventFilters (items |> List.ofSeq) filter
+                let filteredItems = applyInMemoryEventFilters (items |> List.ofSeq) filter
 
                 return {
                     Items = filteredItems |> List.skip filter.Skip |> List.truncate filter.Take
