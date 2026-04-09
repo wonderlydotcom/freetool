@@ -29,6 +29,10 @@ type OpenFgaDefaultMemberPermissionRepairSummary = {
     Results: OpenFgaDefaultMemberPermissionRepairSpaceResult list
 }
 
+type IOpenFgaDefaultMemberPermissionRepairService =
+    abstract member RepairAsync:
+        apply: bool -> requestedSpaceId: string option -> Task<OpenFgaDefaultMemberPermissionRepairSummary>
+
 module OpenFgaDefaultMemberPermissionRepair =
     let allDefaultMemberPermissions = SpaceHandler.allSpacePermissions
 
@@ -263,3 +267,6 @@ type OpenFgaDefaultMemberPermissionRepairService
                 Results = materializedResults
             }
         }
+
+    interface IOpenFgaDefaultMemberPermissionRepairService with
+        member this.RepairAsync apply requestedSpaceId = this.RepairAsync(apply, requestedSpaceId)

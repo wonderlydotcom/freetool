@@ -11,7 +11,7 @@ open Freetool.Application.Interfaces
 [<Route("admin/openfga")>]
 type OpenFgaRepairController
     (
-        repairService: OpenFgaDefaultMemberPermissionRepairService,
+        repairService: IOpenFgaDefaultMemberPermissionRepairService,
         authService: IAuthorizationService,
         logger: ILogger<OpenFgaRepairController>
     ) =
@@ -73,6 +73,6 @@ type OpenFgaRepairController
                         )
                         :> IActionResult
                 | _ ->
-                    let! summary = repairService.RepairAsync(apply, requestedSpaceId)
+                    let! summary = repairService.RepairAsync apply requestedSpaceId
                     return this.Ok(summary) :> IActionResult
         }

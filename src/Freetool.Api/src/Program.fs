@@ -210,6 +210,35 @@ let private ensureOpenFgaStoreWithRetry
 
     attempt 1
 
+let runOpenFgaDefaultMemberPermissionRepair
+    (logger: ILogger)
+    (repair: unit -> OpenFgaDefaultMemberPermissionRepairSummary)
+    : unit =
+    try
+        logger.LogInformation("Repairing OpenFGA default member permissions from audit history...")
+
+        let repairSummary = repair ()
+
+        let warningCount =
+            repairSummary.Results |> List.sumBy (fun result -> List.length result.Warnings)
+
+        logger.LogInformation(
+            "OpenFGA default member permission repair examined {SpacesExamined} spaces and repaired {SpacesWithDrift} spaces",
+            repairSummary.SpacesExamined,
+            repairSummary.SpacesWithDrift
+        )
+
+        if warningCount > 0 then
+            logger.LogWarning(
+                "OpenFGA default member permission repair completed with {WarningCount} warnings",
+                warningCount
+            )
+    with ex ->
+        logger.LogWarning(
+            "Could not repair OpenFGA default member permissions from audit history: {Error}",
+            ex.Message
+        )
+
 [<EntryPoint>]
 let main args =
     let builder = WebApplication.CreateBuilder(args)
@@ -387,7 +416,7 @@ let main args =
     builder.Services.AddScoped<IIdentityProvisioningService, IdentityProvisioningService>()
     |> ignore
 
-    builder.Services.AddScoped<OpenFgaDefaultMemberPermissionRepairService>()
+    builder.Services.AddScoped<IOpenFgaDefaultMemberPermissionRepairService, OpenFgaDefaultMemberPermissionRepairService>()
     |> ignore
 
     builder.Services.AddScoped<UserHandler>() |> ignore
@@ -533,35 +562,11 @@ let main args =
                     ex.Message
                 )
 
-            try
-                startupLogger.LogInformation("Repairing OpenFGA default member permissions from audit history...")
-
+            runOpenFgaDefaultMemberPermissionRepair startupLogger (fun () ->
                 let repairService =
-                    scope.ServiceProvider.GetRequiredService<OpenFgaDefaultMemberPermissionRepairService>()
+                    scope.ServiceProvider.GetRequiredService<IOpenFgaDefaultMemberPermissionRepairService>()
 
-                let repairTask = repairService.RepairAsync(true, None)
-                repairTask.Wait()
-                let repairSummary = repairTask.Result
-
-                let warningCount =
-                    repairSummary.Results |> List.sumBy (fun result -> List.length result.Warnings)
-
-                startupLogger.LogInformation(
-                    "OpenFGA default member permission repair examined {SpacesExamined} spaces and repaired {SpacesWithDrift} spaces",
-                    repairSummary.SpacesExamined,
-                    repairSummary.SpacesWithDrift
-                )
-
-                if warningCount > 0 then
-                    startupLogger.LogWarning(
-                        "OpenFGA default member permission repair completed with {WarningCount} warnings",
-                        warningCount
-                    )
-            with ex ->
-                startupLogger.LogWarning(
-                    "Could not repair OpenFGA default member permissions from audit history: {Error}",
-                    ex.Message
-                )
+                repairService.RepairAsync true None |> Async.AwaitTask |> Async.RunSynchronously)
 
             // Note: Organization admin is now set automatically when the user first logs in
             // via IapAuthMiddleware if their email matches OpenFGA:OrgAdminEmail config
