@@ -27,7 +27,7 @@ type CapturingLogger() =
             | _ -> ()
 
 [<Fact>]
-let ``runOpenFgaDefaultMemberPermissionRepair logs success and warning summary`` () =
+let ``runOpenFgaSpaceAuthorizationRepair logs success and warning summary`` () =
     let logger = CapturingLogger()
 
     let summary = {
@@ -39,25 +39,24 @@ let ``runOpenFgaDefaultMemberPermissionRepair logs success and warning summary``
             {
                 SpaceId = Guid.NewGuid().ToString()
                 SpaceName = "Engineering"
-                DesiredPermissions = [ "RunApp" ]
-                CurrentPermissions = []
-                PermissionsToAdd = [ "RunApp" ]
-                PermissionsToRemove = []
+                DesiredRelationships = [ "space:engineering#run_app@space:engineering#member" ]
+                CurrentRelationships = []
+                RelationshipsToAdd = [ "space:engineering#run_app@space:engineering#member" ]
+                RelationshipsToRemove = []
                 Applied = true
                 Warnings = [ "ignored unknown permission" ]
             }
         ]
     }
 
-    OpenFgaDefaultMemberPermissionRepairStartup.runOpenFgaDefaultMemberPermissionRepair (logger :> ILogger) (fun () ->
-        summary)
+    OpenFgaSpaceAuthorizationRepairStartup.runOpenFgaSpaceAuthorizationRepair (logger :> ILogger) (fun () -> summary)
 
-    Assert.Contains(logger.Infos, fun message -> message.Contains("Repairing OpenFGA default member permissions"))
+    Assert.Contains(logger.Infos, fun message -> message.Contains("Repairing OpenFGA space authorization"))
     Assert.Contains(logger.Infos, fun message -> message.Contains("examined 2 spaces"))
     Assert.Contains(logger.Warnings, fun message -> message.Contains("completed with 1 warnings"))
 
 [<Fact>]
-let ``runOpenFgaDefaultMemberPermissionRepair logs success without warnings when none are present`` () =
+let ``runOpenFgaSpaceAuthorizationRepair logs success without warnings when none are present`` () =
     let logger = CapturingLogger()
 
     let summary = {
@@ -68,20 +67,19 @@ let ``runOpenFgaDefaultMemberPermissionRepair logs success without warnings when
         Results = []
     }
 
-    OpenFgaDefaultMemberPermissionRepairStartup.runOpenFgaDefaultMemberPermissionRepair (logger :> ILogger) (fun () ->
-        summary)
+    OpenFgaSpaceAuthorizationRepairStartup.runOpenFgaSpaceAuthorizationRepair (logger :> ILogger) (fun () -> summary)
 
     Assert.Contains(logger.Infos, fun message -> message.Contains("examined 1 spaces"))
     Assert.Empty(logger.Warnings)
 
 [<Fact>]
-let ``runOpenFgaDefaultMemberPermissionRepair swallows repair exceptions and logs warning`` () =
+let ``runOpenFgaSpaceAuthorizationRepair swallows repair exceptions and logs warning`` () =
     let logger = CapturingLogger()
 
-    OpenFgaDefaultMemberPermissionRepairStartup.runOpenFgaDefaultMemberPermissionRepair (logger :> ILogger) (fun () ->
+    OpenFgaSpaceAuthorizationRepairStartup.runOpenFgaSpaceAuthorizationRepair (logger :> ILogger) (fun () ->
         raise (InvalidOperationException "boom"))
 
     Assert.Contains(
         logger.Warnings,
-        fun message -> message.Contains("Could not repair OpenFGA default member permissions from audit history")
+        fun message -> message.Contains("Could not repair OpenFGA space authorization tuples")
     )

@@ -347,15 +347,22 @@ let main args =
     let actualStoreId =
         resolveOpenFgaStoreId configuredStoreId (builder.Environment.IsDevelopment())
 
-    builder.Services.AddScoped<IAuthorizationService>(fun serviceProvider ->
-        // Always create with the actual store ID (which may have been created)
+    let createOpenFgaService (serviceProvider: IServiceProvider) =
         let loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>()
         let logger = loggerFactory.CreateLogger<OpenFgaService>()
 
         if System.String.IsNullOrEmpty(actualStoreId) then
-            OpenFgaService(openFgaApiUrl, logger) :> IAuthorizationService
+            OpenFgaService(openFgaApiUrl, logger)
         else
-            OpenFgaService(openFgaApiUrl, logger, actualStoreId) :> IAuthorizationService)
+            OpenFgaService(openFgaApiUrl, logger, actualStoreId)
+
+    builder.Services.AddScoped<IAuthorizationService>(fun serviceProvider ->
+        // Always create with the actual store ID (which may have been created)
+        createOpenFgaService serviceProvider :> IAuthorizationService)
+    |> ignore
+
+    builder.Services.AddScoped<IAuthorizationRelationshipReader>(fun serviceProvider ->
+        createOpenFgaService serviceProvider :> IAuthorizationRelationshipReader)
     |> ignore
 
     builder.Services.AddScoped<IEventEnhancementService>(fun serviceProvider ->
@@ -383,7 +390,7 @@ let main args =
     builder.Services.AddScoped<IIdentityProvisioningService, IdentityProvisioningService>()
     |> ignore
 
-    builder.Services.AddScoped<IOpenFgaDefaultMemberPermissionRepairService, OpenFgaDefaultMemberPermissionRepairService>()
+    builder.Services.AddScoped<IOpenFgaSpaceAuthorizationRepairService, OpenFgaSpaceAuthorizationRepairService>()
     |> ignore
 
     builder.Services.AddScoped<UserHandler>() |> ignore
@@ -529,9 +536,9 @@ let main args =
                     ex.Message
                 )
 
-            OpenFgaDefaultMemberPermissionRepairStartup.runOpenFgaDefaultMemberPermissionRepair startupLogger (fun () ->
+            OpenFgaSpaceAuthorizationRepairStartup.runOpenFgaSpaceAuthorizationRepair startupLogger (fun () ->
                 let repairService =
-                    scope.ServiceProvider.GetRequiredService<IOpenFgaDefaultMemberPermissionRepairService>()
+                    scope.ServiceProvider.GetRequiredService<IOpenFgaSpaceAuthorizationRepairService>()
 
                 repairService.RepairAsync true None |> Async.AwaitTask |> Async.RunSynchronously)
 

@@ -11,7 +11,7 @@ open Freetool.Application.Interfaces
 [<Route("admin/openfga")>]
 type OpenFgaRepairController
     (
-        repairService: IOpenFgaDefaultMemberPermissionRepairService,
+        repairService: IOpenFgaSpaceAuthorizationRepairService,
         authService: IAuthorizationService,
         logger: ILogger<OpenFgaRepairController>
     ) =
@@ -40,7 +40,7 @@ type OpenFgaRepairController
 
             if not isOrgAdmin then
                 logger.LogWarning(
-                    "User {UserId} attempted to repair OpenFGA default member permissions without org admin role",
+                    "User {UserId} attempted to repair OpenFGA space authorization tuples without org admin role",
                     actorUserId.Value
                 )
 
@@ -49,7 +49,7 @@ type OpenFgaRepairController
                         403,
                         {|
                             error = "Forbidden"
-                            message = "Only organization administrators can repair OpenFGA default member permissions"
+                            message = "Only organization administrators can repair OpenFGA space authorization tuples"
                         |}
                     )
                     :> IActionResult

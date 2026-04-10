@@ -36,12 +36,12 @@ type MockAuthorizationService(checkPermissionFn: AuthSubject -> AuthRelation -> 
 
             Task.FromResult(results)
 
-type CapturingRepairService(summary: OpenFgaDefaultMemberPermissionRepairSummary) =
+type CapturingRepairService(summary: OpenFgaSpaceAuthorizationRepairSummary) =
     let mutable capturedArgs: (bool * string option) option = None
 
     member _.CapturedArgs = capturedArgs
 
-    interface IOpenFgaDefaultMemberPermissionRepairService with
+    interface IOpenFgaSpaceAuthorizationRepairService with
         member _.RepairAsync apply requestedSpaceId =
             capturedArgs <- Some(apply, requestedSpaceId)
             Task.FromResult(summary)
@@ -55,10 +55,10 @@ let createSummary apply spaceFilter = {
         {
             SpaceId = Guid.NewGuid().ToString()
             SpaceName = "Engineering"
-            DesiredPermissions = [ "RunApp" ]
-            CurrentPermissions = []
-            PermissionsToAdd = [ "RunApp" ]
-            PermissionsToRemove = []
+            DesiredRelationships = [ "space:engineering#run_app@space:engineering#member" ]
+            CurrentRelationships = []
+            RelationshipsToAdd = [ "space:engineering#run_app@space:engineering#member" ]
+            RelationshipsToRemove = []
             Applied = apply
             Warnings = []
         }
@@ -67,7 +67,7 @@ let createSummary apply spaceFilter = {
 
 let createController
     (checkPermissionFn: AuthSubject -> AuthRelation -> AuthObject -> bool)
-    (summary: OpenFgaDefaultMemberPermissionRepairSummary)
+    (summary: OpenFgaSpaceAuthorizationRepairSummary)
     =
     let authService =
         MockAuthorizationService(checkPermissionFn) :> IAuthorizationService
@@ -76,7 +76,7 @@ let createController
 
     let controller =
         OpenFgaRepairController(
-            repairService :> IOpenFgaDefaultMemberPermissionRepairService,
+            repairService :> IOpenFgaSpaceAuthorizationRepairService,
             authService,
             NullLogger<OpenFgaRepairController>.Instance
         )
@@ -138,8 +138,7 @@ let ``RepairDefaultMemberPermissions returns 200 and forwards arguments for org 
 
     match result with
     | :? OkObjectResult as okResult ->
-        let payload =
-            Assert.IsType<OpenFgaDefaultMemberPermissionRepairSummary>(okResult.Value)
+        let payload = Assert.IsType<OpenFgaSpaceAuthorizationRepairSummary>(okResult.Value)
 
         Assert.Equal(expectedSummary.SpacesExamined, payload.SpacesExamined)
         Assert.Equal(expectedSummary.SpaceFilter, payload.SpaceFilter)

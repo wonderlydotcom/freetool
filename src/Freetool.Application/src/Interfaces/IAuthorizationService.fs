@@ -1,5 +1,6 @@
 namespace Freetool.Application.Interfaces
 
+open System
 open System.Threading.Tasks
 
 /// Request to create an OpenFGA store
@@ -100,6 +101,68 @@ module AuthTypes =
         | SpaceObject spaceId -> $"space:{spaceId}"
         | OrganizationObject orgId -> $"organization:{orgId}"
 
+    let private splitTypeAndId (value: string) =
+        let parts = value.Split([| ':' |], 2, StringSplitOptions.None)
+
+        match parts with
+        | [| itemType; itemId |] -> Some(itemType, itemId)
+        | _ -> None
+
+    /// Attempts to parse an OpenFGA subject string into a typed AuthSubject.
+    let tryParseSubject (value: string) : AuthSubject option =
+        if String.IsNullOrWhiteSpace value then
+            None
+        elif value.Contains "#" then
+            let parts = value.Split([| '#' |], 2, StringSplitOptions.None)
+
+            match parts with
+            | [| objectPart; relation |] ->
+                splitTypeAndId objectPart
+                |> Option.map (fun (objectType, objectId) -> UserSetFromRelation(objectType, objectId, relation))
+            | _ -> None
+        else
+            match splitTypeAndId value with
+            | Some("user", userId) -> Some(User userId)
+            | Some("space", spaceId) -> Some(Space spaceId)
+            | Some("organization", organizationId) -> Some(Organization organizationId)
+            | _ -> None
+
+    /// Attempts to parse an OpenFGA relation string into a typed AuthRelation.
+    let tryParseRelation (value: string) : AuthRelation option =
+        match value with
+        | "admin" -> Some OrganizationAdmin
+        | "member" -> Some SpaceMember
+        | "moderator" -> Some SpaceModerator
+        | "organization" -> Some SpaceOrganization
+        | "create" -> Some SpaceCreate
+        | "rename" -> Some SpaceRename
+        | "delete" -> Some SpaceDelete
+        | "add_member" -> Some SpaceAddMember
+        | "remove_member" -> Some SpaceRemoveMember
+        | "create_resource" -> Some ResourceCreate
+        | "edit_resource" -> Some ResourceEdit
+        | "delete_resource" -> Some ResourceDelete
+        | "create_app" -> Some AppCreate
+        | "edit_app" -> Some AppEdit
+        | "delete_app" -> Some AppDelete
+        | "run_app" -> Some AppRun
+        | "create_dashboard" -> Some DashboardCreate
+        | "edit_dashboard" -> Some DashboardEdit
+        | "delete_dashboard" -> Some DashboardDelete
+        | "run_dashboard" -> Some DashboardRun
+        | "create_folder" -> Some FolderCreate
+        | "edit_folder" -> Some FolderEdit
+        | "delete_folder" -> Some FolderDelete
+        | _ -> None
+
+    /// Attempts to parse an OpenFGA object string into a typed AuthObject.
+    let tryParseObject (value: string) : AuthObject option =
+        match splitTypeAndId value with
+        | Some("user", userId) -> Some(UserObject userId)
+        | Some("space", spaceId) -> Some(SpaceObject spaceId)
+        | Some("organization", organizationId) -> Some(OrganizationObject organizationId)
+        | _ -> None
+
 /// Represents a strongly-typed relationship tuple
 type RelationshipTuple = {
     Subject: AuthSubject
@@ -115,11 +178,19 @@ module RelationshipTuple =
          AuthTypes.relationToString tuple.Relation,
          AuthTypes.objectToString tuple.Object)
 
+    let toDisplayString (tuple: RelationshipTuple) : string =
+        let (subject, relation, obj) = toStrings tuple
+        $"{obj}#{relation}@{subject}"
+
 /// Request to update relationships (add and/or remove tuples)
 type UpdateRelationshipsRequest = {
     TuplesToAdd: RelationshipTuple list
     TuplesToRemove: RelationshipTuple list
 }
+
+/// Read-only interface for listing existing OpenFGA tuples on an object.
+type IAuthorizationRelationshipReader =
+    abstract member ReadRelationshipsAsync: object: AuthObject -> Task<RelationshipTuple list>
 
 /// Interface for OpenFGA authorization operations
 type IAuthorizationService =

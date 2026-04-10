@@ -13,6 +13,20 @@ type OpenFgaService(apiUrl: string, logger: ILogger<OpenFgaService>, ?storeId: s
     let isDuplicateTupleWriteError (ex: exn) =
         ex.Message.Contains("cannot write a tuple which already exists")
 
+    let tryMapTupleKey (tupleKey: TupleKey) =
+        match
+            AuthTypes.tryParseSubject tupleKey.User,
+            AuthTypes.tryParseRelation tupleKey.Relation,
+            AuthTypes.tryParseObject tupleKey.Object
+        with
+        | Some subject, Some relation, Some obj ->
+            Some {
+                Subject = subject
+                Relation = relation
+                Object = obj
+            }
+        | _ -> None
+
     /// Creates a new OpenFGA client instance without store ID (for store creation)
     let createClientWithoutStore () =
         let configuration = ClientConfiguration(ApiUrl = apiUrl)
@@ -368,3 +382,44 @@ type OpenFgaService(apiUrl: string, logger: ILogger<OpenFgaService>, ?storeId: s
 
                 return results |> Array.toList |> Map.ofList
             }
+
+    interface IAuthorizationRelationshipReader with
+        member _.ReadRelationshipsAsync(object: AuthObject) : Task<RelationshipTuple list> = task {
+            use client = createClient ()
+
+            let objectStr = AuthTypes.objectToString object
+            let mutable continuationToken = null
+            let mutable hasMorePages = true
+            let mutable tuples: RelationshipTuple list = []
+
+            while hasMorePages do
+                let request = ClientReadRequest(Object = objectStr)
+
+                let options = ClientReadOptions()
+                options.ContinuationToken <- continuationToken
+
+                let! response = client.Read(request, options)
+
+                let mappedTuples =
+                    response.Tuples
+                    |> Seq.choose (fun tupleData ->
+                        match tryMapTupleKey tupleData.Key with
+                        | Some tuple -> Some tuple
+                        | None ->
+                            logger.LogWarning(
+                                "Ignoring unparseable OpenFGA tuple while reading {Object}: {User}#{Relation}@{ObjectValue}",
+                                objectStr,
+                                tupleData.Key.User,
+                                tupleData.Key.Relation,
+                                tupleData.Key.Object
+                            )
+
+                            None)
+                    |> Seq.toList
+
+                tuples <- tuples @ mappedTuples
+                continuationToken <- response.ContinuationToken
+                hasMorePages <- not (System.String.IsNullOrEmpty continuationToken)
+
+            return tuples
+        }
